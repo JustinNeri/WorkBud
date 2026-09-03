@@ -3,11 +3,14 @@ import { ArrowLeft, MailCheck } from 'lucide-react'
 import { supabase, errorMessage } from '../lib/supabase'
 import { Alert, Button } from './ui'
 
-const CODE_LENGTH = 6
+// Supabase's OTP length is a project setting (6–10 digits), so don't assume
+// one — accept the whole range and let the server reject a wrong code.
+const MIN_CODE_LENGTH = 6
+const MAX_CODE_LENGTH = 10
 const RESEND_COOLDOWN = 60
 
 /**
- * Second signup step: the 6-digit code Supabase mailed out.
+ * Second signup step: the numeric code Supabase mailed out.
  * Requires the "Confirm signup" email template to contain {{ .Token }}.
  */
 export function OtpStep({ email, onBack }) {
@@ -55,11 +58,11 @@ export function OtpStep({ email, onBack }) {
     // Success: onAuthStateChange swaps in the dashboard. Stay busy.
   }
 
+  // No auto-submit: the code length varies by project, so there's no reliable
+  // "it's complete now" moment. The user taps Verify.
   function handleChange(e) {
-    const next = e.target.value.replace(/\D/g, '').slice(0, CODE_LENGTH)
-    setCode(next)
+    setCode(e.target.value.replace(/\D/g, '').slice(0, MAX_CODE_LENGTH))
     setError(null)
-    if (next.length === CODE_LENGTH) verify(next)
   }
 
   async function handleResend() {
@@ -96,7 +99,7 @@ export function OtpStep({ email, onBack }) {
           </span>
           <h1 className="text-[22px] font-bold tracking-tight">Check your email</h1>
           <p className="mt-1.5 text-[15px] leading-snug text-muted">
-            We sent a {CODE_LENGTH}-digit code to{' '}
+            We sent a verification code to{' '}
             <span className="font-medium text-ink">{email}</span>
           </p>
         </header>
@@ -104,7 +107,7 @@ export function OtpStep({ email, onBack }) {
         <form
           onSubmit={(e) => {
             e.preventDefault()
-            if (code.length === CODE_LENGTH) verify(code)
+            if (code.length >= MIN_CODE_LENGTH) verify(code)
           }}
           className="flex flex-col gap-4"
         >
@@ -114,16 +117,21 @@ export function OtpStep({ email, onBack }) {
             onChange={handleChange}
             inputMode="numeric"
             autoComplete="one-time-code"
-            placeholder="000000"
+            placeholder="Enter code"
             aria-label="Verification code"
+            maxLength={MAX_CODE_LENGTH}
             disabled={busy}
-            className="w-full rounded-xl border border-line bg-surface-2 py-4 text-center text-[30px] font-semibold tracking-[0.4em] text-ink placeholder:text-faint focus:border-brand focus:bg-surface disabled:opacity-60"
+            className="w-full rounded-xl border border-line bg-surface-2 py-4 text-center text-[28px] font-semibold tracking-[0.25em] text-ink placeholder:text-[18px] placeholder:tracking-normal placeholder:text-faint focus:border-brand focus:bg-surface disabled:opacity-60"
           />
 
           <Alert>{error}</Alert>
           <Alert tone="info">{notice}</Alert>
 
-          <Button type="submit" busy={busy} disabled={code.length < CODE_LENGTH}>
+          <Button
+            type="submit"
+            busy={busy}
+            disabled={code.length < MIN_CODE_LENGTH}
+          >
             Verify
           </Button>
         </form>
