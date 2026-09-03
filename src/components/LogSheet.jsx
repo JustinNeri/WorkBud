@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { todayISO } from '../lib/format'
+import { currencySymbol, todayISO } from '../lib/format'
 import { Sheet } from './Sheet'
 import { Alert, Button, Field, NumberInput, TextArea, TextInput } from './ui'
 
@@ -7,7 +7,7 @@ import { Alert, Button, Field, NumberInput, TextArea, TextInput } from './ui'
  * Create or edit one daily entry. `log` null → new entry dated today.
  * Inputs stay strings while typing so a half-typed "8." doesn't snap to 8.
  */
-export function LogSheet({ open, log, onClose, onSubmit }) {
+export function LogSheet({ open, log, jobName, onClose, onSubmit }) {
   const editing = Boolean(log)
 
   const [date, setDate] = useState(log?.entry_date ?? todayISO())
@@ -51,7 +51,11 @@ export function LogSheet({ open, log, onClose, onSubmit }) {
   }
 
   return (
-    <Sheet open={open} onClose={onClose} title={editing ? 'Edit entry' : 'Log today'}>
+    <Sheet
+      open={open}
+      onClose={onClose}
+      title={editing ? 'Edit entry' : `Log today${jobName ? ` · ${jobName}` : ''}`}
+    >
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
         <Field label="Date">
           <TextInput
@@ -77,7 +81,7 @@ export function LogSheet({ open, log, onClose, onSubmit }) {
 
           <Field label="Money spent">
             <NumberInput
-              adornment="$"
+              adornment={currencySymbol()}
               value={spent}
               onChange={(e) => setSpent(e.target.value)}
               placeholder="0.00"
