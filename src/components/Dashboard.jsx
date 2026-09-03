@@ -12,6 +12,7 @@ import { JobTabs } from './JobTabs'
 import { LogSheet } from './LogSheet'
 import { Onboarding } from './Onboarding'
 import { PaceCard } from './PaceCard'
+import { PasswordSheet } from './PasswordSheet'
 import { SettingsSheet } from './SettingsSheet'
 import { Sheet } from './Sheet'
 import { StatTiles } from './StatTiles'
@@ -45,6 +46,7 @@ export function Dashboard({ user }) {
   const [jobSheet, setJobSheet] = useState(null) // null | { job: job|null }
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [exportOpen, setExportOpen] = useState(false)
+  const [passwordOpen, setPasswordOpen] = useState(false)
   const [pendingDelete, setPendingDelete] = useState(null)
   const [deletingId, setDeletingId] = useState(null)
   const [deleteError, setDeleteError] = useState(null)
@@ -275,6 +277,19 @@ export function Dashboard({ user }) {
           email={user.email}
           onClose={() => setSettingsOpen(false)}
           onSave={saveProfile}
+          onChangePassword={() => {
+            // Swap rather than stack — two sheets deep has no way back.
+            setSettingsOpen(false)
+            setPasswordOpen(true)
+          }}
+        />
+      ) : null}
+
+      {passwordOpen ? (
+        <PasswordSheet
+          open
+          email={user.email}
+          onClose={() => setPasswordOpen(false)}
         />
       ) : null}
 
