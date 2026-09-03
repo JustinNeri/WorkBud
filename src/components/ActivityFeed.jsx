@@ -1,74 +1,107 @@
 import { CalendarDays, Clock, Pencil, Trash2, Wallet } from 'lucide-react'
-import { formatEntryDate, formatHours, formatMoney } from '../lib/format'
+import {
+  formatEntryDate,
+  formatHours,
+  formatMoney,
+  fromISODate,
+} from '../lib/format'
 
-function LogRow({ log, onEdit, onDelete, deleting }) {
+/** Compact day badge: "SEP / 3" — the scannable anchor for each row. */
+function DateBadge({ iso, today }) {
+  const date = fromISODate(iso)
+  return (
+    <div
+      className={`flex size-11 shrink-0 flex-col items-center justify-center rounded-xl ${
+        today ? 'bg-brand text-white' : 'bg-surface-2 text-muted'
+      }`}
+    >
+      <span className="text-[9px] font-bold uppercase tracking-wide opacity-80">
+        {date.toLocaleDateString('en-US', { month: 'short' })}
+      </span>
+      <span className="text-[15px] font-bold leading-none">{date.getDate()}</span>
+    </div>
+  )
+}
+
+function LogRow({ log, onEdit, onDelete, deleting, isToday }) {
+  const spent = Number(log.amount_spent)
+
   return (
     <li
-      className={`flex items-start gap-3 px-4 py-3.5 transition-opacity ${
+      className={`flex items-center gap-3 px-3.5 py-3 transition-opacity ${
         deleting ? 'opacity-40' : ''
       }`}
     >
+      <DateBadge iso={log.entry_date} today={isToday} />
+
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <span className="text-[15px] font-semibold">
+          <span className="text-[14px] font-semibold">
             {formatEntryDate(log.entry_date)}
           </span>
         </div>
 
-        <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px]">
-          <span className="inline-flex items-center gap-1 font-medium text-brand">
-            <Clock size={13} />
+        <div className="mt-1 flex flex-wrap items-center gap-1.5">
+          <span className="inline-flex items-center gap-1 rounded-md bg-brand-soft px-1.5 py-0.5 text-[12px] font-semibold text-brand">
+            <Clock size={11} />
             {formatHours(log.hours_worked)}
           </span>
           <span
-            className={`inline-flex items-center gap-1 font-medium ${
-              Number(log.amount_spent) > 0 ? 'text-money' : 'text-faint'
+            className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[12px] font-semibold ${
+              spent > 0 ? 'bg-money-soft text-money' : 'bg-surface-2 text-faint'
             }`}
           >
-            <Wallet size={13} />
-            {formatMoney(log.amount_spent)}
+            <Wallet size={11} />
+            {formatMoney(spent)}
           </span>
         </div>
 
         {log.description ? (
-          <p className="mt-1.5 text-[13px] leading-snug text-muted">
+          <p className="mt-1.5 truncate text-[12.5px] leading-snug text-muted">
             {log.description}
           </p>
         ) : null}
       </div>
 
-      <div className="flex shrink-0 items-center gap-0.5">
+      <div className="flex shrink-0 items-center">
         <button
           type="button"
           onClick={() => onEdit(log)}
           aria-label={`Edit entry for ${formatEntryDate(log.entry_date)}`}
-          className="rounded-lg p-2 text-muted transition-colors active:bg-surface-2"
+          className="rounded-lg p-2 text-faint transition-colors active:bg-surface-2 active:text-ink"
         >
-          <Pencil size={16} />
+          <Pencil size={15} />
         </button>
         <button
           type="button"
           onClick={() => onDelete(log)}
           aria-label={`Delete entry for ${formatEntryDate(log.entry_date)}`}
-          className="rounded-lg p-2 text-muted transition-colors active:bg-over-soft active:text-over"
+          className="rounded-lg p-2 text-faint transition-colors active:bg-over-soft active:text-over"
         >
-          <Trash2 size={16} />
+          <Trash2 size={15} />
         </button>
       </div>
     </li>
   )
 }
 
-export function ActivityFeed({ logs, onEdit, onDelete, deletingId }) {
+export function ActivityFeed({ logs, onEdit, onDelete, deletingId, todayISO }) {
   return (
-    <section className="animate-rise" style={{ animationDelay: '120ms' }}>
-      <h2 className="mb-2 px-1 text-[13px] font-semibold uppercase tracking-wide text-faint">
-        Activity
-      </h2>
+    <section className="animate-rise" style={{ animationDelay: '230ms' }}>
+      <div className="mb-2 flex items-baseline justify-between px-1">
+        <h2 className="text-[12px] font-bold uppercase tracking-wide text-faint">
+          Activity
+        </h2>
+        {logs.length > 0 ? (
+          <span className="text-[12px] text-faint">
+            {logs.length} {logs.length === 1 ? 'entry' : 'entries'}
+          </span>
+        ) : null}
+      </div>
 
       {logs.length === 0 ? (
         <div className="rounded-2xl bg-surface px-6 py-12 text-center shadow-card">
-          <span className="mx-auto mb-3 flex size-12 items-center justify-center rounded-2xl bg-surface-2 text-faint">
+          <span className="mx-auto mb-3 flex size-12 items-center justify-center rounded-2xl bg-brand-soft text-brand">
             <CalendarDays size={22} />
           </span>
           <p className="text-[15px] font-semibold">No entries yet</p>
@@ -86,6 +119,7 @@ export function ActivityFeed({ logs, onEdit, onDelete, deletingId }) {
               onEdit={onEdit}
               onDelete={onDelete}
               deleting={deletingId === log.id}
+              isToday={log.entry_date === todayISO}
             />
           ))}
         </ul>

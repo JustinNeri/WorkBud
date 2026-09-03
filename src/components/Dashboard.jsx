@@ -1,12 +1,14 @@
 import { useState } from 'react'
-import { Clock, Loader2, Plus, Settings, Wallet } from 'lucide-react'
+import { Loader2, Plus, Settings } from 'lucide-react'
 import { useWorkbud } from '../hooks/useWorkbud'
-import { formatHours, formatMoney, formatMonth } from '../lib/format'
+import { todayISO } from '../lib/format'
 import { ActivityFeed } from './ActivityFeed'
+import { BudgetCard } from './BudgetCard'
+import { HeroHours } from './HeroHours'
 import { LogSheet } from './LogSheet'
-import { ProgressCard } from './ProgressCard'
 import { SettingsSheet } from './SettingsSheet'
 import { Sheet } from './Sheet'
+import { StatTiles } from './StatTiles'
 import { Alert, Button } from './ui'
 
 export function Dashboard({ user }) {
@@ -55,11 +57,16 @@ export function Dashboard({ user }) {
   return (
     <div className="min-h-dvh pb-32">
       <header className="flex items-center justify-between px-5 pt-[max(1.25rem,env(safe-area-inset-top))] pb-4">
-        <div>
-          <p className="text-[13px] text-muted">Welcome back</p>
-          <h1 className="text-[22px] font-bold leading-tight tracking-tight">
-            WorkBud
-          </h1>
+        <div className="flex items-center gap-3">
+          <span className="flex size-10 items-center justify-center rounded-full bg-brand text-[15px] font-bold text-white">
+            {(user.email?.[0] ?? '?').toUpperCase()}
+          </span>
+          <div>
+            <p className="text-[12.5px] leading-tight text-muted">Welcome back</p>
+            <h1 className="text-[19px] font-bold leading-tight tracking-tight">
+              WorkBud
+            </h1>
+          </div>
         </div>
         <button
           type="button"
@@ -74,41 +81,33 @@ export function Dashboard({ user }) {
       <main className="flex flex-col gap-3 px-5">
         {error ? <Alert>{error}</Alert> : null}
 
-        <ProgressCard
-          icon={Clock}
-          label="OJT Progress"
-          period="Total placement"
-          value={formatHours(stats.loggedHours)}
-          target={formatHours(stats.targetHours)}
+        <HeroHours
+          logged={stats.loggedHours}
+          target={stats.targetHours}
+          remaining={stats.hoursRemaining}
           percent={stats.hoursPct}
-          tone="brand"
-          footnote={
-            stats.hoursComplete
-              ? '🎉 Target reached — nice work.'
-              : `${formatHours(stats.hoursRemaining)} remaining`
-          }
+          complete={stats.hoursComplete}
         />
 
-        <ProgressCard
-          icon={Wallet}
-          label="Budget"
-          period={formatMonth()}
-          value={formatMoney(stats.spentThisMonth)}
-          target={formatMoney(stats.monthlyBudget, { compact: true })}
+        <StatTiles
+          weekHours={stats.weekHours}
+          avgPerDay={stats.avgPerDay}
+          daysWorked={stats.daysWorked}
+        />
+
+        <BudgetCard
+          spent={stats.spentThisMonth}
+          budget={stats.monthlyBudget}
+          remaining={stats.budgetRemaining}
           percent={stats.budgetPct}
-          tone={stats.overBudget ? 'over' : 'money'}
-          style={{ animationDelay: '60ms' }}
-          footnote={
-            stats.overBudget
-              ? `${formatMoney(Math.abs(stats.budgetRemaining))} over budget`
-              : `${formatMoney(stats.budgetRemaining)} left this month`
-          }
+          over={stats.overBudget}
         />
 
         <div className="mt-2">
           <ActivityFeed
             logs={logs}
             deletingId={deletingId}
+            todayISO={todayISO()}
             onEdit={(log) => setLogSheet({ log })}
             onDelete={(log) => {
               setDeleteError(null)
@@ -122,7 +121,7 @@ export function Dashboard({ user }) {
         type="button"
         onClick={() => setLogSheet({ log: null })}
         aria-label="Log an entry"
-        className="fixed right-5 bottom-[max(1.5rem,env(safe-area-inset-bottom))] flex size-14 items-center justify-center rounded-full bg-brand text-white shadow-lg shadow-brand/30 transition active:scale-95"
+        className="fixed right-5 bottom-[max(1.5rem,env(safe-area-inset-bottom))] flex size-14 items-center justify-center rounded-full bg-hero text-white shadow-hero transition active:scale-95"
       >
         <Plus size={26} />
       </button>
