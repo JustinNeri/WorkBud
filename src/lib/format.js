@@ -1,19 +1,42 @@
-/**
- * Currency lives here alone — swap these two lines to move the app to ₱, €, …
- */
 const LOCALE = 'en-US'
-const CURRENCY = 'USD'
 
-const money = new Intl.NumberFormat(LOCALE, {
-  style: 'currency',
-  currency: CURRENCY,
-  maximumFractionDigits: 2,
-})
-const moneyWhole = new Intl.NumberFormat(LOCALE, {
-  style: 'currency',
-  currency: CURRENCY,
-  maximumFractionDigits: 0,
-})
+/** Offered at onboarding and changeable in settings. */
+export const CURRENCIES = [
+  { code: 'PHP', label: 'Philippine peso', symbol: '₱' },
+  { code: 'USD', label: 'US dollar', symbol: '$' },
+  { code: 'EUR', label: 'Euro', symbol: '€' },
+  { code: 'GBP', label: 'British pound', symbol: '£' },
+  { code: 'JPY', label: 'Japanese yen', symbol: '¥' },
+  { code: 'AUD', label: 'Australian dollar', symbol: 'A$' },
+  { code: 'CAD', label: 'Canadian dollar', symbol: 'C$' },
+  { code: 'SGD', label: 'Singapore dollar', symbol: 'S$' },
+  { code: 'AED', label: 'UAE dirham', symbol: 'د.إ' },
+  { code: 'INR', label: 'Indian rupee', symbol: '₹' },
+]
+
+// One active currency for the account. Set once when the profile loads, so
+// call sites stay `formatMoney(n)` instead of threading a code through every
+// component. Falls back to PHP until the profile arrives.
+let active = 'PHP'
+let money = null
+let moneyWhole = null
+
+function build() {
+  const opts = { style: 'currency', currency: active }
+  money = new Intl.NumberFormat(LOCALE, { ...opts, maximumFractionDigits: 2 })
+  moneyWhole = new Intl.NumberFormat(LOCALE, { ...opts, maximumFractionDigits: 0 })
+}
+build()
+
+export function setCurrency(code) {
+  if (!code || code === active) return
+  active = code
+  build()
+}
+
+export function currencySymbol(code = active) {
+  return CURRENCIES.find((c) => c.code === code)?.symbol ?? '$'
+}
 
 export function formatMoney(value, { compact = false } = {}) {
   const n = Number(value) || 0

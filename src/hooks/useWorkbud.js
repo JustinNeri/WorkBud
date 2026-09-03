@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase, errorMessage } from '../lib/supabase'
-import { monthStartISO, toISODate, todayISO } from '../lib/format'
+import { monthStartISO, setCurrency, toISODate, todayISO } from '../lib/format'
 
 /** Feed order: newest entry_date first, ties broken by newest created_at. */
 function byNewest(a, b) {
@@ -8,42 +8,67 @@ function byNewest(a, b) {
   return a.created_at < b.created_at ? 1 : -1
 }
 
+const LOG_COLS =
+  'id, job_id, entry_date, hours_worked, amount_spent, description, created_at'
+
 /**
- * Loads the profile + every log for the signed-in user and exposes CRUD.
- * RLS scopes all of this server-side, so no user_id filter is needed on reads.
+ * Profile + jobs + logs for the signed-in user, with everything derived for
+ * whichever job tab is active. RLS scopes all reads server-side, so no
+ * user_id filter is needed here.
+ *
+ * All of a user's logs are held in memory and filtered per job — a personal
+ * tracker's volume is small, and it makes tab switching instant.
  */
 export function useWorkbud(userId) {
   const [profile, setProfile] = useState(null)
-  const [logs, setLogs] = useState([])
+  const [jobs, setJobs] = useState([])
+  const [allLogs, setAllLogs] = useState([])
+  const [activeJobId, setActiveJobId] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
   const load = useCallback(async () => {
-    const [profileRes, logsRes] = await Promise.all([
+    const [profileRes, jobsRes, logsRes] = await Promise.all([
       supabase
         .from('profiles')
-        .select('id, target_hours, monthly_budget')
+        .select(
+          'id, first_name, last_name, middle_initial, age, occupation, currency, onboarded_at',
+        )
         .eq('id', userId)
         .maybeSingle(),
       supabase
+        .from('jobs')
+        .select('id, name, target_hours, monthly_budget, sort_order, created_at')
+        .order('sort_order', { ascending: true })
+        .order('created_at', { ascending: true }),
+      supabase
         .from('daily_logs')
-        .select('id, entry_date, hours_worked, amount_spent, description, created_at')
+        .select(LOG_COLS)
         .order('entry_date', { ascending: false })
         .order('created_at', { ascending: false }),
     ])
 
-    if (!profileRes.error) setProfile(profileRes.data)
-    if (!logsRes.error) setLogs(logsRes.data ?? [])
+    if (!profileRes.error && profileRes.data) {
+      setProfile(profileRes.data)
+      setCurrency(profileRes.data.currency)
+    }
+    if (!jobsRes.error) {
+      const list = jobsRes.data ?? []
+      setJobs(list)
+      // Keep the current tab if it still exists, else fall back to the first.
+      setActiveJobId((current) =>
+        current && list.some((j) => j.id === current)
+          ? current
+          : (list[0]?.id ?? null),
+      )
+    }
+    if (!logsRes.error) setAllLogs(logsRes.data ?? [])
 
-    // Set once, at the end, so a successful reload also clears a stale error.
-    const failure = profileRes.error || logsRes.error
+    const failure = profileRes.error || jobsRes.error || logsRes.error
     setError(failure ? errorMessage(failure) : null)
     setLoading(false)
   }, [userId])
 
-  // App keys <Dashboard> by user id, so userId never changes under one mount:
-  // `loading` starts true and load() settles it. Callers use reload() for a
-  // silent refresh that leaves the rendered data in place.
   useEffect(() => {
     // load() fetches from Supabase — syncing with an external system is what
     // effects are for, and its setStates all happen after an await.
@@ -51,20 +76,31 @@ export function useWorkbud(userId) {
     load()
   }, [load])
 
-  // --- mutations. Each returns { error } so the caller can keep its sheet open.
+  const activeJob = useMemo(
+    () => jobs.find((j) => j.id === activeJobId) ?? null,
+    [jobs, activeJobId],
+  )
+
+  const logs = useMemo(
+    () => allLogs.filter((l) => l.job_id === activeJobId),
+    [allLogs, activeJobId],
+  )
+
+  // --- log mutations, always scoped to the active job
   const addLog = useCallback(
     async (values) => {
+      if (!activeJobId) return { error: 'Create a job first.' }
       const { data, error: err } = await supabase
         .from('daily_logs')
-        .insert({ ...values, user_id: userId })
-        .select('id, entry_date, hours_worked, amount_spent, description, created_at')
+        .insert({ ...values, user_id: userId, job_id: activeJobId })
+        .select(LOG_COLS)
         .single()
 
       if (err) return { error: errorMessage(err) }
-      setLogs((prev) => [data, ...prev].sort(byNewest))
+      setAllLogs((prev) => [data, ...prev].sort(byNewest))
       return {}
     },
-    [userId],
+    [userId, activeJobId],
   )
 
   const updateLog = useCallback(async (id, values) => {
@@ -72,50 +108,92 @@ export function useWorkbud(userId) {
       .from('daily_logs')
       .update(values)
       .eq('id', id)
-      .select('id, entry_date, hours_worked, amount_spent, description, created_at')
+      .select(LOG_COLS)
       .single()
 
     if (err) return { error: errorMessage(err) }
-    setLogs((prev) => prev.map((l) => (l.id === id ? data : l)).sort(byNewest))
+    setAllLogs((prev) => prev.map((l) => (l.id === id ? data : l)).sort(byNewest))
     return {}
   }, [])
 
   const deleteLog = useCallback(
     async (id) => {
-      const previous = logs
-      setLogs((prev) => prev.filter((l) => l.id !== id)) // optimistic
+      const previous = allLogs
+      setAllLogs((prev) => prev.filter((l) => l.id !== id)) // optimistic
       const { error: err } = await supabase.from('daily_logs').delete().eq('id', id)
       if (err) {
-        setLogs(previous) // put it back
+        setAllLogs(previous)
         return { error: errorMessage(err) }
       }
       return {}
     },
-    [logs],
+    [allLogs],
   )
 
-  const saveTargets = useCallback(
-    async ({ target_hours, monthly_budget }) => {
+  // --- job mutations
+  const addJob = useCallback(
+    async (values) => {
+      const { data, error: err } = await supabase
+        .from('jobs')
+        .insert({ ...values, user_id: userId, sort_order: jobs.length })
+        .select('id, name, target_hours, monthly_budget, sort_order, created_at')
+        .single()
+
+      if (err) return { error: errorMessage(err) }
+      setJobs((prev) => [...prev, data])
+      setActiveJobId(data.id) // land the user on what they just made
+      return {}
+    },
+    [userId, jobs.length],
+  )
+
+  const updateJob = useCallback(async (id, values) => {
+    const { data, error: err } = await supabase
+      .from('jobs')
+      .update(values)
+      .eq('id', id)
+      .select('id, name, target_hours, monthly_budget, sort_order, created_at')
+      .single()
+
+    if (err) return { error: errorMessage(err) }
+    setJobs((prev) => prev.map((j) => (j.id === id ? data : j)))
+    return {}
+  }, [])
+
+  const deleteJob = useCallback(async (id) => {
+    const { error: err } = await supabase.from('jobs').delete().eq('id', id)
+    if (err) return { error: errorMessage(err) }
+    // The FK cascades in the database; mirror that locally.
+    setJobs((prev) => prev.filter((j) => j.id !== id))
+    setAllLogs((prev) => prev.filter((l) => l.job_id !== id))
+    setActiveJobId((current) => (current === id ? null : current))
+    return {}
+  }, [])
+
+  const saveProfile = useCallback(
+    async (values) => {
       const { data, error: err } = await supabase
         .from('profiles')
-        .update({ target_hours, monthly_budget })
+        .update(values)
         .eq('id', userId)
-        .select('id, target_hours, monthly_budget')
+        .select(
+          'id, first_name, last_name, middle_initial, age, occupation, currency, onboarded_at',
+        )
         .single()
 
       if (err) return { error: errorMessage(err) }
       setProfile(data)
+      setCurrency(data.currency)
       return {}
     },
     [userId],
   )
 
-  // --- derived totals
+  // --- derived, for the active job only
   const stats = useMemo(() => {
-    const targetHours = Number(profile?.target_hours) || 0
-    const monthlyBudget = Number(profile?.monthly_budget) || 0
+    const targetHours = Number(activeJob?.target_hours) || 0
+    const monthlyBudget = Number(activeJob?.monthly_budget) || 0
 
-    // Hours accumulate across the whole placement; spending resets each month.
     const loggedHours = logs.reduce((sum, l) => sum + Number(l.hours_worked), 0)
     const firstOfMonth = monthStartISO()
     const spentThisMonth = logs
@@ -158,10 +236,14 @@ export function useWorkbud(userId) {
 
       loggedToday: logs.some((l) => l.entry_date === todayISO()),
     }
-  }, [logs, profile])
+  }, [logs, activeJob])
 
   return {
     profile,
+    jobs,
+    activeJob,
+    activeJobId,
+    setActiveJobId,
     logs,
     stats,
     loading,
@@ -170,6 +252,9 @@ export function useWorkbud(userId) {
     addLog,
     updateLog,
     deleteLog,
-    saveTargets,
+    addJob,
+    updateJob,
+    deleteJob,
+    saveProfile,
   }
 }
