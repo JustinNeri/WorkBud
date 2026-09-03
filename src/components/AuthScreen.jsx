@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Clock, Wallet } from 'lucide-react'
 import { supabase, errorMessage } from '../lib/supabase'
+import { OtpStep } from './OtpStep'
 import { Alert, Button, Field, TextInput } from './ui'
 
 export function AuthScreen() {
@@ -10,6 +11,8 @@ export function AuthScreen() {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
   const [notice, setNotice] = useState(null)
+  // Set once signUp has mailed a code; swaps this screen for the OTP step.
+  const [awaitingCode, setAwaitingCode] = useState(null)
 
   const isSignUp = mode === 'signup'
 
@@ -31,21 +34,35 @@ export function AuthScreen() {
       : await supabase.auth.signInWithPassword(credentials)
 
     if (err) {
+      // Signed up earlier but never entered the code — send a fresh one
+      // rather than dead-ending them on "Email not confirmed".
+      if (err.code === 'email_not_confirmed') {
+        await supabase.auth.resend({ type: 'signup', email: credentials.email })
+        setAwaitingCode(credentials.email)
+        setPassword('')
+        setBusy(false)
+        return
+      }
       setError(errorMessage(err))
       setBusy(false)
       return
     }
 
-    // With email confirmation on, signUp returns a user but no session —
-    // there's nothing to navigate to yet, so say so instead of hanging.
+    // With email confirmation on, signUp returns a user but no session — a
+    // code is in the user's inbox, so hand off to the OTP step.
     if (isSignUp && !data.session) {
-      setNotice(`Almost there — confirm your email at ${credentials.email}, then sign in.`)
-      setMode('signin')
+      setAwaitingCode(credentials.email)
       setPassword('')
       setBusy(false)
       return
     }
     // On success onAuthStateChange swaps this screen out; leave busy = true.
+  }
+
+  if (awaitingCode) {
+    return (
+      <OtpStep email={awaitingCode} onBack={() => setAwaitingCode(null)} />
+    )
   }
 
   return (
