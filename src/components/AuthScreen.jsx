@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { ArrowRight, Clock, Sparkles, Wallet } from 'lucide-react'
 import { supabase, errorMessage } from '../lib/supabase'
+import { ForgotPassword } from './ForgotPassword'
 import { OtpStep } from './OtpStep'
 import { Alert, Button, Field, TextInput } from './ui'
 
@@ -13,6 +14,7 @@ export function AuthScreen() {
   const [notice, setNotice] = useState(null)
   // Set once signUp has mailed a code; swaps this screen for the OTP step.
   const [awaitingCode, setAwaitingCode] = useState(null)
+  const [resetting, setResetting] = useState(false)
 
   const isSignUp = mode === 'signup'
 
@@ -70,6 +72,15 @@ export function AuthScreen() {
 
   if (awaitingCode) {
     return <OtpStep email={awaitingCode} onBack={() => setAwaitingCode(null)} />
+  }
+
+  if (resetting) {
+    return (
+      <ForgotPassword
+        initialEmail={email.trim()}
+        onBack={() => setResetting(false)}
+      />
+    )
   }
 
   return (
@@ -152,6 +163,16 @@ export function AuthScreen() {
                 required
               />
             </Field>
+
+            {!isSignUp ? (
+              <button
+                type="button"
+                onClick={() => setResetting(true)}
+                className="-mt-2 self-end text-[13px] font-semibold text-brand"
+              >
+                Forgot password?
+              </button>
+            ) : null}
 
             <Alert>{error}</Alert>
             <Alert tone="info">{notice}</Alert>
