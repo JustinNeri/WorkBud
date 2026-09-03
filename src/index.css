@@ -1,0 +1,149 @@
+@import 'tailwindcss';
+
+/* ---------------------------------------------------------------------------
+   Palette — declared once as raw vars, re-pointed for dark mode, then handed
+   to Tailwind through @theme so utilities (bg-surface, text-muted, …) work.
+--------------------------------------------------------------------------- */
+:root {
+  --wb-canvas: #f6f7fb;
+  --wb-surface: #ffffff;
+  --wb-surface-2: #f2f3f8;
+  --wb-ink: #14151a;
+  --wb-muted: #6b7280;
+  --wb-faint: #9ca3af;
+  --wb-line: #e6e8f0;
+  --wb-brand: #4f46e5;
+  --wb-brand-soft: #eef0ff;
+  --wb-money: #059669;
+  --wb-money-soft: #e7f7f1;
+  --wb-over: #e11d48;
+  --wb-over-soft: #ffe9ee;
+  --wb-shadow: 0 1px 2px rgb(16 18 32 / 0.04), 0 8px 24px -12px rgb(16 18 32 / 0.12);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --wb-canvas: #0b0b0f;
+    --wb-surface: #15161c;
+    --wb-surface-2: #1d1f27;
+    --wb-ink: #f3f4f6;
+    --wb-muted: #9ca3af;
+    --wb-faint: #6b7280;
+    --wb-line: #272932;
+    --wb-brand: #7c74ff;
+    --wb-brand-soft: #1e1e3a;
+    --wb-money: #34d399;
+    --wb-money-soft: #10281f;
+    --wb-over: #fb7185;
+    --wb-over-soft: #2c1119;
+    --wb-shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 24px -12px rgb(0 0 0 / 0.6);
+  }
+}
+
+@theme {
+  --color-canvas: var(--wb-canvas);
+  --color-surface: var(--wb-surface);
+  --color-surface-2: var(--wb-surface-2);
+  --color-ink: var(--wb-ink);
+  --color-muted: var(--wb-muted);
+  --color-faint: var(--wb-faint);
+  --color-line: var(--wb-line);
+  --color-brand: var(--wb-brand);
+  --color-brand-soft: var(--wb-brand-soft);
+  --color-money: var(--wb-money);
+  --color-money-soft: var(--wb-money-soft);
+  --color-over: var(--wb-over);
+  --color-over-soft: var(--wb-over-soft);
+
+  --shadow-card: var(--wb-shadow);
+
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, sans-serif;
+
+  --animate-sheet-in: sheet-in 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+  --animate-fade-in: fade-in 0.2s ease-out;
+  --animate-rise: rise 0.4s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+}
+
+@keyframes sheet-in {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ---------------------------------------------------------------------------
+   Native-feeling baseline
+--------------------------------------------------------------------------- */
+html {
+  background: var(--wb-canvas);
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  background: var(--wb-canvas);
+  color: var(--wb-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  /* kill the rubber-band flash behind a standalone PWA */
+  overscroll-behavior-y: none;
+}
+
+/* No blue flash / long-press menu on taps */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+button,
+a {
+  -webkit-touch-callout: none;
+}
+
+/* iOS zooms any focused input under 16px — pin it */
+input,
+select,
+textarea,
+button {
+  font-family: inherit;
+  font-size: 16px;
+}
+
+/* Hide number-input spinners; we use big tappable fields instead */
+input[type='number']::-webkit-outer-spin-button,
+input[type='number']::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type='number'] {
+  -moz-appearance: textfield;
+}
+
+/* Consistent, visible focus without the default double ring */
+:focus-visible {
+  outline: 2px solid var(--wb-brand);
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar { display: none; }
+}
