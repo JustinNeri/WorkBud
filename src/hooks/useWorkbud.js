@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase, errorMessage } from '../lib/supabase'
-import { monthStartISO, todayISO } from '../lib/format'
+import { monthStartISO, toISODate, todayISO } from '../lib/format'
 
 /** Feed order: newest entry_date first, ties broken by newest created_at. */
 function byNewest(a, b) {
@@ -125,7 +125,25 @@ export function useWorkbud(userId) {
     const pct = (value, total) =>
       total > 0 ? Math.min((value / total) * 100, 100) : 0
 
+    // Rolling 7 days, and an average over days actually worked (not calendar
+    // days) — otherwise a weekend off drags the number down misleadingly.
+    const weekAgo = new Date()
+    weekAgo.setDate(weekAgo.getDate() - 6)
+    const weekStart = toISODate(weekAgo)
+    const weekHours = logs
+      .filter((l) => l.entry_date >= weekStart)
+      .reduce((sum, l) => sum + Number(l.hours_worked), 0)
+
+    const daysWorked = new Set(
+      logs.filter((l) => Number(l.hours_worked) > 0).map((l) => l.entry_date),
+    ).size
+
     return {
+      weekHours,
+      daysWorked,
+      avgPerDay: daysWorked > 0 ? loggedHours / daysWorked : 0,
+      entryCount: logs.length,
+
       targetHours,
       loggedHours,
       hoursRemaining: Math.max(targetHours - loggedHours, 0),
