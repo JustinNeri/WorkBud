@@ -54,7 +54,11 @@ create table if not exists public.daily_logs (
   user_id      uuid           not null references auth.users (id) on delete cascade,
   job_id       uuid           not null references public.jobs (id) on delete cascade,
   entry_date   date           not null default current_date,
+  time_in      time,
+  time_out     time,
+  break_minutes integer       not null default 0 check (break_minutes >= 0 and break_minutes < 1440),
   hours_worked numeric(6, 2)  not null default 0 check (hours_worked >= 0 and hours_worked <= 24),
+  -- Total of this day's expenses rows; written by the app alongside them.
   amount_spent numeric(12, 2) not null default 0 check (amount_spent >= 0),
   description  text,
   created_at   timestamptz    not null default now(),
@@ -66,6 +70,20 @@ create index if not exists daily_logs_user_date_idx
   on public.daily_logs (user_id, entry_date desc, created_at desc);
 create index if not exists daily_logs_job_date_idx
   on public.daily_logs (job_id, entry_date desc, created_at desc);
+
+-- ---------------------------------------------------------------------------
+-- 2b. expenses — the individual things bought on a given day.
+-- ---------------------------------------------------------------------------
+create table if not exists public.expenses (
+  id         uuid           primary key default gen_random_uuid(),
+  log_id     uuid           not null references public.daily_logs (id) on delete cascade,
+  user_id    uuid           not null references auth.users (id) on delete cascade,
+  label      text           check (label is null or length(label) <= 120),
+  amount     numeric(12, 2) not null default 0 check (amount >= 0),
+  created_at timestamptz    not null default now()
+);
+
+create index if not exists expenses_log_idx on public.expenses (log_id, created_at);
 
 -- ---------------------------------------------------------------------------
 -- 3. updated_at maintenance
@@ -134,6 +152,7 @@ on conflict (id) do nothing;
 -- ---------------------------------------------------------------------------
 alter table public.profiles   enable row level security;
 alter table public.jobs       enable row level security;
+alter table public.expenses   enable row level security;
 alter table public.daily_logs enable row level security;
 
 -- profiles: no INSERT policy on purpose — rows come only from the trigger.
@@ -167,6 +186,25 @@ drop policy if exists "jobs_delete_own" on public.jobs;
 create policy "jobs_delete_own" on public.jobs
   for delete to authenticated using ((select auth.uid()) = user_id);
 
+-- expenses: full CRUD, scoped to the owner.
+drop policy if exists "expenses_select_own" on public.expenses;
+create policy "expenses_select_own" on public.expenses
+  for select to authenticated using ((select auth.uid()) = user_id);
+
+drop policy if exists "expenses_insert_own" on public.expenses;
+create policy "expenses_insert_own" on public.expenses
+  for insert to authenticated with check ((select auth.uid()) = user_id);
+
+drop policy if exists "expenses_update_own" on public.expenses;
+create policy "expenses_update_own" on public.expenses
+  for update to authenticated
+  using ((select auth.uid()) = user_id)
+  with check ((select auth.uid()) = user_id);
+
+drop policy if exists "expenses_delete_own" on public.expenses;
+create policy "expenses_delete_own" on public.expenses
+  for delete to authenticated using ((select auth.uid()) = user_id);
+
 -- daily_logs: full CRUD, scoped to the owner.
 drop policy if exists "daily_logs_select_own" on public.daily_logs;
 create policy "daily_logs_select_own" on public.daily_logs
@@ -194,6 +232,7 @@ create policy "daily_logs_delete_own" on public.daily_logs
 -- ---------------------------------------------------------------------------
 grant select, update                 on public.profiles   to authenticated;
 grant select, insert, update, delete on public.jobs       to authenticated;
+grant select, insert, update, delete on public.expenses   to authenticated;
 grant select, insert, update, delete on public.daily_logs to authenticated;
 
 -- ---------------------------------------------------------------------------
