@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { KeyRound } from 'lucide-react'
 import { supabase, errorMessage } from '../lib/supabase'
 import { Sheet } from './Sheet'
-import { Alert, Button, Field, TextInput } from './ui'
+import { Alert, Button, Field, PasswordInput } from './ui'
 
 const MIN_LENGTH = 6
 
@@ -83,8 +83,7 @@ export function PasswordSheet({ open, email, onClose }) {
       ) : (
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <Field label="Current password">
-            <TextInput
-              type="password"
+            <PasswordInput
               value={current}
               onChange={(e) => setCurrent(e.target.value)}
               autoComplete="current-password"
@@ -94,8 +93,7 @@ export function PasswordSheet({ open, email, onClose }) {
           </Field>
 
           <Field label="New password" hint={`At least ${MIN_LENGTH} characters.`}>
-            <TextInput
-              type="password"
+            <PasswordInput
               value={next}
               onChange={(e) => setNext(e.target.value)}
               autoComplete="new-password"
@@ -106,8 +104,7 @@ export function PasswordSheet({ open, email, onClose }) {
           </Field>
 
           <Field label="Confirm new password">
-            <TextInput
-              type="password"
+            <PasswordInput
               value={confirm}
               onChange={(e) => setConfirm(e.target.value)}
               autoComplete="new-password"
