@@ -1,42 +1,81 @@
 @import 'tailwindcss';
 
 /* ---------------------------------------------------------------------------
-   Palette — declared once as raw vars, re-pointed for dark mode, then handed
-   to Tailwind through @theme so utilities (bg-surface, text-muted, …) work.
+   Palette
+
+   The four data colours (brand / money / warn / over) are not taste — each
+   pair was run through the dataviz validator for lightness band, chroma,
+   CVD separation and contrast against its own surface. Dark mode uses its
+   own steps (band 0.48–0.67), not a flip of the light ones: very light
+   colours glare on a dark ground.
+
+   Every meter track is a lighter step of its own fill's ramp, so the state
+   reads across the whole bar rather than only the filled part.
 --------------------------------------------------------------------------- */
 :root {
-  --wb-canvas: #f6f7fb;
+  --wb-canvas: #f4f5fa;
   --wb-surface: #ffffff;
-  --wb-surface-2: #f2f3f8;
-  --wb-ink: #14151a;
-  --wb-muted: #6b7280;
-  --wb-faint: #9ca3af;
-  --wb-line: #e6e8f0;
+  --wb-surface-2: #f1f2f8;
+  --wb-ink: #101116;
+  --wb-muted: #61636e;
+  --wb-faint: #9497a3;
+  --wb-line: #e7e8f0;
+
   --wb-brand: #4f46e5;
-  --wb-brand-soft: #eef0ff;
+  --wb-brand-soft: #eceafd;
+  --wb-brand-track: #dddafb;
+
   --wb-money: #059669;
-  --wb-money-soft: #e7f7f1;
+  --wb-money-soft: #e3f7ef;
+  --wb-money-track: #c7efdf;
+
+  --wb-warn: #f59e0b;
+  --wb-warn-soft: #fdf3dd;
+  --wb-warn-track: #fae4b4;
+
   --wb-over: #e11d48;
-  --wb-over-soft: #ffe9ee;
-  --wb-shadow: 0 1px 2px rgb(16 18 32 / 0.04), 0 8px 24px -12px rgb(16 18 32 / 0.12);
+  --wb-over-soft: #fde8ec;
+  --wb-over-track: #f9ccd6;
+
+  --wb-hero-from: #4f46e5;
+  --wb-hero-to: #7c3aed;
+  --wb-hero-ink: #ffffff;
+
+  --wb-shadow: 0 1px 2px rgb(16 18 32 / 0.05), 0 10px 26px -14px rgb(16 18 32 / 0.18);
+  --wb-shadow-hero: 0 10px 30px -12px rgb(79 70 229 / 0.5);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --wb-canvas: #0b0b0f;
+    --wb-canvas: #0a0a0e;
     --wb-surface: #15161c;
-    --wb-surface-2: #1d1f27;
-    --wb-ink: #f3f4f6;
-    --wb-muted: #9ca3af;
-    --wb-faint: #6b7280;
-    --wb-line: #272932;
-    --wb-brand: #7c74ff;
-    --wb-brand-soft: #1e1e3a;
-    --wb-money: #34d399;
-    --wb-money-soft: #10281f;
-    --wb-over: #fb7185;
-    --wb-over-soft: #2c1119;
-    --wb-shadow: 0 1px 2px rgb(0 0 0 / 0.4), 0 8px 24px -12px rgb(0 0 0 / 0.6);
+    --wb-surface-2: #1e1f27;
+    --wb-ink: #f2f3f7;
+    --wb-muted: #9b9ead;
+    --wb-faint: #6a6d7b;
+    --wb-line: #262832;
+
+    --wb-brand: #6d70f0;
+    --wb-brand-soft: #1c1d3d;
+    --wb-brand-track: #2a2b57;
+
+    --wb-money: #0ea472;
+    --wb-money-soft: #0c2a21;
+    --wb-money-track: #123f31;
+
+    --wb-warn: #a87304;
+    --wb-warn-soft: #2b2109;
+    --wb-warn-track: #40320e;
+
+    --wb-over: #f2456a;
+    --wb-over-soft: #33131d;
+    --wb-over-track: #4d1c2b;
+
+    --wb-hero-from: #4338ca;
+    --wb-hero-to: #6d28d9;
+
+    --wb-shadow: 0 1px 2px rgb(0 0 0 / 0.5), 0 10px 26px -14px rgb(0 0 0 / 0.8);
+    --wb-shadow-hero: 0 10px 30px -14px rgb(67 56 202 / 0.7);
   }
 }
 
@@ -48,14 +87,27 @@
   --color-muted: var(--wb-muted);
   --color-faint: var(--wb-faint);
   --color-line: var(--wb-line);
+
   --color-brand: var(--wb-brand);
   --color-brand-soft: var(--wb-brand-soft);
+  --color-brand-track: var(--wb-brand-track);
+
   --color-money: var(--wb-money);
   --color-money-soft: var(--wb-money-soft);
+  --color-money-track: var(--wb-money-track);
+
+  --color-warn: var(--wb-warn);
+  --color-warn-soft: var(--wb-warn-soft);
+  --color-warn-track: var(--wb-warn-track);
+
   --color-over: var(--wb-over);
   --color-over-soft: var(--wb-over-soft);
+  --color-over-track: var(--wb-over-track);
+
+  --color-hero-ink: var(--wb-hero-ink);
 
   --shadow-card: var(--wb-shadow);
+  --shadow-hero: var(--wb-shadow-hero);
 
   --font-sans:
     -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto,
@@ -63,7 +115,7 @@
 
   --animate-sheet-in: sheet-in 0.32s cubic-bezier(0.32, 0.72, 0, 1);
   --animate-fade-in: fade-in 0.2s ease-out;
-  --animate-rise: rise 0.4s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  --animate-rise: rise 0.45s cubic-bezier(0.22, 1, 0.36, 1) backwards;
 }
 
 @keyframes sheet-in {
@@ -75,7 +127,7 @@
   to { opacity: 1; }
 }
 @keyframes rise {
-  from { opacity: 0; transform: translateY(10px); }
+  from { opacity: 0; transform: translateY(12px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
@@ -146,4 +198,9 @@ input[type='number'] {
 @utility no-scrollbar {
   scrollbar-width: none;
   &::-webkit-scrollbar { display: none; }
+}
+
+/* The one gradient surface in the app — the hero card. */
+@utility bg-hero {
+  background-image: linear-gradient(135deg, var(--wb-hero-from), var(--wb-hero-to));
 }
