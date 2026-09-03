@@ -1,4 +1,5 @@
-import { Loader2 } from 'lucide-react'
+import { useState } from 'react'
+import { Eye, EyeOff, Loader2 } from 'lucide-react'
 
 const baseField =
   'w-full rounded-xl border border-line bg-surface-2 px-3.5 py-3 text-ink placeholder:text-faint transition-colors focus:border-brand focus:bg-surface'
@@ -17,6 +18,36 @@ export function Field({ label, hint, children }) {
 
 export function TextInput({ className = '', ...props }) {
   return <input className={`${baseField} ${className}`} {...props} />
+}
+
+/**
+ * Password field with a reveal toggle — typing one blind on a phone keyboard
+ * is where most sign-in failures actually come from.
+ *
+ * The toggle is type="button" on purpose: inside a form, a bare <button>
+ * defaults to submit, so tapping the eye would try to sign the user in.
+ */
+export function PasswordInput({ className = '', ...props }) {
+  const [visible, setVisible] = useState(false)
+
+  return (
+    <div className="relative">
+      <input
+        type={visible ? 'text' : 'password'}
+        className={`${baseField} pr-12 ${className}`}
+        {...props}
+      />
+      <button
+        type="button"
+        onClick={() => setVisible((v) => !v)}
+        aria-label={visible ? 'Hide password' : 'Show password'}
+        aria-pressed={visible}
+        className="absolute inset-y-0 right-0 flex w-12 items-center justify-center text-muted transition-colors active:text-ink"
+      >
+        {visible ? <EyeOff size={18} /> : <Eye size={18} />}
+      </button>
+    </div>
+  )
 }
 
 /**
