@@ -4,6 +4,8 @@ import {
   EXPENSE_CATEGORIES,
   computeHours,
   currencySymbol,
+  formatEntryDate,
+  formatHours,
   formatMoney,
   todayISO,
 } from '../lib/format'
@@ -25,7 +27,16 @@ const newItem = () => ({
  * arithmetic — but the field stays editable for days that don't fit a shift.
  * Spending is a list of things bought; the day's total is their sum.
  */
-export function LogSheet({ open, log, jobName, expenses = [], onClose, onSubmit }) {
+export function LogSheet({
+  open,
+  log,
+  jobName,
+  expenses = [],
+  jobLogs = [],
+  onOpenExisting,
+  onClose,
+  onSubmit,
+}) {
   const editing = Boolean(log)
 
   const [date, setDate] = useState(log?.entry_date ?? todayISO())
@@ -59,6 +70,17 @@ export function LogSheet({ open, log, jobName, expenses = [], onClose, onSubmit 
         : log
           ? String(Number(log.hours_worked))
           : ''
+
+  /**
+   * A soft duplicate check, not a unique constraint: two shifts in one day is
+   * legitimate (a morning and an afternoon block), so the second entry is
+   * allowed — the user is just told, and offered the existing one instead.
+   */
+  const duplicate = useMemo(
+    () =>
+      editing ? null : (jobLogs.find((l) => l.entry_date === date) ?? null),
+    [editing, jobLogs, date],
+  )
 
   const total = useMemo(
     () => items.reduce((sum, i) => sum + (Number(i.amount) || 0), 0),
@@ -131,6 +153,27 @@ export function LogSheet({ open, log, jobName, expenses = [], onClose, onSubmit 
             required
           />
         </Field>
+
+        {duplicate ? (
+          <div className="rounded-xl bg-warn-soft px-3.5 py-3 text-[13px] leading-snug">
+            <p>
+              <span className="font-semibold">
+                {formatEntryDate(duplicate.entry_date)} is already logged
+              </span>{' '}
+              ({formatHours(duplicate.hours_worked)}). Saving this adds a second
+              entry and both will count.
+            </p>
+            {onOpenExisting ? (
+              <button
+                type="button"
+                onClick={() => onOpenExisting(duplicate)}
+                className="mt-1.5 font-semibold text-warn underline"
+              >
+                Edit that entry instead
+              </button>
+            ) : null}
+          </div>
+        ) : null}
 
         {/* --- shift ------------------------------------------------------ */}
         <div>
