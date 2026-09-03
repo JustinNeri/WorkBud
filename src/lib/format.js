@@ -1,0 +1,86 @@
+/**
+ * Currency lives here alone — swap these two lines to move the app to ₱, €, …
+ */
+const LOCALE = 'en-US'
+const CURRENCY = 'USD'
+
+const money = new Intl.NumberFormat(LOCALE, {
+  style: 'currency',
+  currency: CURRENCY,
+  maximumFractionDigits: 2,
+})
+const moneyWhole = new Intl.NumberFormat(LOCALE, {
+  style: 'currency',
+  currency: CURRENCY,
+  maximumFractionDigits: 0,
+})
+
+export function formatMoney(value, { compact = false } = {}) {
+  const n = Number(value) || 0
+  return compact && Number.isInteger(n) ? moneyWhole.format(n) : money.format(n)
+}
+
+/** 8 → "8h", 8.5 → "8.5h" */
+export function formatHours(value) {
+  const n = Number(value) || 0
+  return `${Number.isInteger(n) ? n : n.toFixed(2).replace(/0$/, '')}h`
+}
+
+// --- dates -----------------------------------------------------------------
+// entry_date is a plain `date` column, so everything here stays in LOCAL time.
+// Using toISOString() directly would shift the day for anyone behind UTC.
+
+/** Local calendar date as YYYY-MM-DD. */
+export function toISODate(date = new Date()) {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
+export const todayISO = () => toISODate()
+
+/** First day of `date`'s calendar month, as YYYY-MM-DD. */
+export function monthStartISO(date = new Date()) {
+  return toISODate(new Date(date.getFullYear(), date.getMonth(), 1))
+}
+
+/** YYYY-MM-DD → local Date (never through Date.parse, which assumes UTC). */
+export function fromISODate(iso) {
+  const [y, m, d] = String(iso).split('-').map(Number)
+  return new Date(y, m - 1, d)
+}
+
+const dayMonth = new Intl.DateTimeFormat(LOCALE, {
+  weekday: 'short',
+  month: 'short',
+  day: 'numeric',
+})
+const withYear = new Intl.DateTimeFormat(LOCALE, {
+  month: 'short',
+  day: 'numeric',
+  year: 'numeric',
+})
+const monthName = new Intl.DateTimeFormat(LOCALE, {
+  month: 'long',
+  year: 'numeric',
+})
+
+/** "Today" / "Yesterday" / "Mon, Sep 1" / "Sep 1, 2025" for older years. */
+export function formatEntryDate(iso) {
+  const date = fromISODate(iso)
+  if (iso === todayISO()) return 'Today'
+
+  const yesterday = new Date()
+  yesterday.setDate(yesterday.getDate() - 1)
+  if (iso === toISODate(yesterday)) return 'Yesterday'
+
+  return date.getFullYear() === new Date().getFullYear()
+    ? dayMonth.format(date)
+    : withYear.format(date)
+}
+
+/** "September 2025" — the budget card's period label. */
+export function formatMonth(date = new Date()) {
+  return monthName.format(date)
+}
