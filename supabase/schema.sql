@@ -45,6 +45,7 @@ create index if not exists daily_logs_user_date_idx
 create or replace function public.set_updated_at()
 returns trigger
 language plpgsql
+set search_path = ''
 as $$
 begin
   new.updated_at = now();
@@ -140,3 +141,13 @@ create policy "daily_logs_delete_own" on public.daily_logs
 -- ---------------------------------------------------------------------------
 grant select, update                 on public.profiles   to authenticated;
 grant select, insert, update, delete on public.daily_logs to authenticated;
+
+-- ---------------------------------------------------------------------------
+-- 7. Lock down the trigger functions
+--    Postgres grants EXECUTE to PUBLIC by default, which puts both of these on
+--    PostgREST as /rest/v1/rpc/... endpoints. Triggers fire as the table owner
+--    and don't consult these grants, so revoking costs nothing and takes the
+--    SECURITY DEFINER handle_new_user() off the public API.
+-- ---------------------------------------------------------------------------
+revoke execute on function public.handle_new_user() from public, anon, authenticated;
+revoke execute on function public.set_updated_at()  from public, anon, authenticated;
