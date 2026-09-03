@@ -1,4 +1,4 @@
-import { CalendarDays, Clock, Pencil, Trash2, Wallet } from 'lucide-react'
+import { CalendarDays, ChevronRight, Clock, Trash2, Wallet } from 'lucide-react'
 import {
   formatEntryDate,
   formatHours,
@@ -33,70 +33,71 @@ function LogRow({ log, items, onEdit, onDelete, deleting, isToday }) {
 
   return (
     <li
-      className={`flex items-center gap-3 px-3.5 py-3 transition-opacity ${
+      className={`flex items-stretch transition-opacity ${
         deleting ? 'opacity-40' : ''
       }`}
     >
-      <DateBadge iso={log.entry_date} today={isToday} />
+      {/* The whole row opens the editor; delete sits outside it so the two
+          controls never nest. */}
+      <button
+        type="button"
+        onClick={() => onEdit(log)}
+        aria-label={`Edit entry for ${formatEntryDate(log.entry_date)}`}
+        className="flex min-w-0 flex-1 items-center gap-3 py-3 pr-2 pl-3.5 text-left transition-colors active:bg-surface-2"
+      >
+        <DateBadge iso={log.entry_date} today={isToday} />
 
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <span className="text-[14px] font-semibold">
-            {formatEntryDate(log.entry_date)}
-          </span>
-          {shift ? (
-            <span className="truncate text-[12px] text-faint">{shift}</span>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <span className="text-[14px] font-semibold">
+              {formatEntryDate(log.entry_date)}
+            </span>
+            {shift ? (
+              <span className="truncate text-[12px] text-faint">{shift}</span>
+            ) : null}
+          </div>
+
+          <div className="mt-1 flex flex-wrap items-center gap-1.5">
+            <span className="inline-flex items-center gap-1 rounded-md bg-brand-soft px-1.5 py-0.5 text-[12px] font-semibold text-brand">
+              <Clock size={11} />
+              {formatHours(log.hours_worked)}
+            </span>
+            <span
+              className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[12px] font-semibold ${
+                spent > 0 ? 'bg-money-soft text-money' : 'bg-surface-2 text-faint'
+              }`}
+            >
+              <Wallet size={11} />
+              {formatMoney(spent)}
+            </span>
+          </div>
+
+          {items.length > 1 ? (
+            <p className="mt-1 truncate text-[12px] text-faint">
+              {items
+                .map((i) => `${i.label || 'Expense'} ${formatMoney(i.amount)}`)
+                .join(' · ')}
+            </p>
+          ) : null}
+
+          {log.description ? (
+            <p className="mt-1.5 truncate text-[12.5px] leading-snug text-muted">
+              {log.description}
+            </p>
           ) : null}
         </div>
 
-        <div className="mt-1 flex flex-wrap items-center gap-1.5">
-          <span className="inline-flex items-center gap-1 rounded-md bg-brand-soft px-1.5 py-0.5 text-[12px] font-semibold text-brand">
-            <Clock size={11} />
-            {formatHours(log.hours_worked)}
-          </span>
-          <span
-            className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[12px] font-semibold ${
-              spent > 0 ? 'bg-money-soft text-money' : 'bg-surface-2 text-faint'
-            }`}
-          >
-            <Wallet size={11} />
-            {formatMoney(spent)}
-          </span>
-        </div>
+        <ChevronRight size={16} className="shrink-0 text-faint" />
+      </button>
 
-        {items.length > 1 ? (
-          <p className="mt-1 truncate text-[12px] text-faint">
-            {items
-              .map((i) => `${i.label || 'Expense'} ${formatMoney(i.amount)}`)
-              .join(' · ')}
-          </p>
-        ) : null}
-
-        {log.description ? (
-          <p className="mt-1.5 truncate text-[12.5px] leading-snug text-muted">
-            {log.description}
-          </p>
-        ) : null}
-      </div>
-
-      <div className="flex shrink-0 items-center">
-        <button
-          type="button"
-          onClick={() => onEdit(log)}
-          aria-label={`Edit entry for ${formatEntryDate(log.entry_date)}`}
-          className="rounded-lg p-2 text-faint transition-colors active:bg-surface-2 active:text-ink"
-        >
-          <Pencil size={15} />
-        </button>
-        <button
-          type="button"
-          onClick={() => onDelete(log)}
-          aria-label={`Delete entry for ${formatEntryDate(log.entry_date)}`}
-          className="rounded-lg p-2 text-faint transition-colors active:bg-over-soft active:text-over"
-        >
-          <Trash2 size={15} />
-        </button>
-      </div>
+      <button
+        type="button"
+        onClick={() => onDelete(log)}
+        aria-label={`Delete entry for ${formatEntryDate(log.entry_date)}`}
+        className="shrink-0 px-3 text-faint transition-colors active:bg-over-soft active:text-over"
+      >
+        <Trash2 size={15} />
+      </button>
     </li>
   )
 }
