@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { LogOut } from 'lucide-react'
+import { KeyRound, LogOut } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { CURRENCIES } from '../lib/format'
 import { Sheet } from './Sheet'
@@ -21,7 +21,14 @@ const selectClass =
   'w-full appearance-none rounded-xl border border-line bg-surface-2 px-3.5 py-3 text-ink focus:border-brand focus:bg-surface'
 
 /** Account-level settings. Hour and budget targets live on each job instead. */
-export function SettingsSheet({ open, profile, email, onClose, onSave }) {
+export function SettingsSheet({
+  open,
+  profile,
+  email,
+  onClose,
+  onSave,
+  onChangePassword,
+}) {
   const [firstName, setFirstName] = useState(profile?.first_name ?? '')
   const [lastName, setLastName] = useState(profile?.last_name ?? '')
   const [middleInitial, setMiddleInitial] = useState(profile?.middle_initial ?? '')
@@ -137,6 +144,13 @@ export function SettingsSheet({ open, profile, email, onClose, onSave }) {
         </Button>
 
         <div className="mt-2 border-t border-line pt-4">
+          <Button type="button" variant="secondary" onClick={onChangePassword}>
+            <KeyRound size={17} />
+            Change password
+          </Button>
+        </div>
+
+        <div className="border-t border-line pt-4">
           <p className="mb-3 text-center text-[13px] text-muted">
             Signed in as <span className="font-medium text-ink">{email}</span>
           </p>
