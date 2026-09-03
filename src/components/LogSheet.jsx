@@ -4,9 +4,12 @@ import {
   EXPENSE_CATEGORIES,
   computeHours,
   currencySymbol,
+  effectiveHours,
   formatEntryDate,
   formatHours,
   formatMoney,
+  formatTime,
+  isInProgress,
   todayISO,
 } from '../lib/format'
 import { Sheet } from './Sheet'
@@ -86,6 +89,13 @@ export function LogSheet({
     () => items.reduce((sum, i) => sum + (Number(i.amount) || 0), 0),
     [items],
   )
+
+  // What this shift is worth right now, versus what it'll finish on. The
+  // stored value is the planned total; the dashboard counts elapsed.
+  const preview = { entry_date: date, time_in: timeIn, time_out: timeOut,
+    break_minutes: Number(breakMins) || 0, hours_worked: computed ?? 0 }
+  const running = Boolean(timeIn && timeOut) && isInProgress(preview)
+  const soFar = running ? effectiveHours(preview) : null
 
   function updateItem(key, patch) {
     setItems((prev) => prev.map((i) => (i.key === key ? { ...i, ...patch } : i)))
@@ -228,7 +238,11 @@ export function LogSheet({
 
           {computed !== null && hoursOverride === null ? (
             <p className="mt-1.5 text-[12.5px] text-brand">
-              Computed from your shift — edit it to override.
+              {running
+                ? `${formatHours(soFar)} so far — counts up to ${formatHours(
+                    computed,
+                  )} at ${formatTime(timeOut)}.`
+                : 'Computed from your shift — edit it to override.'}
             </p>
           ) : null}
         </div>

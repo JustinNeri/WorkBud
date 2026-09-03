@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase, errorMessage } from '../lib/supabase'
 import {
   computeHours,
+  effectiveHours,
   monthStartISO,
   nowTime,
   setCurrency,
@@ -40,6 +41,14 @@ export function useWorkbud(userId) {
   const [activeJobId, setActiveJobId] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  // Today's hours grow with the clock, so the derived figures need a heartbeat
+  // to recompute against. A minute is finer than the numbers can show.
+  const [minuteTick, setMinuteTick] = useState(() => Date.now())
+
+  useEffect(() => {
+    const id = setInterval(() => setMinuteTick(Date.now()), 60_000)
+    return () => clearInterval(id)
+  }, [])
 
   const load = useCallback(async () => {
     const [profileRes, jobsRes, logsRes, expensesRes] = await Promise.all([
@@ -344,7 +353,9 @@ export function useWorkbud(userId) {
     const targetHours = Number(activeJob?.target_hours) || 0
     const monthlyBudget = Number(activeJob?.monthly_budget) || 0
 
-    const loggedHours = logs.reduce((sum, l) => sum + Number(l.hours_worked), 0)
+    // Counted so far, not planned: a 7am–5pm day is 2h at 9am.
+    const now = new Date(minuteTick)
+    const loggedHours = logs.reduce((sum, l) => sum + effectiveHours(l, now), 0)
     const firstOfMonth = monthStartISO()
     const spentThisMonth = logs
       .filter((l) => l.entry_date >= firstOfMonth)
@@ -360,10 +371,10 @@ export function useWorkbud(userId) {
     const weekStart = toISODate(weekAgo)
     const weekHours = logs
       .filter((l) => l.entry_date >= weekStart)
-      .reduce((sum, l) => sum + Number(l.hours_worked), 0)
+      .reduce((sum, l) => sum + effectiveHours(l, now), 0)
 
     const daysWorked = new Set(
-      logs.filter((l) => Number(l.hours_worked) > 0).map((l) => l.entry_date),
+      logs.filter((l) => effectiveHours(l, now) > 0).map((l) => l.entry_date),
     ).size
 
     // --- cost of working. Spend here is all-time for this job, not just this
@@ -428,7 +439,7 @@ export function useWorkbud(userId) {
 
       loggedToday: logs.some((l) => l.entry_date === todayISO()),
     }
-  }, [logs, activeJob, allExpenses])
+  }, [logs, activeJob, allExpenses, minuteTick])
 
   /** The expense line items belonging to one log, oldest first. */
   const expensesFor = useCallback(
