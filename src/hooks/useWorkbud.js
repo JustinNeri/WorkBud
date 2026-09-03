@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase, errorMessage } from '../lib/supabase'
 import {
+  computeHours,
   monthStartISO,
+  nowTime,
   setCurrency,
   toISODate,
   todayISO,
@@ -105,6 +107,16 @@ export function useWorkbud(userId) {
   )
 
   /**
+   * A shift in progress is just a log with a time_in and no time_out — no
+   * extra table needed. Searched across every job because you can't be at two
+   * places at once, and clocking into a second job should say so.
+   */
+  const openShift = useMemo(
+    () => allLogs.find((l) => l.time_in && !l.time_out) ?? null,
+    [allLogs],
+  )
+
+  /**
    * A day's expense list is small and edited as a whole, so replace it wholesale
    * rather than diffing. The parent's amount_spent is written by the caller from
    * the same numbers, keeping one source of truth for the total.
@@ -200,6 +212,67 @@ export function useWorkbud(userId) {
     },
     [allLogs],
   )
+
+  /** Stamp the real arrival time. Creates today's row for the active job. */
+  const clockIn = useCallback(async () => {
+    if (!activeJobId) return { error: 'Create a job first.' }
+    if (openShift) return { error: 'You already have a shift running.' }
+
+    const { data, error: err } = await supabase
+      .from('daily_logs')
+      .insert({
+        user_id: userId,
+        job_id: activeJobId,
+        entry_date: todayISO(),
+        time_in: nowTime(),
+        hours_worked: 0,
+        amount_spent: 0,
+      })
+      .select(LOG_COLS)
+      .single()
+
+    if (err) return { error: errorMessage(err) }
+    setAllLogs((prev) => [data, ...prev].sort(byNewest))
+    return { data }
+  }, [userId, activeJobId, openShift])
+
+  /**
+   * Close the running shift. Hours are computed from the stamped times rather
+   * than the wall clock now, so an overnight shift still lands correctly.
+   */
+  const clockOut = useCallback(async () => {
+    if (!openShift) return { error: 'No shift is running.' }
+
+    const timeOut = nowTime()
+    const hours = computeHours(
+      openShift.time_in,
+      timeOut,
+      openShift.break_minutes ?? 0,
+    )
+
+    const { data, error: err } = await supabase
+      .from('daily_logs')
+      .update({ time_out: timeOut, hours_worked: hours ?? 0 })
+      .eq('id', openShift.id)
+      .select(LOG_COLS)
+      .single()
+
+    if (err) return { error: errorMessage(err) }
+    setAllLogs((prev) => prev.map((l) => (l.id === data.id ? data : l)).sort(byNewest))
+    return { data }
+  }, [openShift])
+
+  /** Clocked in by accident — bin the empty row rather than leave a 0h day. */
+  const cancelShift = useCallback(async () => {
+    if (!openShift) return {}
+    const { error: err } = await supabase
+      .from('daily_logs')
+      .delete()
+      .eq('id', openShift.id)
+    if (err) return { error: errorMessage(err) }
+    setAllLogs((prev) => prev.filter((l) => l.id !== openShift.id))
+    return {}
+  }, [openShift])
 
   // --- job mutations
   const addJob = useCallback(
@@ -364,6 +437,10 @@ export function useWorkbud(userId) {
   )
 
   return {
+    openShift,
+    clockIn,
+    clockOut,
+    cancelShift,
     expensesFor,
     profile,
     jobs,

@@ -84,6 +84,31 @@ export function computeHours(timeIn, timeOut, breakMinutes = 0) {
   return Math.max(0, Math.round((minutes / 60) * 100) / 100)
 }
 
+/** Current local wall-clock time as "HH:MM", ready for a `time` column. */
+export function nowTime(date = new Date()) {
+  return `${String(date.getHours()).padStart(2, '0')}:${String(
+    date.getMinutes(),
+  ).padStart(2, '0')}`
+}
+
+/** The real Date a shift began, from its log's date plus its time_in. */
+export function shiftStartedAt(entryDateISO, timeIn) {
+  const date = fromISODate(entryDateISO)
+  const [h, m] = String(timeIn).split(':').map(Number)
+  date.setHours(h, m, 0, 0)
+  return date
+}
+
+/** Elapsed seconds → "7h 24m" / "48m" / "12s" for a running clock. */
+export function formatElapsed(totalSeconds) {
+  const s = Math.max(0, Math.floor(totalSeconds))
+  const h = Math.floor(s / 3600)
+  const m = Math.floor((s % 3600) / 60)
+  if (h > 0) return `${h}h ${String(m).padStart(2, '0')}m`
+  if (m > 0) return `${m}m ${String(s % 60).padStart(2, '0')}s`
+  return `${s}s`
+}
+
 /** "9:00 AM" from "09:00" / "09:00:00" — for the activity feed. */
 export function formatTime(value) {
   if (!value) return null

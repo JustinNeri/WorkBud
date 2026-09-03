@@ -5,6 +5,7 @@ import { todayISO } from '../lib/format'
 import { ActivityFeed } from './ActivityFeed'
 import { BudgetCard } from './BudgetCard'
 import { CategoryBreakdown } from './CategoryBreakdown'
+import { ClockCard } from './ClockCard'
 import { ExportSheet } from './ExportSheet'
 import { HeroHours } from './HeroHours'
 import { JobSheet } from './JobSheet'
@@ -21,6 +22,10 @@ import { Alert, Button } from './ui'
 
 export function Dashboard({ user }) {
   const {
+    openShift,
+    clockIn,
+    clockOut,
+    cancelShift,
     expensesFor,
     profile,
     jobs,
@@ -47,9 +52,23 @@ export function Dashboard({ user }) {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [exportOpen, setExportOpen] = useState(false)
   const [passwordOpen, setPasswordOpen] = useState(false)
+  const [clockBusy, setClockBusy] = useState(false)
+  const [clockError, setClockError] = useState(null)
   const [pendingDelete, setPendingDelete] = useState(null)
   const [deletingId, setDeletingId] = useState(null)
   const [deleteError, setDeleteError] = useState(null)
+
+  async function runClock(action, after) {
+    setClockBusy(true)
+    setClockError(null)
+    const { error: err, data } = await action()
+    setClockBusy(false)
+    if (err) {
+      setClockError(err)
+      return
+    }
+    after?.(data)
+  }
 
   async function confirmDelete() {
     const target = pendingDelete
@@ -157,10 +176,28 @@ export function Dashboard({ user }) {
               </button>
             </div>
 
+            <ClockCard
+              openShift={openShift}
+              activeJobId={activeJob.id}
+              jobName={activeJob.name}
+              otherJobName={
+                jobs.find((j) => j.id === openShift?.job_id)?.name ?? 'another job'
+              }
+              busy={clockBusy}
+              error={clockError}
+              onClockIn={() => runClock(clockIn)}
+              onClockOut={() =>
+                // Clocking out is the natural moment to add a break and the
+                // day's expenses, so open the entry rather than just closing it.
+                runClock(clockOut, (log) => log && setLogSheet({ log }))
+              }
+              onCancel={() => runClock(cancelShift)}
+            />
+
             <TodayNudge
               key={activeJob.id}
               jobId={activeJob.id}
-              loggedToday={stats.loggedToday}
+              loggedToday={stats.loggedToday || Boolean(openShift)}
               onLog={() => setLogSheet({ log: null })}
             />
 
@@ -232,10 +269,15 @@ export function Dashboard({ user }) {
 
       {logSheet ? (
         <LogSheet
+          // Remount when the target changes — the form seeds its state from
+          // props once, so switching entries in place would keep the old values.
+          key={logSheet.log?.id ?? 'new'}
           open
           log={logSheet.log}
           jobName={activeJob?.name}
           expenses={logSheet.log ? expensesFor(logSheet.log.id) : []}
+          jobLogs={logs}
+          onOpenExisting={(existing) => setLogSheet({ log: existing })}
           onClose={() => setLogSheet(null)}
           onSubmit={(values, items) =>
             logSheet.log
