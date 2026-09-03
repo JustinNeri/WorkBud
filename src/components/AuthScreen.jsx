@@ -3,7 +3,7 @@ import { ArrowRight, Clock, Sparkles, Wallet } from 'lucide-react'
 import { supabase, errorMessage } from '../lib/supabase'
 import { ForgotPassword } from './ForgotPassword'
 import { OtpStep } from './OtpStep'
-import { Alert, Button, Field, TextInput } from './ui'
+import { Alert, Button, Field, PasswordInput, TextInput } from './ui'
 
 export function AuthScreen() {
   const [mode, setMode] = useState('signin') // 'signin' | 'signup'
@@ -153,8 +153,7 @@ export function AuthScreen() {
               label="Password"
               hint={isSignUp ? 'At least 6 characters.' : undefined}
             >
-              <TextInput
-                type="password"
+              <PasswordInput
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
