@@ -112,7 +112,9 @@ export function shiftStartedAt(entryDateISO, timeIn) {
  */
 export function effectiveHours(log, now = new Date()) {
   const stored = Number(log?.hours_worked) || 0
-  if (!log?.time_in) return stored
+  // Needs both ends to count anything down — a half-filled entry just uses
+  // whatever hours were typed.
+  if (!log?.time_in || !log?.time_out) return stored
 
   const start = shiftStartedAt(log.entry_date, log.time_in)
   const breakMs = (Number(log.break_minutes) || 0) * 60_000
@@ -122,11 +124,6 @@ export function effectiveHours(log, now = new Date()) {
   if (rawMs <= 0) return 0
 
   const round2 = (h) => Math.round(h * 100) / 100
-
-  // Still running — nothing to cap against.
-  if (!log.time_out) {
-    return round2(Math.max(0, (rawMs - breakMs) / 3_600_000))
-  }
 
   let end = shiftStartedAt(log.entry_date, log.time_out)
   // time_out at or before time_in means the shift crossed midnight.
@@ -138,10 +135,9 @@ export function effectiveHours(log, now = new Date()) {
 
 /** True while a dated shift is part-way through — used to label it "so far". */
 export function isInProgress(log, now = new Date()) {
-  if (!log?.time_in) return false
+  if (!log?.time_in || !log?.time_out) return false
   const start = shiftStartedAt(log.entry_date, log.time_in)
   if (now < start) return false
-  if (!log.time_out) return true
 
   let end = shiftStartedAt(log.entry_date, log.time_out)
   if (end <= start) end = new Date(end.getTime() + 86_400_000)
