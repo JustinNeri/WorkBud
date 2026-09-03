@@ -49,6 +49,18 @@ export function formatHours(value) {
   return `${Number.isInteger(n) ? n : n.toFixed(2).replace(/0$/, '')}h`
 }
 
+/** Fixed vocabulary so spending can be grouped; the label carries the detail. */
+export const EXPENSE_CATEGORIES = [
+  { value: 'transport', label: 'Transport' },
+  { value: 'food', label: 'Food' },
+  { value: 'supplies', label: 'Supplies' },
+  { value: 'fees', label: 'Fees' },
+  { value: 'other', label: 'Other' },
+]
+
+export const categoryLabel = (value) =>
+  EXPENSE_CATEGORIES.find((c) => c.value === value)?.label ?? 'Other'
+
 // --- shift times -----------------------------------------------------------
 
 /**
@@ -133,6 +145,34 @@ export function formatEntryDate(iso) {
   return date.getFullYear() === new Date().getFullYear()
     ? dayMonth.format(date)
     : withYear.format(date)
+}
+
+/**
+ * Working days (Mon–Fri) from today through `endISO`, inclusive.
+ * Returns 0 once the date has passed. Weekends are excluded because a
+ * required-pace figure that assumes 7-day weeks is not one anyone can act on.
+ */
+export function weekdaysUntil(endISO, fromISO = todayISO()) {
+  if (!endISO) return null
+  const end = fromISODate(endISO)
+  const cursor = fromISODate(fromISO)
+  if (end < cursor) return 0
+
+  let count = 0
+  while (cursor <= end) {
+    const day = cursor.getDay()
+    if (day !== 0 && day !== 6) count += 1
+    cursor.setDate(cursor.getDate() + 1)
+  }
+  return count
+}
+
+/** Whole days until `endISO`; negative once it's passed. */
+export function daysUntil(endISO, fromISO = todayISO()) {
+  if (!endISO) return null
+  return Math.round(
+    (fromISODate(endISO) - fromISODate(fromISO)) / (1000 * 60 * 60 * 24),
+  )
 }
 
 /** "September 2025" — the budget card's period label. */
