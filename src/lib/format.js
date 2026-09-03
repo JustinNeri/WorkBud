@@ -49,6 +49,38 @@ export function formatHours(value) {
   return `${Number.isInteger(n) ? n : n.toFixed(2).replace(/0$/, '')}h`
 }
 
+// --- shift times -----------------------------------------------------------
+
+/**
+ * Hours between two "HH:MM" times, minus an unpaid break.
+ * A time-out earlier than time-in is treated as crossing midnight, so a
+ * 22:00 → 06:00 shift reads as 8h rather than -16.
+ * Returns null when either end is missing.
+ */
+export function computeHours(timeIn, timeOut, breakMinutes = 0) {
+  if (!timeIn || !timeOut) return null
+
+  const toMinutes = (t) => {
+    const [h, m] = String(t).split(':').map(Number)
+    return h * 60 + m
+  }
+
+  let minutes = toMinutes(timeOut) - toMinutes(timeIn)
+  if (minutes < 0) minutes += 24 * 60
+  minutes -= Number(breakMinutes) || 0
+
+  return Math.max(0, Math.round((minutes / 60) * 100) / 100)
+}
+
+/** "9:00 AM" from "09:00" / "09:00:00" — for the activity feed. */
+export function formatTime(value) {
+  if (!value) return null
+  const [h, m] = String(value).split(':').map(Number)
+  const date = new Date()
+  date.setHours(h, m, 0, 0)
+  return date.toLocaleTimeString(LOCALE, { hour: 'numeric', minute: '2-digit' })
+}
+
 // --- dates -----------------------------------------------------------------
 // entry_date is a plain `date` column, so everything here stays in LOCAL time.
 // Using toISOString() directly would shift the day for anyone behind UTC.

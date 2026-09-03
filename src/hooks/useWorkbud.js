@@ -9,7 +9,9 @@ function byNewest(a, b) {
 }
 
 const LOG_COLS =
-  'id, job_id, entry_date, hours_worked, amount_spent, description, created_at'
+  'id, job_id, entry_date, hours_worked, amount_spent, description, time_in, time_out, break_minutes, created_at'
+
+const EXPENSE_COLS = 'id, log_id, label, amount, created_at'
 
 /**
  * Profile + jobs + logs for the signed-in user, with everything derived for
@@ -23,12 +25,13 @@ export function useWorkbud(userId) {
   const [profile, setProfile] = useState(null)
   const [jobs, setJobs] = useState([])
   const [allLogs, setAllLogs] = useState([])
+  const [allExpenses, setAllExpenses] = useState([])
   const [activeJobId, setActiveJobId] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
   const load = useCallback(async () => {
-    const [profileRes, jobsRes, logsRes] = await Promise.all([
+    const [profileRes, jobsRes, logsRes, expensesRes] = await Promise.all([
       supabase
         .from('profiles')
         .select(
@@ -46,6 +49,10 @@ export function useWorkbud(userId) {
         .select(LOG_COLS)
         .order('entry_date', { ascending: false })
         .order('created_at', { ascending: false }),
+      supabase
+        .from('expenses')
+        .select(EXPENSE_COLS)
+        .order('created_at', { ascending: true }),
     ])
 
     if (!profileRes.error && profileRes.data) {
@@ -63,8 +70,10 @@ export function useWorkbud(userId) {
       )
     }
     if (!logsRes.error) setAllLogs(logsRes.data ?? [])
+    if (!expensesRes.error) setAllExpenses(expensesRes.data ?? [])
 
-    const failure = profileRes.error || jobsRes.error || logsRes.error
+    const failure =
+      profileRes.error || jobsRes.error || logsRes.error || expensesRes.error
     setError(failure ? errorMessage(failure) : null)
     setLoading(false)
   }, [userId])
@@ -86,9 +95,49 @@ export function useWorkbud(userId) {
     [allLogs, activeJobId],
   )
 
+  /**
+   * A day's expense list is small and edited as a whole, so replace it wholesale
+   * rather than diffing. The parent's amount_spent is written by the caller from
+   * the same numbers, keeping one source of truth for the total.
+   */
+  const replaceExpenses = useCallback(
+    async (logId, items) => {
+      const { error: delErr } = await supabase
+        .from('expenses')
+        .delete()
+        .eq('log_id', logId)
+      if (delErr) return { error: errorMessage(delErr) }
+
+      if (items.length === 0) {
+        setAllExpenses((prev) => prev.filter((e) => e.log_id !== logId))
+        return {}
+      }
+
+      const { data, error: insErr } = await supabase
+        .from('expenses')
+        .insert(
+          items.map((i) => ({
+            log_id: logId,
+            user_id: userId,
+            label: i.label,
+            amount: i.amount,
+          })),
+        )
+        .select(EXPENSE_COLS)
+
+      if (insErr) return { error: errorMessage(insErr) }
+      setAllExpenses((prev) => [
+        ...prev.filter((e) => e.log_id !== logId),
+        ...(data ?? []),
+      ])
+      return {}
+    },
+    [userId],
+  )
+
   // --- log mutations, always scoped to the active job
   const addLog = useCallback(
-    async (values) => {
+    async (values, items = []) => {
       if (!activeJobId) return { error: 'Create a job first.' }
       const { data, error: err } = await supabase
         .from('daily_logs')
@@ -98,23 +147,34 @@ export function useWorkbud(userId) {
 
       if (err) return { error: errorMessage(err) }
       setAllLogs((prev) => [data, ...prev].sort(byNewest))
+
+      if (items.length) {
+        const { error: expErr } = await replaceExpenses(data.id, items)
+        if (expErr) return { error: expErr }
+      }
       return {}
     },
-    [userId, activeJobId],
+    [userId, activeJobId, replaceExpenses],
   )
 
-  const updateLog = useCallback(async (id, values) => {
-    const { data, error: err } = await supabase
-      .from('daily_logs')
-      .update(values)
-      .eq('id', id)
-      .select(LOG_COLS)
-      .single()
+  const updateLog = useCallback(
+    async (id, values, items = []) => {
+      const { data, error: err } = await supabase
+        .from('daily_logs')
+        .update(values)
+        .eq('id', id)
+        .select(LOG_COLS)
+        .single()
 
-    if (err) return { error: errorMessage(err) }
-    setAllLogs((prev) => prev.map((l) => (l.id === id ? data : l)).sort(byNewest))
-    return {}
-  }, [])
+      if (err) return { error: errorMessage(err) }
+      setAllLogs((prev) => prev.map((l) => (l.id === id ? data : l)).sort(byNewest))
+
+      const { error: expErr } = await replaceExpenses(id, items)
+      if (expErr) return { error: expErr }
+      return {}
+    },
+    [replaceExpenses],
+  )
 
   const deleteLog = useCallback(
     async (id) => {
@@ -125,6 +185,8 @@ export function useWorkbud(userId) {
         setAllLogs(previous)
         return { error: errorMessage(err) }
       }
+      // The FK cascades in the database; mirror that locally.
+      setAllExpenses((prev) => prev.filter((e) => e.log_id !== id))
       return {}
     },
     [allLogs],
@@ -165,10 +227,16 @@ export function useWorkbud(userId) {
     if (err) return { error: errorMessage(err) }
     // The FK cascades in the database; mirror that locally.
     setJobs((prev) => prev.filter((j) => j.id !== id))
+    setAllExpenses((prev) => {
+      const gone = new Set(
+        allLogs.filter((l) => l.job_id === id).map((l) => l.id),
+      )
+      return prev.filter((e) => !gone.has(e.log_id))
+    })
     setAllLogs((prev) => prev.filter((l) => l.job_id !== id))
     setActiveJobId((current) => (current === id ? null : current))
     return {}
-  }, [])
+  }, [allLogs])
 
   const saveProfile = useCallback(
     async (values) => {
@@ -238,7 +306,14 @@ export function useWorkbud(userId) {
     }
   }, [logs, activeJob])
 
+  /** The expense line items belonging to one log, oldest first. */
+  const expensesFor = useCallback(
+    (logId) => allExpenses.filter((e) => e.log_id === logId),
+    [allExpenses],
+  )
+
   return {
+    expensesFor,
     profile,
     jobs,
     activeJob,
