@@ -1,10 +1,12 @@
 import { CalendarDays, ChevronRight, Clock, Trash2, Wallet } from 'lucide-react'
 import {
+  effectiveHours,
   formatEntryDate,
   formatHours,
   formatMoney,
   formatTime,
   fromISODate,
+  isInProgress,
 } from '../lib/format'
 
 /** Compact day badge: "SEP / 3" — the scannable anchor for each row. */
@@ -26,6 +28,8 @@ function DateBadge({ iso, today }) {
 
 function LogRow({ log, items, onEdit, onDelete, deleting, isToday }) {
   const spent = Number(log.amount_spent)
+  const hoursSoFar = effectiveHours(log)
+  const running = isInProgress(log)
   const shift =
     log.time_in && log.time_out
       ? `${formatTime(log.time_in)} – ${formatTime(log.time_out)}`
@@ -60,7 +64,10 @@ function LogRow({ log, items, onEdit, onDelete, deleting, isToday }) {
           <div className="mt-1 flex flex-wrap items-center gap-1.5">
             <span className="inline-flex items-center gap-1 rounded-md bg-brand-soft px-1.5 py-0.5 text-[12px] font-semibold text-brand">
               <Clock size={11} />
-              {formatHours(log.hours_worked)}
+              {formatHours(hoursSoFar)}
+              {running ? (
+                <span className="font-normal opacity-70">so far</span>
+              ) : null}
             </span>
             <span
               className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[12px] font-semibold ${

@@ -99,6 +99,55 @@ export function shiftStartedAt(entryDateISO, timeIn) {
   return date
 }
 
+/**
+ * Hours to *count so far* for a log, as opposed to the hours it will end on.
+ *
+ * A 7am–5pm day reads 2h at 9am and reaches 9h only once 5pm arrives. The
+ * stored hours_worked stays the planned total, so nothing has to be written
+ * back as the day passes — this is purely what gets displayed and summed.
+ *
+ * The break is absorbed by the cap rather than subtracted up front: at 9am no
+ * lunch has been taken yet, so removing an hour then would understate the day.
+ * Capping raw elapsed at the planned total applies it exactly once, at the end.
+ */
+export function effectiveHours(log, now = new Date()) {
+  const stored = Number(log?.hours_worked) || 0
+  if (!log?.time_in) return stored
+
+  const start = shiftStartedAt(log.entry_date, log.time_in)
+  const breakMs = (Number(log.break_minutes) || 0) * 60_000
+  const rawMs = now.getTime() - start.getTime()
+
+  // Shift hasn't started yet (entered ahead of time).
+  if (rawMs <= 0) return 0
+
+  const round2 = (h) => Math.round(h * 100) / 100
+
+  // Still running — nothing to cap against.
+  if (!log.time_out) {
+    return round2(Math.max(0, (rawMs - breakMs) / 3_600_000))
+  }
+
+  let end = shiftStartedAt(log.entry_date, log.time_out)
+  // time_out at or before time_in means the shift crossed midnight.
+  if (end <= start) end = new Date(end.getTime() + 86_400_000)
+
+  const planned = Math.max(0, (end.getTime() - start.getTime() - breakMs) / 3_600_000)
+  return round2(Math.min(rawMs / 3_600_000, planned))
+}
+
+/** True while a dated shift is part-way through — used to label it "so far". */
+export function isInProgress(log, now = new Date()) {
+  if (!log?.time_in) return false
+  const start = shiftStartedAt(log.entry_date, log.time_in)
+  if (now < start) return false
+  if (!log.time_out) return true
+
+  let end = shiftStartedAt(log.entry_date, log.time_out)
+  if (end <= start) end = new Date(end.getTime() + 86_400_000)
+  return now < end
+}
+
 /** Elapsed seconds → "7h 24m" / "48m" / "12s" for a running clock. */
 export function formatElapsed(totalSeconds) {
   const s = Math.max(0, Math.floor(totalSeconds))
