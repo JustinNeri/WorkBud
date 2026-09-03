@@ -1,11 +1,22 @@
 import { useMemo, useState } from 'react'
 import { Plus, X } from 'lucide-react'
-import { computeHours, currencySymbol, formatMoney, todayISO } from '../lib/format'
+import {
+  EXPENSE_CATEGORIES,
+  computeHours,
+  currencySymbol,
+  formatMoney,
+  todayISO,
+} from '../lib/format'
 import { Sheet } from './Sheet'
 import { Alert, Button, Field, NumberInput, TextArea, TextInput } from './ui'
 
 let tempId = 0
-const newItem = () => ({ key: `new-${tempId++}`, label: '', amount: '' })
+const newItem = () => ({
+  key: `new-${tempId++}`,
+  label: '',
+  amount: '',
+  category: 'transport',
+})
 
 /**
  * Create or edit one day.
@@ -32,6 +43,7 @@ export function LogSheet({ open, log, jobName, expenses = [], onClose, onSubmit 
           key: e.id,
           label: e.label ?? '',
           amount: String(Number(e.amount)),
+          category: e.category ?? 'other',
         }))
       : [newItem()],
   )
@@ -70,7 +82,11 @@ export function LogSheet({ open, log, jobName, expenses = [], onClose, onSubmit 
     // Drop blank rows; a row with an amount but no label is fine.
     const kept = items
       .filter((i) => i.amount !== '' && Number(i.amount) > 0)
-      .map((i) => ({ label: i.label.trim() || null, amount: Number(i.amount) }))
+      .map((i) => ({
+        label: i.label.trim() || null,
+        amount: Number(i.amount),
+        category: i.category,
+      }))
 
     if (hoursValue === 0 && kept.length === 0 && !note.trim())
       return setError('Add some hours, an expense, or a note.')
@@ -184,6 +200,18 @@ export function LogSheet({ open, log, jobName, expenses = [], onClose, onSubmit 
           <div className="flex flex-col gap-2">
             {items.map((item) => (
               <div key={item.key} className="flex items-center gap-2">
+                <select
+                  value={item.category}
+                  onChange={(e) => updateItem(item.key, { category: e.target.value })}
+                  aria-label="Expense category"
+                  className="w-24 shrink-0 appearance-none rounded-xl border border-line bg-surface-2 px-2 py-3 text-[13px] text-ink focus:border-brand focus:bg-surface"
+                >
+                  {EXPENSE_CATEGORIES.map((c) => (
+                    <option key={c.value} value={c.value}>
+                      {c.label}
+                    </option>
+                  ))}
+                </select>
                 <TextInput
                   value={item.label}
                   onChange={(e) => updateItem(item.key, { label: e.target.value })}
@@ -191,7 +219,7 @@ export function LogSheet({ open, log, jobName, expenses = [], onClose, onSubmit 
                   maxLength={120}
                   className="flex-1"
                 />
-                <div className="w-28 shrink-0">
+                <div className="w-24 shrink-0">
                   <NumberInput
                     adornment={currencySymbol()}
                     value={item.amount}

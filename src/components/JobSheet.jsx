@@ -16,6 +16,8 @@ export function JobSheet({ open, job, canDelete, onClose, onSubmit, onDelete }) 
   const [budget, setBudget] = useState(
     job ? String(Number(job.monthly_budget)) : '3000',
   )
+  const [deadline, setDeadline] = useState(job?.deadline ?? '')
+  const [rate, setRate] = useState(job ? String(Number(job.hourly_rate)) : '0')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
   const [confirmingDelete, setConfirmingDelete] = useState(false)
@@ -31,6 +33,10 @@ export function JobSheet({ open, job, canDelete, onClose, onSubmit, onDelete }) 
     if (!Number.isFinite(budgetValue) || budgetValue < 0)
       return setError('Budget must be zero or more.')
 
+    const rateValue = rate === '' ? 0 : Number(rate)
+    if (!Number.isFinite(rateValue) || rateValue < 0)
+      return setError('Hourly rate must be zero or more.')
+
     setBusy(true)
     setError(null)
 
@@ -38,6 +44,8 @@ export function JobSheet({ open, job, canDelete, onClose, onSubmit, onDelete }) 
       name: name.trim(),
       target_hours: hoursValue,
       monthly_budget: budgetValue,
+      deadline: deadline || null,
+      hourly_rate: rateValue,
     })
 
     if (err) {
@@ -98,6 +106,27 @@ export function JobSheet({ open, job, canDelete, onClose, onSubmit, onDelete }) 
             />
           </Field>
         </div>
+
+        <Field
+          label="Deadline"
+          hint="Optional — powers the “hours per day to finish” figure."
+        >
+          <TextInput
+            type="date"
+            value={deadline}
+            onChange={(e) => setDeadline(e.target.value)}
+          />
+        </Field>
+
+        <Field label="Hourly rate" hint="Leave at 0 for an unpaid placement.">
+          <NumberInput
+            adornment={currencySymbol()}
+            value={rate}
+            onChange={(e) => setRate(e.target.value)}
+            min="0"
+            step="0.01"
+          />
+        </Field>
 
         <Alert>{error}</Alert>
 

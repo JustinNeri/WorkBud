@@ -1,6 +1,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase, errorMessage } from '../lib/supabase'
-import { monthStartISO, setCurrency, toISODate, todayISO } from '../lib/format'
+import {
+  monthStartISO,
+  setCurrency,
+  toISODate,
+  todayISO,
+  weekdaysUntil,
+} from '../lib/format'
 
 /** Feed order: newest entry_date first, ties broken by newest created_at. */
 function byNewest(a, b) {
@@ -8,10 +14,13 @@ function byNewest(a, b) {
   return a.created_at < b.created_at ? 1 : -1
 }
 
+const JOB_COLS =
+  'id, name, target_hours, monthly_budget, deadline, hourly_rate, sort_order, created_at'
+
 const LOG_COLS =
   'id, job_id, entry_date, hours_worked, amount_spent, description, time_in, time_out, break_minutes, created_at'
 
-const EXPENSE_COLS = 'id, log_id, label, amount, created_at'
+const EXPENSE_COLS = 'id, log_id, label, amount, category, created_at'
 
 /**
  * Profile + jobs + logs for the signed-in user, with everything derived for
@@ -41,7 +50,7 @@ export function useWorkbud(userId) {
         .maybeSingle(),
       supabase
         .from('jobs')
-        .select('id, name, target_hours, monthly_budget, sort_order, created_at')
+        .select(JOB_COLS)
         .order('sort_order', { ascending: true })
         .order('created_at', { ascending: true }),
       supabase
@@ -198,7 +207,7 @@ export function useWorkbud(userId) {
       const { data, error: err } = await supabase
         .from('jobs')
         .insert({ ...values, user_id: userId, sort_order: jobs.length })
-        .select('id, name, target_hours, monthly_budget, sort_order, created_at')
+        .select(JOB_COLS)
         .single()
 
       if (err) return { error: errorMessage(err) }
@@ -214,7 +223,7 @@ export function useWorkbud(userId) {
       .from('jobs')
       .update(values)
       .eq('id', id)
-      .select('id, name, target_hours, monthly_budget, sort_order, created_at')
+      .select(JOB_COLS)
       .single()
 
     if (err) return { error: errorMessage(err) }
@@ -284,7 +293,49 @@ export function useWorkbud(userId) {
       logs.filter((l) => Number(l.hours_worked) > 0).map((l) => l.entry_date),
     ).size
 
+    // --- cost of working. Spend here is all-time for this job, not just this
+    // month, because the question is what the whole placement has cost.
+    const spentAllTime = logs.reduce((sum, l) => sum + Number(l.amount_spent), 0)
+    const hourlyRate = Number(activeJob?.hourly_rate) || 0
+    const earned = loggedHours * hourlyRate
+
+    // --- pace. Weekdays only; a 7-day figure isn't something anyone can act on.
+    const deadline = activeJob?.deadline ?? null
+    const hoursLeft = Math.max(targetHours - loggedHours, 0)
+    const weekdaysLeft = deadline ? weekdaysUntil(deadline) : null
+    const requiredPerDay =
+      weekdaysLeft && weekdaysLeft > 0 ? hoursLeft / weekdaysLeft : null
+
+    // --- where the money goes
+    const logIds = new Set(logs.map((l) => l.id))
+    const byCategory = new Map()
+    for (const e of allExpenses) {
+      if (!logIds.has(e.log_id)) continue
+      byCategory.set(e.category, (byCategory.get(e.category) ?? 0) + Number(e.amount))
+    }
+    const categoryTotals = [...byCategory.entries()]
+      .map(([category, amount]) => ({ category, amount }))
+      .sort((a, b) => b.amount - a.amount)
+
     return {
+      spentAllTime,
+      hourlyRate,
+      earned,
+      net: earned - spentAllTime,
+      costPerHour: loggedHours > 0 ? spentAllTime / loggedHours : 0,
+
+      deadline,
+      weekdaysLeft,
+      requiredPerDay,
+      // Behind only counts once we know both the pace needed and the pace held.
+      behind:
+        requiredPerDay !== null &&
+        daysWorked > 0 &&
+        requiredPerDay > loggedHours / daysWorked,
+      deadlinePassed: Boolean(deadline) && weekdaysLeft === 0 && hoursLeft > 0,
+
+      categoryTotals,
+
       weekHours,
       daysWorked,
       avgPerDay: daysWorked > 0 ? loggedHours / daysWorked : 0,
@@ -304,7 +355,7 @@ export function useWorkbud(userId) {
 
       loggedToday: logs.some((l) => l.entry_date === todayISO()),
     }
-  }, [logs, activeJob])
+  }, [logs, activeJob, allExpenses])
 
   /** The expense line items belonging to one log, oldest first. */
   const expensesFor = useCallback(
