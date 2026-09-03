@@ -48,9 +48,18 @@ export function AuthScreen() {
       return
     }
 
-    // With email confirmation on, signUp returns a user but no session — a
-    // code is in the user's inbox, so hand off to the OTP step.
     if (isSignUp && !data.session) {
+      // Signing up an address that already has an account returns success with
+      // a decoy user — Supabase hides the difference so outsiders can't probe
+      // which emails are registered. An empty identities array is the only
+      // tell, and no code is sent, so don't strand them on the OTP screen.
+      if (data.user?.identities?.length === 0) {
+        setError('That email is already registered. Sign in instead.')
+        setBusy(false)
+        return
+      }
+
+      // A real new signup: the code is in their inbox.
       setAwaitingCode(credentials.email)
       setPassword('')
       setBusy(false)
