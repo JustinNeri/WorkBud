@@ -1,17 +1,21 @@
 import { useState } from 'react'
-import { Loader2, Pencil, Plus, Settings } from 'lucide-react'
+import { Download, Loader2, Pencil, Plus, Settings } from 'lucide-react'
 import { useWorkbud } from '../hooks/useWorkbud'
 import { todayISO } from '../lib/format'
 import { ActivityFeed } from './ActivityFeed'
 import { BudgetCard } from './BudgetCard'
+import { CategoryBreakdown } from './CategoryBreakdown'
+import { ExportSheet } from './ExportSheet'
 import { HeroHours } from './HeroHours'
 import { JobSheet } from './JobSheet'
 import { JobTabs } from './JobTabs'
 import { LogSheet } from './LogSheet'
 import { Onboarding } from './Onboarding'
+import { PaceCard } from './PaceCard'
 import { SettingsSheet } from './SettingsSheet'
 import { Sheet } from './Sheet'
 import { StatTiles } from './StatTiles'
+import { TodayNudge } from './TodayNudge'
 import { Alert, Button } from './ui'
 
 export function Dashboard({ user }) {
@@ -40,6 +44,7 @@ export function Dashboard({ user }) {
   const [logSheet, setLogSheet] = useState(null) // null | { log: log|null }
   const [jobSheet, setJobSheet] = useState(null) // null | { job: job|null }
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [exportOpen, setExportOpen] = useState(false)
   const [pendingDelete, setPendingDelete] = useState(null)
   const [deletingId, setDeletingId] = useState(null)
   const [deleteError, setDeleteError] = useState(null)
@@ -89,14 +94,26 @@ export function Dashboard({ user }) {
             </h1>
           </div>
         </div>
-        <button
-          type="button"
-          onClick={() => setSettingsOpen(true)}
-          aria-label="Settings"
-          className="shrink-0 rounded-full bg-surface p-2.5 text-muted shadow-card transition active:brightness-95"
-        >
-          <Settings size={20} />
-        </button>
+        <div className="flex shrink-0 items-center gap-2">
+          {activeJob ? (
+            <button
+              type="button"
+              onClick={() => setExportOpen(true)}
+              aria-label="Export"
+              className="rounded-full bg-surface p-2.5 text-muted shadow-card transition active:brightness-95"
+            >
+              <Download size={20} />
+            </button>
+          ) : null}
+          <button
+            type="button"
+            onClick={() => setSettingsOpen(true)}
+            aria-label="Settings"
+            className="rounded-full bg-surface p-2.5 text-muted shadow-card transition active:brightness-95"
+          >
+            <Settings size={20} />
+          </button>
+        </div>
       </header>
 
       <div className="px-5 pb-3">
@@ -138,12 +155,33 @@ export function Dashboard({ user }) {
               </button>
             </div>
 
+            <TodayNudge
+              key={activeJob.id}
+              jobId={activeJob.id}
+              loggedToday={stats.loggedToday}
+              onLog={() => setLogSheet({ log: null })}
+            />
+
             <HeroHours
               logged={stats.loggedHours}
               target={stats.targetHours}
               remaining={stats.hoursRemaining}
               percent={stats.hoursPct}
               complete={stats.hoursComplete}
+            />
+
+            <PaceCard
+              deadline={stats.deadline}
+              weekdaysLeft={stats.weekdaysLeft}
+              requiredPerDay={stats.requiredPerDay}
+              behind={stats.behind}
+              deadlinePassed={stats.deadlinePassed}
+              complete={stats.hoursComplete}
+              hourlyRate={stats.hourlyRate}
+              earned={stats.earned}
+              spentAllTime={stats.spentAllTime}
+              net={stats.net}
+              costPerHour={stats.costPerHour}
             />
 
             <StatTiles
@@ -159,6 +197,8 @@ export function Dashboard({ user }) {
               percent={stats.budgetPct}
               over={stats.overBudget}
             />
+
+            <CategoryBreakdown totals={stats.categoryTotals} />
 
             <div className="mt-2">
               <ActivityFeed
@@ -213,6 +253,18 @@ export function Dashboard({ user }) {
             jobSheet.job ? updateJob(jobSheet.job.id, values) : addJob(values)
           }
           onDelete={deleteJob}
+        />
+      ) : null}
+
+      {exportOpen ? (
+        <ExportSheet
+          open
+          job={activeJob}
+          profile={profile}
+          email={user.email}
+          logs={logs}
+          expensesFor={expensesFor}
+          onClose={() => setExportOpen(false)}
         />
       ) : null}
 
