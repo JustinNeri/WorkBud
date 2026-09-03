@@ -16,6 +16,7 @@ import { Alert, Button } from './ui'
 
 export function Dashboard({ user }) {
   const {
+    expensesFor,
     profile,
     jobs,
     activeJob,
@@ -162,6 +163,7 @@ export function Dashboard({ user }) {
             <div className="mt-2">
               <ActivityFeed
                 logs={logs}
+                expensesFor={expensesFor}
                 deletingId={deletingId}
                 todayISO={todayISO()}
                 onEdit={(log) => setLogSheet({ log })}
@@ -191,9 +193,12 @@ export function Dashboard({ user }) {
           open
           log={logSheet.log}
           jobName={activeJob?.name}
+          expenses={logSheet.log ? expensesFor(logSheet.log.id) : []}
           onClose={() => setLogSheet(null)}
-          onSubmit={(values) =>
-            logSheet.log ? updateLog(logSheet.log.id, values) : addLog(values)
+          onSubmit={(values, items) =>
+            logSheet.log
+              ? updateLog(logSheet.log.id, values, items)
+              : addLog(values, items)
           }
         />
       ) : null}

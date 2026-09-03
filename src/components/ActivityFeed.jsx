@@ -3,6 +3,7 @@ import {
   formatEntryDate,
   formatHours,
   formatMoney,
+  formatTime,
   fromISODate,
 } from '../lib/format'
 
@@ -23,8 +24,12 @@ function DateBadge({ iso, today }) {
   )
 }
 
-function LogRow({ log, onEdit, onDelete, deleting, isToday }) {
+function LogRow({ log, items, onEdit, onDelete, deleting, isToday }) {
   const spent = Number(log.amount_spent)
+  const shift =
+    log.time_in && log.time_out
+      ? `${formatTime(log.time_in)} – ${formatTime(log.time_out)}`
+      : null
 
   return (
     <li
@@ -39,6 +44,9 @@ function LogRow({ log, onEdit, onDelete, deleting, isToday }) {
           <span className="text-[14px] font-semibold">
             {formatEntryDate(log.entry_date)}
           </span>
+          {shift ? (
+            <span className="truncate text-[12px] text-faint">{shift}</span>
+          ) : null}
         </div>
 
         <div className="mt-1 flex flex-wrap items-center gap-1.5">
@@ -55,6 +63,14 @@ function LogRow({ log, onEdit, onDelete, deleting, isToday }) {
             {formatMoney(spent)}
           </span>
         </div>
+
+        {items.length > 1 ? (
+          <p className="mt-1 truncate text-[12px] text-faint">
+            {items
+              .map((i) => `${i.label || 'Expense'} ${formatMoney(i.amount)}`)
+              .join(' · ')}
+          </p>
+        ) : null}
 
         {log.description ? (
           <p className="mt-1.5 truncate text-[12.5px] leading-snug text-muted">
@@ -85,7 +101,14 @@ function LogRow({ log, onEdit, onDelete, deleting, isToday }) {
   )
 }
 
-export function ActivityFeed({ logs, onEdit, onDelete, deletingId, todayISO }) {
+export function ActivityFeed({
+  logs,
+  expensesFor,
+  onEdit,
+  onDelete,
+  deletingId,
+  todayISO,
+}) {
   return (
     <section className="animate-rise" style={{ animationDelay: '230ms' }}>
       <div className="mb-2 flex items-baseline justify-between px-1">
@@ -116,6 +139,7 @@ export function ActivityFeed({ logs, onEdit, onDelete, deletingId, todayISO }) {
             <LogRow
               key={log.id}
               log={log}
+              items={expensesFor(log.id)}
               onEdit={onEdit}
               onDelete={onDelete}
               deleting={deletingId === log.id}
