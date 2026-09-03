@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { ArrowLeft, KeyRound, MailCheck } from 'lucide-react'
 import { supabase, errorMessage } from '../lib/supabase'
-import { Alert, Button, Field, TextInput } from './ui'
+import { Alert, Button, Field, PasswordInput, TextInput } from './ui'
 
 const MIN_CODE_LENGTH = 6
 const MAX_CODE_LENGTH = 10
@@ -170,8 +170,7 @@ export function ForgotPassword({ initialEmail = '', onBack }) {
             </Field>
 
             <Field label="New password" hint={`At least ${MIN_PASSWORD} characters.`}>
-              <TextInput
-                type="password"
+              <PasswordInput
                 value={next}
                 onChange={(e) => setNext(e.target.value)}
                 autoComplete="new-password"
@@ -182,8 +181,7 @@ export function ForgotPassword({ initialEmail = '', onBack }) {
             </Field>
 
             <Field label="Confirm new password">
-              <TextInput
-                type="password"
+              <PasswordInput
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}
                 autoComplete="new-password"
