@@ -269,6 +269,12 @@ as $$
     from auth.users u
     where lower(u.email) = lower(trim(p_email))
       and u.deleted_at is null
+      -- An abandoned signup leaves a row here the moment "Create account" is
+      -- pressed, long before the code is entered. That is not an account: no
+      -- one can sign in with it, and Supabase won't mail a recovery code to an
+      -- unconfirmed address. Counting it as registered sent people to a code
+      -- step to wait for mail that was never going to arrive.
+      and u.email_confirmed_at is not null
   );
 $$;
 
