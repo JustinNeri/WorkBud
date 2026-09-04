@@ -36,15 +36,37 @@ export function AuthScreen() {
       : await supabase.auth.signInWithPassword(credentials)
 
     if (err) {
-      // Signed up earlier but never entered the code — send a fresh one
-      // rather than dead-ending them on "Email not confirmed".
+      // An abandoned signup leaves an auth.users row behind, and signing into
+      // it lands here. Quietly mailing a fresh code and jumping to the OTP
+      // screen turned a sign-in attempt into a half-finished signup, which is
+      // not what anyone pressing "Sign in" asked for. Say what happened and
+      // let them pick Sign up, which mails a new code on its own.
       if (err.code === 'email_not_confirmed') {
-        await supabase.auth.resend({ type: 'signup', email: credentials.email })
-        setAwaitingCode(credentials.email)
-        setPassword('')
+        setError(
+          'That email isn’t registered yet — the signup was never finished. Tap Sign up to complete it.',
+        )
         setBusy(false)
         return
       }
+
+      // "Invalid login credentials" covers both an unknown address and a wrong
+      // password. The reset screen can already tell those apart, so use the
+      // same lookup here instead of making them guess which one it was.
+      if (!isSignUp && err.code === 'invalid_credentials') {
+        const { data: registered, error: lookupErr } = await supabase.rpc(
+          'email_registered',
+          { p_email: credentials.email },
+        )
+
+        if (lookupErr) setError(errorMessage(err))
+        else if (registered === false)
+          setError('No account is registered with that email.')
+        else setError('Incorrect password.')
+
+        setBusy(false)
+        return
+      }
+
       setError(errorMessage(err))
       setBusy(false)
       return
