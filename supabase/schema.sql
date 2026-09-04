@@ -244,3 +244,33 @@ grant select, insert, update, delete on public.daily_logs to authenticated;
 -- ---------------------------------------------------------------------------
 revoke execute on function public.handle_new_user() from public, anon, authenticated;
 revoke execute on function public.set_updated_at()  from public, anon, authenticated;
+
+-- ---------------------------------------------------------------------------
+-- 8. email_registered — does an account exist for this address?
+--    auth.users is not reachable through PostgREST, so the reset screen has no
+--    way to tell a typo'd address from a real one: resetPasswordForEmail()
+--    reports success either way (Supabase hides that on purpose, so nobody can
+--    enumerate accounts) and the user is left waiting on a code that was never
+--    sent. This trades that protection away for a straight answer, which is
+--    the right call for an app this size.
+--
+--    Returns a bare boolean and nothing else — no id, no name — so a scraper
+--    learns only what a signup form would already tell them.
+-- ---------------------------------------------------------------------------
+create or replace function public.email_registered(p_email text)
+returns boolean
+language sql
+security definer
+stable
+set search_path = ''
+as $$
+  select exists (
+    select 1
+    from auth.users u
+    where lower(u.email) = lower(trim(p_email))
+      and u.deleted_at is null
+  );
+$$;
+
+revoke execute on function public.email_registered(text) from public;
+grant  execute on function public.email_registered(text) to anon, authenticated;
