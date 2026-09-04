@@ -26,6 +26,7 @@ export function ForgotPassword({ initialEmail = '', onBack }) {
   const [next, setNext] = useState('')
   const [confirm, setConfirm] = useState('')
   const [busy, setBusy] = useState(false)
+  const [confirmed, setConfirmed] = useState(false)
   const [error, setError] = useState(null)
   const [notice, setNotice] = useState(null)
   const [cooldown, setCooldown] = useState(0)
@@ -47,15 +48,34 @@ export function ForgotPassword({ initialEmail = '', onBack }) {
     setError(null)
     setNotice(null)
 
-    const { error: err } = await supabase.auth.resetPasswordForEmail(email.trim())
+    const address = email.trim()
+
+    // resetPasswordForEmail() reports success for addresses it has never seen —
+    // Supabase hides the difference so accounts can't be enumerated — which used
+    // to march a typo'd address on to the code step to wait for a code that was
+    // never sent. Ask the database outright instead.
+    const { data: registered, error: lookupErr } = await supabase.rpc(
+      'email_registered',
+      { p_email: address },
+    )
+
+    if (!lookupErr && registered === false) {
+      setBusy(false)
+      setError('No account is registered with that email.')
+      return
+    }
+
+    const { error: err } = await supabase.auth.resetPasswordForEmail(address)
 
     setBusy(false)
     if (err) {
       setError(errorMessage(err))
       return
     }
-    // Supabase answers the same way whether or not the address exists, so the
-    // wording here must not imply the account was found.
+    // A lookup that failed outright (function not deployed, offline) still sends,
+    // so a broken check can't lock anyone out of recovery — but then the account
+    // was never confirmed, and the step-2 wording below has to stay hedged.
+    setConfirmed(!lookupErr && registered === true)
     setStep(2)
     setCooldown(RESEND_COOLDOWN)
     setNotice(null)
@@ -121,9 +141,10 @@ export function ForgotPassword({ initialEmail = '', onBack }) {
               'We’ll email you a code to set a new one.'
             ) : (
               <>
-                If an account exists for{' '}
-                <span className="font-medium text-ink">{email}</span>, a code is on
-                its way. Enter it below with your new password.
+                {confirmed ? 'We sent a code to ' : 'If an account exists for '}
+                <span className="font-medium text-ink">{email}</span>
+                {confirmed ? '. ' : ', a code is on its way. '}
+                Enter it below with your new password.
               </>
             )}
           </p>
