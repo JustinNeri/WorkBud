@@ -1,27 +1,9 @@
 import { useState } from 'react'
 import { ArrowRight, Briefcase, Check, UserRound } from 'lucide-react'
 import { supabase, errorMessage } from '../lib/supabase'
-import { CURRENCIES, currencySymbol } from '../lib/format'
+import { CURRENCIES, OCCUPATIONS, currencySymbol } from '../lib/format'
 import { AuthShell } from './AuthShell'
 import { Alert, Button, Field, NumberInput, Select, TextInput } from './ui'
-
-/**
- * Occupation options follow the standard employment-status taxonomy
- * (intern/apprentice, part-time, full-time, self-employed, contractor,
- * unemployed) with the OJT case called out first, since that's the app's
- * primary user.
- */
-const OCCUPATIONS = [
-  'Student — OJT / Internship',
-  'Student — not working',
-  'Employed — full-time',
-  'Employed — part-time',
-  'Freelancer / Contractor',
-  'Business owner / Self-employed',
-  'Apprentice / Trainee',
-  'Between jobs',
-  'Other',
-]
 
 /**
  * Runs once, after email verification, before the dashboard exists.
