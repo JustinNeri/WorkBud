@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { ArrowRight, Briefcase, Check, UserRound } from 'lucide-react'
 import { supabase, errorMessage } from '../lib/supabase'
 import { CURRENCIES, currencySymbol } from '../lib/format'
+import { SignupSteps } from './SignupSteps'
 import { Alert, Button, Field, NumberInput, TextInput } from './ui'
 
 /**
@@ -116,15 +117,13 @@ export function Onboarding({ userId, onDone }) {
   return (
     <div className="flex min-h-dvh flex-col justify-center px-6 py-12">
       <div className="mx-auto w-full max-w-sm">
-        <div className="mb-7 flex items-center gap-2">
-          {[1, 2].map((n) => (
-            <span
-              key={n}
-              className={`h-1 flex-1 rounded-full transition-colors ${
-                step >= n ? 'bg-brand' : 'bg-surface-2'
-              }`}
-            />
-          ))}
+        {/* Stage 3 of the signup flow, with this screen's own two parts
+            called out underneath so the last stretch has a visible end. */}
+        <div className="mb-7">
+          <SignupSteps current={3} />
+          <p className="mt-3 text-[12px] font-medium text-faint">
+            Step {step} of 2 — {step === 1 ? 'about you' : 'your first job'}
+          </p>
         </div>
 
         {step === 1 ? (

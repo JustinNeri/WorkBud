@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { ArrowLeft, MailCheck } from 'lucide-react'
 import { supabase, errorMessage } from '../lib/supabase'
+import { SignupSteps } from './SignupSteps'
 import { Alert, Button } from './ui'
 
 // Supabase's OTP length is a project setting (6–10 digits), so don't assume
@@ -92,6 +93,10 @@ export function OtpStep({ email, onBack }) {
           <ArrowLeft size={16} />
           Back
         </button>
+
+        <div className="mb-7">
+          <SignupSteps current={2} />
+        </div>
 
         <header className="mb-7 text-center">
           <span className="mx-auto mb-4 flex size-12 items-center justify-center rounded-2xl bg-brand-soft text-brand">
