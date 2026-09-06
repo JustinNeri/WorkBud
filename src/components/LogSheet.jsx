@@ -258,11 +258,14 @@ export function LogSheet({
               />
             </Field>
             <Field label="Hours worked">
+              {/* Any decimal: the computed value is minutes/60 rounded to two
+                  places (12.83 for a 12h50m shift), and a quarter-hour step
+                  made the browser reject it on save. */}
               <NumberInput
                 value={hours}
                 onChange={(e) => setHoursOverride(e.target.value)}
                 placeholder="8.5"
-                step="0.25"
+                step="any"
                 min="0"
                 max="24"
               />
