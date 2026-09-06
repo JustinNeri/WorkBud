@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import { KeyRound, LogOut } from 'lucide-react'
+import { KeyRound, LogOut, ShieldCheck, UserRound, Wallet } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { CURRENCIES } from '../lib/format'
 import { Sheet } from './Sheet'
-import { Alert, Button, Field, NumberInput, Select, TextInput } from './ui'
+import { Alert, Button, Field, FormSection, NumberInput, Select, TextInput } from './ui'
 
 const OCCUPATIONS = [
   'Student — OJT / Internship',
@@ -16,6 +16,8 @@ const OCCUPATIONS = [
   'Between jobs',
   'Other',
 ]
+
+const FORM_ID = 'wb-settings-form'
 
 /** Account-level settings. Hour and budget targets live on each job instead. */
 export function SettingsSheet({
@@ -66,60 +68,88 @@ export function SettingsSheet({
   }
 
   return (
-    <Sheet open={open} onClose={onClose} title="Settings">
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <div className="grid grid-cols-[1fr_auto] gap-3">
-          <Field label="First name">
-            <TextInput
-              value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
-              autoComplete="given-name"
-              required
-            />
-          </Field>
-          <Field label="M.I.">
-            <TextInput
-              value={middleInitial}
-              onChange={(e) => setMiddleInitial(e.target.value)}
-              maxLength={4}
-              className="w-16 text-center"
-            />
-          </Field>
-        </div>
-
-        <Field label="Last name">
-          <TextInput
-            value={lastName}
-            onChange={(e) => setLastName(e.target.value)}
-            autoComplete="family-name"
-            required
-          />
-        </Field>
-
-        <Field label="Age" hint="Optional.">
-          <NumberInput
-            value={age}
-            onChange={(e) => setAge(e.target.value)}
-            min="10"
-            max="120"
-            step="1"
-          />
-        </Field>
-
-        <Field label="What do you do?">
-          <Select
-            value={occupation}
-            onChange={(e) => setOccupation(e.target.value)}
+    <Sheet
+      open={open}
+      onClose={onClose}
+      title="Settings"
+      footer={
+        <>
+          <Alert>{error}</Alert>
+          {/* Outside <form>, so the form attribute is what still submits it. */}
+          <Button
+            type="submit"
+            form={FORM_ID}
+            busy={busy}
+            className={error ? 'mt-2' : ''}
           >
-            {OCCUPATIONS.map((o) => (
-              <option key={o} value={o}>
-                {o}
-              </option>
-            ))}
-          </Select>
-        </Field>
+            Save changes
+          </Button>
+        </>
+      }
+    >
+      <form id={FORM_ID} onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <FormSection label="About you" icon={UserRound} tone="brand" first>
+          <div className="flex flex-col gap-3">
+            {/* The M.I. width lives on the grid track: `w-16` on the input
+                loses to `w-full` from the shared field style, since Tailwind's
+                sort order decides between two rules for the same property. */}
+            <div className="grid grid-cols-[1fr_5rem] gap-3">
+              <Field label="First name">
+                <TextInput
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  autoComplete="given-name"
+                  required
+                />
+              </Field>
+              <Field label="M.I.">
+                <TextInput
+                  value={middleInitial}
+                  onChange={(e) => setMiddleInitial(e.target.value)}
+                  maxLength={4}
+                  className="text-center"
+                />
+              </Field>
+            </div>
 
-        <Field label="Currency" hint="Applies everywhere money is shown.">
+            <div className="grid grid-cols-[1fr_5rem] gap-3">
+              <Field label="Last name">
+                <TextInput
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  autoComplete="family-name"
+                  required
+                />
+              </Field>
+              <Field label="Age">
+                <NumberInput
+                  value={age}
+                  onChange={(e) => setAge(e.target.value)}
+                  min="10"
+                  max="120"
+                  step="1"
+                  className="text-center"
+                />
+              </Field>
+            </div>
+
+            <Field label="What do you do?">
+              <Select
+                value={occupation}
+                onChange={(e) => setOccupation(e.target.value)}
+              >
+                {OCCUPATIONS.map((o) => (
+                  <option key={o} value={o}>
+                    {o}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          </div>
+        </FormSection>
+
+        <FormSection label="Money" icon={Wallet} tone="money">
+          <Field label="Currency" hint="Applies everywhere money is shown.">
           <Select
             value={currency}
             onChange={(e) => setCurrency(e.target.value)}
@@ -130,34 +160,28 @@ export function SettingsSheet({
               </option>
             ))}
           </Select>
-        </Field>
+          </Field>
+        </FormSection>
 
-        <Alert>{error}</Alert>
-
-        <Button type="submit" busy={busy} className="mt-1">
-          Save changes
-        </Button>
-
-        <div className="mt-2 border-t border-line pt-4">
-          <Button type="button" variant="secondary" onClick={onChangePassword}>
-            <KeyRound size={17} />
-            Change password
-          </Button>
-        </div>
-
-        <div className="border-t border-line pt-4">
-          <p className="mb-3 text-center text-[13px] text-muted">
+        <FormSection label="Account" icon={ShieldCheck}>
+          <p className="mb-3 text-[13px] leading-snug text-muted">
             Signed in as <span className="font-medium text-ink">{email}</span>
           </p>
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={() => supabase.auth.signOut()}
-          >
-            <LogOut size={17} />
-            Sign out
-          </Button>
-        </div>
+          <div className="flex flex-col gap-2">
+            <Button type="button" variant="secondary" onClick={onChangePassword}>
+              <KeyRound size={17} />
+              Change password
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => supabase.auth.signOut()}
+            >
+              <LogOut size={17} />
+              Sign out
+            </Button>
+          </div>
+        </FormSection>
       </form>
     </Sheet>
   )
