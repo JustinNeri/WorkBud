@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Check, Eye, EyeOff, Loader2 } from 'lucide-react'
 
 const baseField =
-  'w-full rounded-xl border border-line bg-surface-2 px-3.5 py-3 text-ink placeholder:text-faint transition-colors focus:border-brand focus:bg-surface'
+  'w-full rounded-2xl border border-line bg-surface-2 px-4 py-3.5 text-ink placeholder:text-faint transition-colors focus:border-brand focus:bg-surface'
 
 export function Field({ label, hint, children }) {
   return (
@@ -90,7 +90,7 @@ export function Button({
   ...props
 }) {
   const variants = {
-    primary: 'bg-brand text-white active:brightness-90',
+    primary: 'bg-hero text-white shadow-hero active:brightness-95',
     secondary: 'bg-surface-2 text-ink active:brightness-95',
     danger: 'bg-over text-white active:brightness-90',
     ghost: 'text-muted active:bg-surface-2',
@@ -98,7 +98,7 @@ export function Button({
 
   return (
     <button
-      className={`inline-flex h-12 w-full items-center justify-center gap-2 rounded-xl text-[15px] font-semibold transition disabled:opacity-50 ${variants[variant]} ${className}`}
+      className={`inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl text-[15px] font-semibold transition disabled:opacity-50 ${variants[variant]} ${className}`}
       disabled={busy || props.disabled}
       {...props}
     >
@@ -114,7 +114,7 @@ export function Alert({ tone = 'error', children }) {
     info: 'bg-brand-soft text-brand',
   }
   return (
-    <p className={`rounded-xl px-3.5 py-3 text-[13px] leading-snug ${tones[tone]}`}>
+    <p className={`rounded-2xl px-3.5 py-3 text-[13px] leading-snug ${tones[tone]}`}>
       {children}
     </p>
   )
@@ -187,6 +187,29 @@ export function PasswordMeter({ result }) {
       {problem ? (
         <p className="mt-1.5 text-[12px] leading-snug text-over">{problem}</p>
       ) : null}
+    </div>
+  )
+}
+
+/**
+ * A group heading in the dashboard's single column.
+ *
+ * The old page was one flat stack of nine identical cards, so nothing told the
+ * reader where the hours end and the money starts. A coloured dot in the
+ * domain's own hue, the label, and a rule running to the edge give the column
+ * joints without adding another box.
+ */
+export function SectionHeading({ tone = 'brand', children, action }) {
+  const dots = { brand: 'bg-brand', money: 'bg-money', neutral: 'bg-faint' }
+
+  return (
+    <div className="mt-4 mb-0.5 flex items-center gap-2 px-1 first:mt-0">
+      <span className={`size-1.5 shrink-0 rounded-full ${dots[tone]}`} />
+      <h2 className="shrink-0 text-[11.5px] font-bold uppercase tracking-[0.09em] text-muted">
+        {children}
+      </h2>
+      <span className="h-px flex-1 bg-line" />
+      {action}
     </div>
   )
 }

@@ -39,7 +39,7 @@ export function TodayNudge({ jobId, loggedToday, onLog }) {
       </span>
       <p className="flex-1 text-[13px] leading-snug">
         <span className="font-semibold">Nothing logged today.</span>{' '}
-        <button type="button" onClick={onLog} className="font-semibold text-brand underline">
+        <button type="button" onClick={onLog} className="font-bold text-brand underline underline-offset-2">
           Log it now
         </button>
       </p>
