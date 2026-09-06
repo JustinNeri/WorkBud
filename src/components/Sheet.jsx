@@ -48,7 +48,7 @@ export function Sheet({ open, onClose, title, footer, children }) {
         aria-modal="true"
         aria-label={title}
         tabIndex={-1}
-        className="relative flex max-h-[92dvh] w-full animate-sheet-in flex-col overflow-hidden rounded-t-[28px] bg-surface shadow-card outline-none sm:max-w-md sm:rounded-[28px]"
+        className="relative flex max-h-[94dvh] w-full animate-sheet-in flex-col overflow-hidden rounded-t-[28px] bg-surface shadow-card outline-none sm:max-h-[92dvh] sm:max-w-md sm:rounded-[28px]"
       >
         {/* Grab handle: the sheet slides from the bottom, so it should look
             like something you can push back down. */}
@@ -69,9 +69,12 @@ export function Sheet({ open, onClose, title, footer, children }) {
           </button>
         </div>
 
+        {/* min-h-0 with flex-1: the scroll area, not the panel, absorbs a form
+            taller than the screen, so the header and the action bar keep their
+            own height instead of being squeezed off a short phone viewport. */}
         <div
-          className={`no-scrollbar overflow-y-auto overscroll-contain px-5 pt-4 ${
-            footer ? 'pb-7' : 'pb-[max(1.25rem,env(safe-area-inset-bottom))]'
+          className={`no-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pt-3.5 ${
+            footer ? 'pb-6' : 'pb-[max(1.25rem,env(safe-area-inset-bottom))]'
           }`}
         >
           {children}
