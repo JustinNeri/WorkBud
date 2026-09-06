@@ -45,9 +45,16 @@ export function Sheet({ open, onClose, title, children }) {
         aria-modal="true"
         aria-label={title}
         tabIndex={-1}
-        className="relative flex max-h-[92dvh] w-full animate-sheet-in flex-col overflow-hidden rounded-t-3xl bg-surface shadow-card outline-none sm:max-w-md sm:rounded-3xl"
+        className="relative flex max-h-[92dvh] w-full animate-sheet-in flex-col overflow-hidden rounded-t-[28px] bg-surface shadow-card outline-none sm:max-w-md sm:rounded-[28px]"
       >
-        <div className="flex items-center justify-between border-b border-line px-5 pt-4 pb-3">
+        {/* Grab handle: the sheet slides from the bottom, so it should look
+            like something you can push back down. */}
+        <span
+          aria-hidden="true"
+          className="mx-auto mt-2.5 h-1 w-9 shrink-0 rounded-full bg-line sm:hidden"
+        />
+
+        <div className="flex items-center justify-between border-b border-line px-5 pt-3 pb-3">
           <h2 className="text-[17px] font-semibold tracking-tight">{title}</h2>
           <button
             type="button"

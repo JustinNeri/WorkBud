@@ -30,7 +30,7 @@ export function PaceCard({
 
   return (
     <section
-      className="animate-rise flex flex-col gap-3 rounded-2xl bg-surface p-4 shadow-card"
+      className="animate-rise flex flex-col gap-3.5 rounded-3xl bg-surface p-4 shadow-card"
       style={{ animationDelay: '90ms' }}
     >
       {showPace ? (
