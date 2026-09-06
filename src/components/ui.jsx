@@ -26,7 +26,11 @@ export function TextInput({ icon: Icon, className = '', ...props }) {
   if (!Icon) return <input className={`${baseField} ${className}`} {...props} />
 
   return (
-    <div className="relative">
+    // min-w-0 on the wrapper, not just the input: as a flex or grid child it
+    // would otherwise floor at the control's min-content width — a number
+    // input reserves ~20 characters — and push the row wider than the phone,
+    // which is what made a sheet pan sideways.
+    <div className="relative min-w-0">
       <span className="pointer-events-none absolute inset-y-0 left-3.5 flex items-center text-faint">
         <Icon size={17} />
       </span>
@@ -46,7 +50,7 @@ export function PasswordInput({ icon: Icon, className = '', ...props }) {
   const [visible, setVisible] = useState(false)
 
   return (
-    <div className="relative">
+    <div className="relative min-w-0">
       {Icon ? (
         <span className="pointer-events-none absolute inset-y-0 left-3.5 flex items-center text-faint">
           <Icon size={17} />
@@ -76,7 +80,7 @@ export function PasswordInput({ icon: Icon, className = '', ...props }) {
  */
 export function NumberInput({ adornment, className = '', ...props }) {
   return (
-    <div className="relative">
+    <div className="relative min-w-0">
       {adornment ? (
         <span className="pointer-events-none absolute inset-y-0 left-3.5 flex items-center text-muted">
           {adornment}
@@ -102,7 +106,7 @@ export function NumberInput({ adornment, className = '', ...props }) {
  */
 export function Select({ className = '', children, ...props }) {
   return (
-    <div className="relative">
+    <div className="relative min-w-0">
       <select
         className={`${baseField} appearance-none pr-10 ${className}`}
         {...props}
