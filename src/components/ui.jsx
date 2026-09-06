@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Eye, EyeOff, Loader2 } from 'lucide-react'
+import { Check, Eye, EyeOff, Loader2 } from 'lucide-react'
 
 const baseField =
   'w-full rounded-xl border border-line bg-surface-2 px-3.5 py-3 text-ink placeholder:text-faint transition-colors focus:border-brand focus:bg-surface'
@@ -117,5 +117,76 @@ export function Alert({ tone = 'error', children }) {
     <p className={`rounded-xl px-3.5 py-3 text-[13px] leading-snug ${tones[tone]}`}>
       {children}
     </p>
+  )
+}
+
+/**
+ * Strength bar + the live rule checklist under a new-password field.
+ *
+ * Four segments rather than a percentage: a continuous bar invites people to
+ * chase 100%, while four steps read as "this is enough" once the rules go
+ * green. Colour carries the same information as the filled count, and the
+ * rules are spelled out in text, so nothing here depends on seeing colour.
+ */
+export function PasswordMeter({ result }) {
+  const { rules, score, label, problem } = result
+
+  const fills = [
+    'bg-over',
+    'bg-over',
+    'bg-warn',
+    'bg-brand',
+    'bg-money',
+  ]
+  const tones = [
+    'text-over',
+    'text-over',
+    'text-warn',
+    'text-brand',
+    'text-money',
+  ]
+
+  return (
+    <div className="mt-2">
+      <div className="flex items-center gap-2">
+        <div className="flex flex-1 gap-1" aria-hidden="true">
+          {[1, 2, 3, 4].map((n) => (
+            <span
+              key={n}
+              className={`h-1 flex-1 rounded-full transition-colors ${
+                score >= n ? fills[score] : 'bg-surface-2'
+              }`}
+            />
+          ))}
+        </div>
+        {label ? (
+          <span className={`text-[12px] font-semibold ${tones[score]}`}>
+            {label}
+          </span>
+        ) : null}
+      </div>
+
+      <ul className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
+        {rules.map((rule) => (
+          <li
+            key={rule.id}
+            className={`inline-flex items-center gap-1 text-[12px] ${
+              rule.ok ? 'text-money' : 'text-faint'
+            }`}
+          >
+            {rule.ok ? (
+              <Check size={12} strokeWidth={3} />
+            ) : (
+              <span aria-hidden="true" className="size-[5px] rounded-full bg-current" />
+            )}
+            {rule.label}
+          </li>
+        ))}
+      </ul>
+
+      {problem ? (
+        <p className="mt-1.5 text-[12px] leading-snug text-over">{problem}</p>
+      ) : null}
+    </div>
   )
 }
