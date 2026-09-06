@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Plus, X } from 'lucide-react'
+import { Clock, NotebookPen, Plus, Wallet, X } from 'lucide-react'
 import {
   EXPENSE_CATEGORIES,
   computeHours,
@@ -13,7 +13,16 @@ import {
   todayISO,
 } from '../lib/format'
 import { Sheet } from './Sheet'
-import { Alert, Button, Field, NumberInput, Select, TextArea, TextInput } from './ui'
+import {
+  Alert,
+  Button,
+  Field,
+  FormSection,
+  NumberInput,
+  Select,
+  TextArea,
+  TextInput,
+} from './ui'
 
 const FORM_ID = 'wb-log-form'
 
@@ -202,7 +211,7 @@ export function LogSheet({
         ) : null}
 
         {/* --- shift ------------------------------------------------------ */}
-        <div>
+        <FormSection label="Shift" icon={Clock} tone="brand">
           <div className="grid grid-cols-2 gap-3">
             <Field label="Time in">
               <TextInput
@@ -253,7 +262,7 @@ export function LogSheet({
           </div>
 
           {computed !== null && hoursOverride === null ? (
-            <p className="mt-1.5 text-[12.5px] text-brand">
+            <p className="mt-2 text-[12.5px] leading-snug text-brand">
               {running
                 ? `${formatHours(soFar)} so far — counts up to ${formatHours(
                     computed,
@@ -261,15 +270,23 @@ export function LogSheet({
                 : 'Computed from your shift — edit it to override.'}
             </p>
           ) : null}
-        </div>
+        </FormSection>
 
         {/* --- expenses --------------------------------------------------- */}
-        <div>
-          <div className="mb-1.5 flex items-baseline justify-between">
-            <span className="text-[13px] font-medium text-muted">Money spent</span>
-            <span className="text-[13px] font-semibold">{formatMoney(total)}</span>
-          </div>
-
+        <FormSection
+          label="Money spent"
+          icon={Wallet}
+          tone="money"
+          action={
+            <span
+              className={`text-[14px] font-bold tabular-nums ${
+                total > 0 ? 'text-money' : 'text-faint'
+              }`}
+            >
+              {formatMoney(total)}
+            </span>
+          }
+        >
           {/* One expense per block, two rows deep.
               All four controls used to share a single row: a fixed 96px
               category, a fixed 96px amount and a remove button left the label
@@ -281,7 +298,7 @@ export function LogSheet({
             {items.map((item) => (
               <div
                 key={item.key}
-                className="rounded-2xl bg-surface-2 p-2.5"
+                className="rounded-2xl border border-line p-2.5"
               >
                 <div className="flex items-center gap-2">
                   <TextInput
@@ -290,7 +307,7 @@ export function LogSheet({
                     placeholder="Jeepney fare"
                     aria-label="What it was for"
                     maxLength={120}
-                    className="flex-1 bg-surface"
+                    className="flex-1"
                   />
                   <button
                     type="button"
@@ -313,7 +330,7 @@ export function LogSheet({
                     value={item.category}
                     onChange={(e) => updateItem(item.key, { category: e.target.value })}
                     aria-label="Expense category"
-                    className="bg-surface text-[14px]"
+                    className="text-[14px]"
                   >
                     {EXPENSE_CATEGORIES.map((c) => (
                       <option key={c.value} value={c.value}>
@@ -329,7 +346,6 @@ export function LogSheet({
                     aria-label="Amount"
                     step="0.01"
                     min="0"
-                    className="bg-surface"
                   />
                 </div>
               </div>
@@ -339,21 +355,24 @@ export function LogSheet({
           <button
             type="button"
             onClick={() => setItems((prev) => [...prev, newItem()])}
-            className="mt-2 inline-flex items-center gap-1.5 text-[13px] font-semibold text-brand"
+            className="mt-2.5 inline-flex items-center gap-1.5 text-[13px] font-semibold text-brand"
           >
             <Plus size={15} />
             Add another expense
           </button>
-        </div>
+        </FormSection>
 
-        <Field label="Note" hint="Optional — how the day went overall.">
+        <FormSection label="Note" icon={NotebookPen}>
           <TextArea
             value={note}
             onChange={(e) => setNote(e.target.value)}
             placeholder="Half day, went to the site office"
             maxLength={280}
           />
-        </Field>
+          <p className="mt-1.5 text-xs text-faint">
+            Optional — how the day went overall.
+          </p>
+        </FormSection>
 
       </form>
     </Sheet>
