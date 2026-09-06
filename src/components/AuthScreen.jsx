@@ -1,18 +1,10 @@
 import { useState } from 'react'
-import {
-  ArrowRight,
-  Check,
-  Clock,
-  Loader2,
-  Sparkles,
-  Wallet,
-} from 'lucide-react'
+import { ArrowRight, Check, Loader2, Lock, Mail, Sparkles } from 'lucide-react'
 import { supabase, errorMessage } from '../lib/supabase'
 import { evaluatePassword } from '../lib/password'
+import { AuthShell } from './AuthShell'
 import { ForgotPassword } from './ForgotPassword'
-import { Logo } from './Logo'
 import { OtpStep } from './OtpStep'
-import { SignupSteps } from './SignupSteps'
 import { Alert, Button, Field, PasswordInput, PasswordMeter, TextInput } from './ui'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
@@ -191,218 +183,161 @@ export function AuthScreen() {
   const available = emailState?.status === 'free' && emailState.email === trimmed
 
   return (
-    <div className="relative flex min-h-dvh flex-col overflow-hidden">
-      {/* Brand panel: the gradient does the work the old centred form didn't. */}
-      <div className="relative overflow-hidden bg-hero px-6 pt-[max(3rem,env(safe-area-inset-top))] pb-16 text-hero-ink">
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute -top-24 -right-16 size-64 rounded-full bg-white/10 blur-2xl"
-        />
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute -bottom-28 -left-20 size-56 rounded-full bg-white/10 blur-2xl"
-        />
-
-        <div className="relative mx-auto w-full max-w-sm">
-          <span className="mb-5 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-[12px] font-semibold">
-            <Sparkles size={13} />
-            {isSignUp ? 'Free — about a minute' : 'OJT + spending, together'}
-          </span>
-
-          <div className="flex items-center gap-3">
-            <Logo size={42} tone="hero" />
-            <h1 className="text-[34px] font-bold leading-[1.1] tracking-tight">
-              WorkBud
-            </h1>
-          </div>
-          <p className="mt-2 max-w-[19rem] text-[15px] leading-snug opacity-85">
-            {isSignUp
-              ? 'Set up once, then every shift, receipt and remaining hour lands in one place.'
-              : 'Track the hours you owe and the money you spend getting them — in one place.'}
-          </p>
-
-          {isSignUp ? (
-            /* Signup gets the roadmap instead of the feature chips: the code
-               and the setup form are the part people don't see coming. */
-            <div className="mt-6">
-              <SignupSteps current={1} tone="hero" />
-            </div>
-          ) : (
-            <div className="mt-6 flex gap-2.5">
-              <span className="inline-flex items-center gap-1.5 rounded-xl bg-white/15 px-2.5 py-1.5 text-[12.5px] font-semibold">
-                <Clock size={14} />
-                Hours
-              </span>
-              <span className="inline-flex items-center gap-1.5 rounded-xl bg-white/15 px-2.5 py-1.5 text-[12.5px] font-semibold">
-                <Wallet size={14} />
-                Budget
-              </span>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Form card overlapping the panel — the shape that stops it reading flat. */}
-      <div className="relative -mt-8 flex-1 rounded-t-3xl bg-canvas px-6 pt-7 pb-12">
-        <div className="mx-auto w-full max-w-sm">
-          {/* Two named destinations, not one form with a swapped button. */}
-          <div
-            role="tablist"
-            aria-label="Sign in or create an account"
-            className="mb-6 grid grid-cols-2 gap-1 rounded-2xl bg-surface-2 p-1"
+    <AuthShell
+      badge={
+        <>
+          <Sparkles size={12} />
+          {isSignUp ? 'Free — about a minute' : 'OJT + spending, together'}
+        </>
+      }
+      title={isSignUp ? 'Create your account' : 'Welcome back'}
+      subtitle={
+        isSignUp
+          ? 'Set up once, then every shift, receipt and remaining hour lands in one place.'
+          : 'Sign in to pick up where you left off.'
+      }
+      step={isSignUp ? 1 : null}
+      footer={
+        isSignUp ? (
+          <>
+            We&apos;ll email you a verification code next. That code and password
+            resets are the only mail WorkBud sends.
+          </>
+        ) : null
+      }
+    >
+      {/* Two named destinations, not one form with a swapped button. */}
+      <div
+        role="tablist"
+        aria-label="Sign in or create an account"
+        className="mb-5 grid grid-cols-2 gap-1 rounded-2xl bg-surface-2 p-1"
+      >
+        {[
+          ['signin', 'Sign in'],
+          ['signup', 'Create account'],
+        ].map(([value, label]) => (
+          <button
+            key={value}
+            type="button"
+            role="tab"
+            aria-selected={mode === value}
+            onClick={() => selectMode(value)}
+            className={`h-10 rounded-xl text-[14px] font-semibold transition ${
+              mode === value
+                ? 'bg-surface text-ink shadow-card'
+                : 'text-muted active:text-ink'
+            }`}
           >
-            {[
-              ['signin', 'Sign in'],
-              ['signup', 'Create account'],
-            ].map(([value, label]) => (
-              <button
-                key={value}
-                type="button"
-                role="tab"
-                aria-selected={mode === value}
-                onClick={() => selectMode(value)}
-                className={`h-10 rounded-xl text-[14px] font-semibold transition ${
-                  mode === value
-                    ? 'bg-surface text-ink shadow-card'
-                    : 'text-muted active:text-ink'
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-
-          <h2 className="text-[21px] font-bold tracking-tight">
-            {isSignUp ? 'Create your account' : 'Welcome back'}
-          </h2>
-          <p className="mt-1 mb-6 text-[14px] text-muted">
-            {isSignUp
-              ? 'Start with an email and a password — the rest comes next.'
-              : 'Sign in to pick up where you left off.'}
-          </p>
-
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
-            {/* The status lines sit outside <Field> on purpose: Field renders a
-                <label>, and a button nested in one has its clicks forwarded to
-                the input as well. */}
-            <div>
-              <Field label="Email">
-                <TextInput
-                  type="email"
-                  value={email}
-                  onChange={handleEmailChange}
-                  onBlur={checkEmail}
-                  placeholder="you@example.com"
-                  autoComplete="email"
-                  autoCapitalize="none"
-                  spellCheck={false}
-                  aria-invalid={taken || undefined}
-                  required
-                />
-              </Field>
-              {isSignUp && checking ? (
-                <span className="mt-1.5 inline-flex items-center gap-1.5 text-[12px] text-faint">
-                  <Loader2 size={12} className="animate-spin" />
-                  Checking this email…
-                </span>
-              ) : null}
-              {isSignUp && available ? (
-                <span className="mt-1.5 inline-flex items-center gap-1 text-[12px] text-money">
-                  <Check size={12} strokeWidth={3} />
-                  That email is free to use.
-                </span>
-              ) : null}
-              {isSignUp && taken ? (
-                <span className="mt-1.5 block text-[12px] leading-snug text-over">
-                  Already registered.{' '}
-                  <button
-                    type="button"
-                    onClick={switchToSignIn}
-                    className="font-semibold text-brand underline underline-offset-2"
-                  >
-                    Sign in instead
-                  </button>
-                </span>
-              ) : null}
-            </div>
-
-            <div>
-              <Field label={isSignUp ? 'Choose a password' : 'Password'}>
-                <PasswordInput
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  autoComplete={isSignUp ? 'new-password' : 'current-password'}
-                  required
-                />
-              </Field>
-              {isSignUp ? <PasswordMeter result={strength} /> : null}
-            </div>
-
-            {isSignUp ? (
-              <div>
-                <Field label="Confirm password">
-                  <PasswordInput
-                    value={confirm}
-                    onChange={(e) => setConfirm(e.target.value)}
-                    placeholder="••••••••"
-                    autoComplete="new-password"
-                    aria-invalid={mismatch || undefined}
-                    required
-                  />
-                </Field>
-                {mismatch ? (
-                  <span className="mt-1.5 block text-[12px] text-over">
-                    These don&apos;t match yet.
-                  </span>
-                ) : null}
-                {confirm.length > 0 && !mismatch ? (
-                  <span className="mt-1.5 inline-flex items-center gap-1 text-[12px] text-money">
-                    <Check size={12} strokeWidth={3} />
-                    Passwords match.
-                  </span>
-                ) : null}
-              </div>
-            ) : null}
-
-            {!isSignUp ? (
-              <button
-                type="button"
-                onClick={() => setResetting(true)}
-                className="-mt-2 self-end text-[13px] font-semibold text-brand"
-              >
-                Forgot password?
-              </button>
-            ) : null}
-
-            <Alert>{error}</Alert>
-            <Alert tone="info">{notice}</Alert>
-
-            <Button type="submit" busy={busy} className="mt-1">
-              {isSignUp ? 'Create account' : 'Sign in'}
-              <ArrowRight size={17} />
-            </Button>
-          </form>
-
-          {isSignUp ? (
-            <p className="mt-4 text-center text-[12.5px] leading-snug text-faint">
-              We&apos;ll email you a verification code next. That code and
-              password resets are the only mail WorkBud sends.
-            </p>
-          ) : (
-            <p className="mt-6 text-center text-[14px] text-muted">
-              Don&apos;t have an account?{' '}
-              <button
-                type="button"
-                onClick={() => selectMode('signup')}
-                className="font-semibold text-brand"
-              >
-                Create one
-              </button>
-            </p>
-          )}
-        </div>
+            {label}
+          </button>
+        ))}
       </div>
-    </div>
+
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
+        {/* The status lines sit outside <Field> on purpose: Field renders a
+            <label>, and a button nested in one has its clicks forwarded to
+            the input as well. */}
+        <div>
+          <Field label="Email">
+            <TextInput
+              icon={Mail}
+              type="email"
+              value={email}
+              onChange={handleEmailChange}
+              onBlur={checkEmail}
+              placeholder="you@example.com"
+              autoComplete="email"
+              autoCapitalize="none"
+              spellCheck={false}
+              aria-invalid={taken || undefined}
+              required
+            />
+          </Field>
+          {isSignUp && checking ? (
+            <span className="mt-1.5 inline-flex items-center gap-1.5 text-[12px] text-faint">
+              <Loader2 size={12} className="animate-spin" />
+              Checking this email…
+            </span>
+          ) : null}
+          {isSignUp && available ? (
+            <span className="mt-1.5 inline-flex items-center gap-1 text-[12px] text-money">
+              <Check size={12} strokeWidth={3} />
+              That email is free to use.
+            </span>
+          ) : null}
+          {isSignUp && taken ? (
+            <span className="mt-1.5 block text-[12px] leading-snug text-over">
+              Already registered.{' '}
+              <button
+                type="button"
+                onClick={switchToSignIn}
+                className="font-semibold text-brand underline underline-offset-2"
+              >
+                Sign in instead
+              </button>
+            </span>
+          ) : null}
+        </div>
+
+        <div>
+          <Field label={isSignUp ? 'Choose a password' : 'Password'}>
+            <PasswordInput
+              icon={Lock}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="••••••••"
+              autoComplete={isSignUp ? 'new-password' : 'current-password'}
+              required
+            />
+          </Field>
+          {isSignUp ? <PasswordMeter result={strength} /> : null}
+        </div>
+
+        {isSignUp ? (
+          <div>
+            <Field label="Confirm password">
+              <PasswordInput
+                icon={Lock}
+                value={confirm}
+                onChange={(e) => setConfirm(e.target.value)}
+                placeholder="••••••••"
+                autoComplete="new-password"
+                aria-invalid={mismatch || undefined}
+                required
+              />
+            </Field>
+            {mismatch ? (
+              <span className="mt-1.5 block text-[12px] text-over">
+                These don&apos;t match yet.
+              </span>
+            ) : null}
+            {confirm.length > 0 && !mismatch ? (
+              <span className="mt-1.5 inline-flex items-center gap-1 text-[12px] text-money">
+                <Check size={12} strokeWidth={3} />
+                Passwords match.
+              </span>
+            ) : null}
+          </div>
+        ) : null}
+
+        {!isSignUp ? (
+          <button
+            type="button"
+            onClick={() => setResetting(true)}
+            className="-mt-2 self-end text-[13px] font-semibold text-brand"
+          >
+            Forgot password?
+          </button>
+        ) : null}
+
+        <Alert>{error}</Alert>
+        <Alert tone="info">{notice}</Alert>
+
+        <Button type="submit" busy={busy} className="mt-1">
+          {isSignUp ? 'Create account' : 'Sign in'}
+          <ArrowRight size={17} />
+        </Button>
+      </form>
+    </AuthShell>
   )
 }

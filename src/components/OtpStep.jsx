@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { ArrowLeft, MailCheck } from 'lucide-react'
+import { MailCheck } from 'lucide-react'
 import { supabase, errorMessage } from '../lib/supabase'
-import { SignupSteps } from './SignupSteps'
+import { AuthShell } from './AuthShell'
 import { Alert, Button } from './ui'
 
 // Supabase's OTP length is a project setting (6–10 digits), so don't assume
@@ -83,79 +83,62 @@ export function OtpStep({ email, onBack }) {
   }
 
   return (
-    <div className="flex min-h-dvh flex-col justify-center px-6 py-12">
-      <div className="mx-auto w-full max-w-sm">
-        <button
-          type="button"
-          onClick={onBack}
-          className="mb-6 inline-flex items-center gap-1.5 text-[14px] font-medium text-muted"
-        >
-          <ArrowLeft size={16} />
-          Back
-        </button>
-
-        <div className="mb-7">
-          <SignupSteps current={2} />
-        </div>
-
-        <header className="mb-7 text-center">
-          <span className="mx-auto mb-4 flex size-12 items-center justify-center rounded-2xl bg-brand-soft text-brand">
-            <MailCheck size={24} />
-          </span>
-          <h1 className="text-[22px] font-bold tracking-tight">Check your email</h1>
-          <p className="mt-1.5 text-[15px] leading-snug text-muted">
-            We sent a verification code to{' '}
-            <span className="font-medium text-ink">{email}</span>
-          </p>
-        </header>
-
-        <form
-          onSubmit={(e) => {
-            e.preventDefault()
-            if (code.length >= MIN_CODE_LENGTH) verify(code)
-          }}
-          className="flex flex-col gap-4"
-        >
-          <input
-            ref={inputRef}
-            value={code}
-            onChange={handleChange}
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            placeholder="Enter code"
-            aria-label="Verification code"
-            maxLength={MAX_CODE_LENGTH}
+    <AuthShell
+      title="Check your email"
+      subtitle={
+        <>
+          We sent a verification code to{' '}
+          <span className="font-semibold text-hero-ink">{email}</span>
+        </>
+      }
+      step={2}
+      onBack={onBack}
+      footer={
+        cooldown > 0 ? (
+          <>Didn&apos;t get it? You can resend in {cooldown}s</>
+        ) : (
+          <button
+            type="button"
+            onClick={handleResend}
             disabled={busy}
-            className="w-full rounded-xl border border-line bg-surface-2 py-4 text-center text-[28px] font-semibold tracking-[0.25em] text-ink placeholder:text-[18px] placeholder:tracking-normal placeholder:text-faint focus:border-brand focus:bg-surface disabled:opacity-60"
-          />
-
-          <Alert>{error}</Alert>
-          <Alert tone="info">{notice}</Alert>
-
-          <Button
-            type="submit"
-            busy={busy}
-            disabled={code.length < MIN_CODE_LENGTH}
+            className="font-semibold text-hero-ink underline underline-offset-2 disabled:opacity-50"
           >
-            Verify
-          </Button>
-        </form>
+            Resend code
+          </button>
+        )
+      }
+    >
+      <span className="mb-4 flex size-12 items-center justify-center rounded-2xl bg-brand-soft text-brand">
+        <MailCheck size={24} />
+      </span>
 
-        <p className="mt-6 text-center text-[14px] text-muted">
-          {cooldown > 0 ? (
-            <>Didn&apos;t get it? Resend in {cooldown}s</>
-          ) : (
-            <button
-              type="button"
-              onClick={handleResend}
-              disabled={busy}
-              className="font-semibold text-brand disabled:opacity-50"
-            >
-              Resend code
-            </button>
-          )}
-        </p>
-      </div>
-    </div>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault()
+          if (code.length >= MIN_CODE_LENGTH) verify(code)
+        }}
+        className="flex flex-col gap-4"
+      >
+        <input
+          ref={inputRef}
+          value={code}
+          onChange={handleChange}
+          inputMode="numeric"
+          autoComplete="one-time-code"
+          placeholder="Enter code"
+          aria-label="Verification code"
+          maxLength={MAX_CODE_LENGTH}
+          disabled={busy}
+          className="w-full rounded-2xl border border-line bg-surface-2 py-4 text-center text-[28px] font-bold tracking-[0.25em] text-ink placeholder:text-[17px] placeholder:font-normal placeholder:tracking-normal placeholder:text-faint focus:border-brand focus:bg-surface disabled:opacity-60"
+        />
+
+        <Alert>{error}</Alert>
+        <Alert tone="info">{notice}</Alert>
+
+        <Button type="submit" busy={busy} disabled={code.length < MIN_CODE_LENGTH}>
+          Verify
+        </Button>
+      </form>
+    </AuthShell>
   )
 }
