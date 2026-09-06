@@ -13,7 +13,9 @@ import {
   todayISO,
 } from '../lib/format'
 import { Sheet } from './Sheet'
-import { Alert, Button, Field, NumberInput, TextArea, TextInput } from './ui'
+import { Alert, Button, Field, NumberInput, Select, TextArea, TextInput } from './ui'
+
+const FORM_ID = 'wb-log-form'
 
 let tempId = 0
 const newItem = () => ({
@@ -152,8 +154,22 @@ export function LogSheet({
       open={open}
       onClose={onClose}
       title={editing ? 'Edit entry' : `Log today${jobName ? ` · ${jobName}` : ''}`}
+      footer={
+        <>
+          <Alert>{error}</Alert>
+          {/* Outside <form>, so the form attribute is what still submits it. */}
+          <Button
+            type="submit"
+            form={FORM_ID}
+            busy={busy}
+            className={error ? 'mt-2' : ''}
+          >
+            {editing ? 'Save changes' : 'Add entry'}
+          </Button>
+        </>
+      }
     >
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <form id={FORM_ID} onSubmit={handleSubmit} className="flex flex-col gap-4">
         <Field label="Date">
           <TextInput
             type="date"
@@ -254,52 +270,68 @@ export function LogSheet({
             <span className="text-[13px] font-semibold">{formatMoney(total)}</span>
           </div>
 
-          <div className="flex flex-col gap-2">
+          {/* One expense per block, two rows deep.
+              All four controls used to share a single row: a fixed 96px
+              category, a fixed 96px amount and a remove button left the label
+              about 70px on a 360px phone, which is not enough to read
+              "Jeepney fare" back. Stacking gives the label the full width it
+              needs and turns each expense into an object you can see the
+              edges of. */}
+          <div className="flex flex-col gap-2.5">
             {items.map((item) => (
-              <div key={item.key} className="flex items-center gap-2">
-                <select
-                  value={item.category}
-                  onChange={(e) => updateItem(item.key, { category: e.target.value })}
-                  aria-label="Expense category"
-                  className="w-24 shrink-0 appearance-none rounded-xl border border-line bg-surface-2 px-2 py-3 text-[13px] text-ink focus:border-brand focus:bg-surface"
-                >
-                  {EXPENSE_CATEGORIES.map((c) => (
-                    <option key={c.value} value={c.value}>
-                      {c.label}
-                    </option>
-                  ))}
-                </select>
-                <TextInput
-                  value={item.label}
-                  onChange={(e) => updateItem(item.key, { label: e.target.value })}
-                  placeholder="Jeepney fare"
-                  maxLength={120}
-                  className="flex-1"
-                />
-                <div className="w-24 shrink-0">
+              <div
+                key={item.key}
+                className="rounded-2xl bg-surface-2 p-2.5"
+              >
+                <div className="flex items-center gap-2">
+                  <TextInput
+                    value={item.label}
+                    onChange={(e) => updateItem(item.key, { label: e.target.value })}
+                    placeholder="Jeepney fare"
+                    aria-label="What it was for"
+                    maxLength={120}
+                    className="flex-1 bg-surface"
+                  />
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setItems((prev) =>
+                        prev.length === 1
+                          ? [newItem()]
+                          : prev.filter((i) => i.key !== item.key),
+                      )
+                    }
+                    aria-label="Remove this expense"
+                    className="shrink-0 rounded-lg p-2 text-faint transition-colors active:bg-over-soft active:text-over"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  <Select
+                    value={item.category}
+                    onChange={(e) => updateItem(item.key, { category: e.target.value })}
+                    aria-label="Expense category"
+                    className="bg-surface text-[14px]"
+                  >
+                    {EXPENSE_CATEGORIES.map((c) => (
+                      <option key={c.value} value={c.value}>
+                        {c.label}
+                      </option>
+                    ))}
+                  </Select>
                   <NumberInput
                     adornment={currencySymbol()}
                     value={item.amount}
                     onChange={(e) => updateItem(item.key, { amount: e.target.value })}
                     placeholder="0.00"
+                    aria-label="Amount"
                     step="0.01"
                     min="0"
+                    className="bg-surface"
                   />
                 </div>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setItems((prev) =>
-                      prev.length === 1
-                        ? [newItem()]
-                        : prev.filter((i) => i.key !== item.key),
-                    )
-                  }
-                  aria-label="Remove this expense"
-                  className="shrink-0 rounded-lg p-2 text-faint transition-colors active:bg-over-soft active:text-over"
-                >
-                  <X size={16} />
-                </button>
               </div>
             ))}
           </div>
@@ -323,11 +355,6 @@ export function LogSheet({
           />
         </Field>
 
-        <Alert>{error}</Alert>
-
-        <Button type="submit" busy={busy} className="mt-1">
-          {editing ? 'Save changes' : 'Add entry'}
-        </Button>
       </form>
     </Sheet>
   )

@@ -3,7 +3,7 @@ import { ArrowRight, Briefcase, Check, UserRound } from 'lucide-react'
 import { supabase, errorMessage } from '../lib/supabase'
 import { CURRENCIES, currencySymbol } from '../lib/format'
 import { AuthShell } from './AuthShell'
-import { Alert, Button, Field, NumberInput, TextInput } from './ui'
+import { Alert, Button, Field, NumberInput, Select, TextInput } from './ui'
 
 /**
  * Occupation options follow the standard employment-status taxonomy
@@ -175,17 +175,16 @@ export function Onboarding({ userId, onDone }) {
             </Field>
 
             <Field label="What do you do?">
-              <select
+              <Select
                 value={occupation}
                 onChange={(e) => setOccupation(e.target.value)}
-                className="w-full appearance-none rounded-xl border border-line bg-surface-2 px-3.5 py-3 text-ink focus:border-brand focus:bg-surface"
               >
                 {OCCUPATIONS.map((o) => (
                   <option key={o} value={o}>
                     {o}
                   </option>
                 ))}
-              </select>
+              </Select>
             </Field>
 
             <Alert>{error}</Alert>
@@ -212,17 +211,16 @@ export function Onboarding({ userId, onDone }) {
             </Field>
 
             <Field label="Currency" hint="Used everywhere money is shown.">
-              <select
+              <Select
                 value={currency}
                 onChange={(e) => setCurrency(e.target.value)}
-                className="w-full appearance-none rounded-xl border border-line bg-surface-2 px-3.5 py-3 text-ink focus:border-brand focus:bg-surface"
               >
                 {CURRENCIES.map((c) => (
                   <option key={c.code} value={c.code}>
                     {c.symbol} — {c.label} ({c.code})
                   </option>
                 ))}
-              </select>
+              </Select>
             </Field>
 
             <div className="grid grid-cols-2 gap-3">
