@@ -22,6 +22,9 @@ export function JobSheet({ open, job, lastJob, onClose, onSubmit, onDelete }) {
   const [budget, setBudget] = useState(
     job ? String(Number(job.monthly_budget)) : '3000',
   )
+  const [dailyBudget, setDailyBudget] = useState(
+    job ? String(Number(job.daily_budget)) : '0',
+  )
   const [deadline, setDeadline] = useState(job?.deadline ?? '')
   const [rate, setRate] = useState(job ? String(Number(job.hourly_rate)) : '0')
   const [busy, setBusy] = useState(false)
@@ -39,6 +42,10 @@ export function JobSheet({ open, job, lastJob, onClose, onSubmit, onDelete }) {
     if (!Number.isFinite(budgetValue) || budgetValue < 0)
       return setError('Budget must be zero or more.')
 
+    const dailyValue = dailyBudget === '' ? 0 : Number(dailyBudget)
+    if (!Number.isFinite(dailyValue) || dailyValue < 0)
+      return setError('Daily budget must be zero or more.')
+
     const rateValue = rate === '' ? 0 : Number(rate)
     if (!Number.isFinite(rateValue) || rateValue < 0)
       return setError('Hourly rate must be zero or more.')
@@ -50,6 +57,7 @@ export function JobSheet({ open, job, lastJob, onClose, onSubmit, onDelete }) {
       name: name.trim(),
       target_hours: hoursValue,
       monthly_budget: budgetValue,
+      daily_budget: dailyValue,
       deadline: deadline || null,
       hourly_rate: rateValue,
     })
@@ -138,6 +146,20 @@ export function JobSheet({ open, job, lastJob, onClose, onSubmit, onDelete }) {
                 value={budget}
                 onChange={(e) => setBudget(e.target.value)}
                 placeholder="3000"
+                min="0"
+                step="1"
+              />
+            </Field>
+
+            <Field
+              label="Daily budget"
+              hint="A cap for a single day. Leave at 0 for no daily limit."
+            >
+              <NumberInput
+                adornment={currencySymbol()}
+                value={dailyBudget}
+                onChange={(e) => setDailyBudget(e.target.value)}
+                placeholder="300"
                 min="0"
                 step="1"
               />

@@ -17,7 +17,7 @@ function byNewest(a, b) {
 }
 
 const JOB_COLS =
-  'id, name, target_hours, monthly_budget, deadline, hourly_rate, sort_order, created_at'
+  'id, name, target_hours, monthly_budget, daily_budget, deadline, hourly_rate, sort_order, created_at'
 
 const LOG_COLS =
   'id, job_id, entry_date, hours_worked, amount_spent, description, time_in, time_out, break_minutes, created_at'
@@ -291,6 +291,8 @@ export function useWorkbud(userId) {
   const stats = useMemo(() => {
     const targetHours = Number(activeJob?.target_hours) || 0
     const monthlyBudget = Number(activeJob?.monthly_budget) || 0
+    // 0 means the user hasn't set a daily cap; nothing about it is shown then.
+    const dailyBudget = Number(activeJob?.daily_budget) || 0
 
     // Counted so far, not planned: a 7am–5pm day is 2h at 9am.
     const now = new Date(minuteTick)
@@ -344,6 +346,26 @@ export function useWorkbud(userId) {
     const weekdaysLeftInMonth = weekdaysUntil(monthEndISO(), toISODate(tomorrow))
     const projectedMonthHours = monthHours + monthDaysAvg * weekdaysLeftInMonth
 
+    // --- the daily cap. Totalled per calendar date rather than per entry: two
+    // shifts on one day are one day's spending, and one day's allowance.
+    const spentByDate = new Map()
+    for (const l of logs) {
+      spentByDate.set(
+        l.entry_date,
+        (spentByDate.get(l.entry_date) ?? 0) + Number(l.amount_spent),
+      )
+    }
+    const spentToday = spentByDate.get(todayISO()) ?? 0
+    const overDates =
+      dailyBudget > 0
+        ? new Set(
+            [...spentByDate]
+              .filter(([, amount]) => amount > dailyBudget)
+              .map(([date]) => date),
+          )
+        : new Set()
+    const daysOverThisMonth = [...overDates].filter((d) => d >= firstOfMonth).length
+
     // --- where the money goes
     const logIds = new Set(logs.map((l) => l.id))
     const byCategory = new Map()
@@ -391,6 +413,13 @@ export function useWorkbud(userId) {
       hoursRemaining: Math.max(targetHours - loggedHours, 0),
       hoursPct: pct(loggedHours, targetHours),
       hoursComplete: targetHours > 0 && loggedHours >= targetHours,
+
+      dailyBudget,
+      spentToday,
+      dailyRemaining: dailyBudget - spentToday,
+      overToday: dailyBudget > 0 && spentToday > dailyBudget,
+      overDates,
+      daysOverThisMonth,
 
       monthlyBudget,
       spentThisMonth,

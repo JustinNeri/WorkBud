@@ -10,7 +10,18 @@ import { Meter } from './Meter'
  * it keeps money visually separate from the purple hours cards above.
  * Status is never colour alone — each state also ships an icon and a sentence.
  */
-export function BudgetCard({ spent, budget, remaining, percent, over }) {
+export function BudgetCard({
+  spent,
+  budget,
+  remaining,
+  percent,
+  over,
+  dailyBudget,
+  spentToday,
+  dailyRemaining,
+  overToday,
+  daysOverThisMonth,
+}) {
   const near = !over && percent >= 80
   const tone = over ? 'over' : near ? 'warn' : 'money'
 
@@ -75,6 +86,34 @@ export function BudgetCard({ spent, budget, remaining, percent, over }) {
         {StatusIcon ? <StatusIcon size={14} /> : null}
         {status.text}
       </p>
+
+      {/* The daily cap, when the job sets one. It sits under the month rather
+          than beside it: the month is the commitment, the day is the pace that
+          keeps it — and a day over is worth seeing before the month tips. */}
+      {dailyBudget > 0 ? (
+        <>
+          <div className="mt-3 h-px bg-ink/10" />
+          <div className="mt-2.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+            <p
+              className={`flex items-center gap-1.5 text-[12.5px] font-semibold ${
+                overToday ? 'text-over' : 'text-muted'
+              }`}
+            >
+              {overToday ? <AlertTriangle size={13} /> : null}
+              <span>
+                Today {formatMoney(spentToday)} of{' '}
+                {formatMoney(dailyBudget, { compact: true })}
+                {overToday ? ` · ${formatMoney(-dailyRemaining)} over` : ''}
+              </span>
+            </p>
+            {daysOverThisMonth > 0 ? (
+              <span className="rounded-full bg-surface/70 px-2 py-0.5 text-[11.5px] font-semibold text-over">
+                {daysOverThisMonth} {daysOverThisMonth === 1 ? 'day' : 'days'} over
+              </span>
+            ) : null}
+          </div>
+        </>
+      ) : null}
     </section>
   )
 }
