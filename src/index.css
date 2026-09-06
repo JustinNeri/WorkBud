@@ -189,6 +189,37 @@ input[type='time'] {
   padding-inline: 0.625rem;
 }
 
+/* No control may outgrow the column it was given. A native date or time field
+   sizes itself from its own shadow content and lays its internal padding
+   outside the width we ask for, so a w-full one measured about 34px wider than
+   the sheet and hung off the right edge — visible as a Date box that ran under
+   the screen edge while Break and Hours beside it sat flush. */
+input,
+select,
+textarea {
+  max-width: 100%;
+}
+
+/* Phones only: drop the native chrome on the two date/time controls so they
+   size like every other field. Desktop keeps its calendar and clock buttons,
+   where there is room for them and no overflow to fix. Tapping the field still
+   opens the platform picker. */
+@media (max-width: 639px) {
+  input[type='date'],
+  input[type='time'] {
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  /* The value itself must be allowed to shrink with the box, or the shadow
+     field keeps the old intrinsic width and pushes the border out again. */
+  input[type='date']::-webkit-date-and-time-value,
+  input[type='time']::-webkit-date-and-time-value {
+    min-width: 0;
+    text-align: left;
+  }
+}
+
 /* Hide number-input spinners; we use big tappable fields instead */
 input[type='number']::-webkit-outer-spin-button,
 input[type='number']::-webkit-inner-spin-button {
