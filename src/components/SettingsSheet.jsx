@@ -3,7 +3,7 @@ import { KeyRound, LogOut } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { CURRENCIES } from '../lib/format'
 import { Sheet } from './Sheet'
-import { Alert, Button, Field, NumberInput, TextInput } from './ui'
+import { Alert, Button, Field, NumberInput, Select, TextInput } from './ui'
 
 const OCCUPATIONS = [
   'Student — OJT / Internship',
@@ -16,9 +16,6 @@ const OCCUPATIONS = [
   'Between jobs',
   'Other',
 ]
-
-const selectClass =
-  'w-full appearance-none rounded-xl border border-line bg-surface-2 px-3.5 py-3 text-ink focus:border-brand focus:bg-surface'
 
 /** Account-level settings. Hour and budget targets live on each job instead. */
 export function SettingsSheet({
@@ -110,31 +107,29 @@ export function SettingsSheet({
         </Field>
 
         <Field label="What do you do?">
-          <select
+          <Select
             value={occupation}
             onChange={(e) => setOccupation(e.target.value)}
-            className={selectClass}
           >
             {OCCUPATIONS.map((o) => (
               <option key={o} value={o}>
                 {o}
               </option>
             ))}
-          </select>
+          </Select>
         </Field>
 
         <Field label="Currency" hint="Applies everywhere money is shown.">
-          <select
+          <Select
             value={currency}
             onChange={(e) => setCurrency(e.target.value)}
-            className={selectClass}
           >
             {CURRENCIES.map((c) => (
               <option key={c.code} value={c.code}>
                 {c.symbol} — {c.label} ({c.code})
               </option>
             ))}
-          </select>
+          </Select>
         </Field>
 
         <Alert>{error}</Alert>
