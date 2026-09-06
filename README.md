@@ -40,6 +40,10 @@ native app, offline shell included.
 
 - Each day holds a list of what you bought — label, category (transport, food,
   supplies, fees, other) and amount — not a single lump figure.
+- An optional **daily budget** per job. Set a cap and the log sheet checks it
+  while you're typing an expense, the budget card shows where today stands, and
+  any day that went over is flagged in the activity feed. Leave it at 0 and
+  nothing about it appears.
 - A monthly budget meter, a spend-by-category breakdown, and the number the
   hero card is really about: what the placement has cost you out of pocket, or
   your net if the job pays.
@@ -108,21 +112,8 @@ data. Without these the app shows a setup card instead of a blank screen.
 
 Run [`supabase/schema.sql`](supabase/schema.sql) in the Supabase SQL editor. It
 creates the four tables, their RLS policies, and the trigger that gives every
-new auth user a profile row. It's idempotent, so re-running it is safe.
-
-> **Note:** the file is currently behind the live database by three columns the
-> app uses. Until it's updated, run this after it:
->
-> ```sql
-> alter table public.jobs
->   add column if not exists deadline date,
->   add column if not exists hourly_rate numeric(10,2) not null default 0
->     check (hourly_rate >= 0);
->
-> alter table public.expenses
->   add column if not exists category text not null default 'other'
->     check (category in ('transport','food','supplies','fees','other'));
-> ```
+new auth user a profile row. It's idempotent, so re-running it is safe — and
+re-running it is also how an existing database picks up columns added later.
 
 **3. Auth email templates**
 
@@ -152,7 +143,7 @@ read or write their own rows.
 | Table | Holds |
 |---|---|
 | `profiles` | One row per auth user: name, age, occupation, currency, onboarding state. Created automatically by a trigger on signup. |
-| `jobs` | A placement or job: name, target hours, deadline, monthly budget, hourly rate. A user can have several. |
+| `jobs` | A placement or job: name, target hours, deadline, monthly budget, daily budget, hourly rate. A user can have several. |
 | `daily_logs` | One logged day: date, time in/out, break, hours worked, day total spent, note. Belongs to a job. |
 | `expenses` | The individual things bought on a day: label, category, amount. Belongs to a log. |
 

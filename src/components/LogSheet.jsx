@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Clock, NotebookPen, Plus, Wallet, X } from 'lucide-react'
+import { AlertTriangle, Clock, NotebookPen, Plus, Wallet, X } from 'lucide-react'
 import {
   EXPENSE_CATEGORIES,
   computeHours,
@@ -58,6 +58,7 @@ export function LogSheet({
   log,
   initialDate,
   jobName,
+  dailyBudget = 0,
   expenses = [],
   jobLogs = [],
   onOpenExisting,
@@ -117,6 +118,18 @@ export function LogSheet({
     () => items.reduce((sum, i) => sum + (Number(i.amount) || 0), 0),
     [items],
   )
+
+  // The cap belongs to the day, not to this form: a second shift logged on the
+  // same date spends from the same allowance, so its total counts here too.
+  const otherSpentThatDay = useMemo(
+    () =>
+      jobLogs
+        .filter((l) => l.entry_date === date && l.id !== log?.id)
+        .reduce((sum, l) => sum + Number(l.amount_spent), 0),
+    [jobLogs, date, log?.id],
+  )
+  const dayTotal = total + otherSpentThatDay
+  const overBy = dailyBudget > 0 ? dayTotal - dailyBudget : 0
 
   // What this shift is worth right now, versus what it'll finish on. The
   // stored value is the planned total; the dashboard counts elapsed.
@@ -343,6 +356,30 @@ export function LogSheet({
             </span>
           }
         >
+          {/* The daily cap, checked as you type. This is the one moment it can
+              still change a decision — by the dashboard it is already spent. */}
+          {dailyBudget > 0 ? (
+            <p
+              className={`mb-2 flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-[12px] font-semibold ${
+                overBy > 0 ? 'bg-over-soft text-over' : 'bg-surface-2 text-muted'
+              }`}
+            >
+              {overBy > 0 ? <AlertTriangle size={12} /> : <Wallet size={12} />}
+              <span>
+                {overBy > 0
+                  ? `${formatMoney(overBy)} over the ${formatMoney(dailyBudget, {
+                      compact: true,
+                    })} daily budget`
+                  : `${formatMoney(dayTotal)} of ${formatMoney(dailyBudget, {
+                      compact: true,
+                    })} for this day`}
+                {otherSpentThatDay > 0
+                  ? ` · includes ${formatMoney(otherSpentThatDay)} from another entry`
+                  : ''}
+              </span>
+            </p>
+          ) : null}
+
           {/* One expense per block, two rows deep.
               All four controls used to share a single row: a fixed 96px
               category, a fixed 96px amount and a remove button left the label

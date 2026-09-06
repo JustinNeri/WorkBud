@@ -187,6 +187,11 @@ export function Dashboard({ user }) {
               remaining={stats.budgetRemaining}
               percent={stats.budgetPct}
               over={stats.overBudget}
+              dailyBudget={stats.dailyBudget}
+              spentToday={stats.spentToday}
+              dailyRemaining={stats.dailyRemaining}
+              overToday={stats.overToday}
+              daysOverThisMonth={stats.daysOverThisMonth}
             />
 
             <CategoryBreakdown totals={stats.categoryTotals} />
@@ -224,6 +229,7 @@ export function Dashboard({ user }) {
                 expensesFor={expensesFor}
                 deletingId={deletingId}
                 todayISO={todayISO()}
+                overDates={stats.overDates}
                 onEdit={(log) => setLogSheet({ log })}
                 onDelete={(log) => {
                   setDeleteError(null)
@@ -255,6 +261,7 @@ export function Dashboard({ user }) {
           log={logSheet.log}
           initialDate={logSheet.date}
           jobName={activeJob?.name}
+          dailyBudget={stats.dailyBudget}
           expenses={logSheet.log ? expensesFor(logSheet.log.id) : []}
           jobLogs={logs}
           onOpenExisting={(existing) => setLogSheet({ log: existing })}
