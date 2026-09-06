@@ -154,6 +154,12 @@ body {
   text-rendering: optimizeLegibility;
   /* kill the rubber-band flash behind a standalone PWA */
   overscroll-behavior-y: none;
+  /* Nothing in this app is meant to be panned sideways, so a card or a field
+     that measures a few pixels too wide should be clipped, not turn the whole
+     page into a horizontal scroller. clip rather than hidden: hidden here
+     would make the body its own scroll container and break the body-level
+     scroll lock a sheet applies while it is open. */
+  overflow-x: clip;
 }
 
 /* No blue flash / long-press menu on taps */
