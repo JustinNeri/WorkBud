@@ -43,6 +43,9 @@
 
   --wb-shadow: 0 1px 2px rgb(16 18 32 / 0.05), 0 10px 26px -14px rgb(16 18 32 / 0.18);
   --wb-shadow-hero: 0 10px 30px -12px rgb(79 70 229 / 0.5);
+  /* A card floating on the gradient needs a deeper, cooler shadow than one
+     sitting on the canvas, or it looks pasted on rather than lifted. */
+  --wb-shadow-float: 0 2px 6px rgb(12 8 40 / 0.16), 0 28px 56px -24px rgb(12 8 40 / 0.55);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -76,6 +79,7 @@
 
     --wb-shadow: 0 1px 2px rgb(0 0 0 / 0.5), 0 10px 26px -14px rgb(0 0 0 / 0.8);
     --wb-shadow-hero: 0 10px 30px -14px rgb(67 56 202 / 0.7);
+    --wb-shadow-float: 0 2px 6px rgb(0 0 0 / 0.5), 0 28px 56px -24px rgb(0 0 0 / 0.85);
   }
 }
 
@@ -108,6 +112,7 @@
 
   --shadow-card: var(--wb-shadow);
   --shadow-hero: var(--wb-shadow-hero);
+  --shadow-float: var(--wb-shadow-float);
 
   --font-sans:
     -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto,

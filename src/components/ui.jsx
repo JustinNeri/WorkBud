@@ -16,8 +16,23 @@ export function Field({ label, hint, children }) {
   )
 }
 
-export function TextInput({ className = '', ...props }) {
-  return <input className={`${baseField} ${className}`} {...props} />
+/**
+ * `icon` puts a leading glyph inside the box. On the auth screens it does real
+ * work: at a glance the fields say "email" and "password" before the labels
+ * are read, which is most of what stops a login form looking like a generic
+ * pair of grey rectangles.
+ */
+export function TextInput({ icon: Icon, className = '', ...props }) {
+  if (!Icon) return <input className={`${baseField} ${className}`} {...props} />
+
+  return (
+    <div className="relative">
+      <span className="pointer-events-none absolute inset-y-0 left-3.5 flex items-center text-faint">
+        <Icon size={17} />
+      </span>
+      <input className={`${baseField} pl-11 ${className}`} {...props} />
+    </div>
+  )
 }
 
 /**
@@ -27,14 +42,19 @@ export function TextInput({ className = '', ...props }) {
  * The toggle is type="button" on purpose: inside a form, a bare <button>
  * defaults to submit, so tapping the eye would try to sign the user in.
  */
-export function PasswordInput({ className = '', ...props }) {
+export function PasswordInput({ icon: Icon, className = '', ...props }) {
   const [visible, setVisible] = useState(false)
 
   return (
     <div className="relative">
+      {Icon ? (
+        <span className="pointer-events-none absolute inset-y-0 left-3.5 flex items-center text-faint">
+          <Icon size={17} />
+        </span>
+      ) : null}
       <input
         type={visible ? 'text' : 'password'}
-        className={`${baseField} pr-12 ${className}`}
+        className={`${baseField} pr-12 ${Icon ? 'pl-11' : ''} ${className}`}
         {...props}
       />
       <button

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { ArrowRight, Briefcase, Check, UserRound } from 'lucide-react'
 import { supabase, errorMessage } from '../lib/supabase'
 import { CURRENCIES, currencySymbol } from '../lib/format'
-import { SignupSteps } from './SignupSteps'
+import { AuthShell } from './AuthShell'
 import { Alert, Button, Field, NumberInput, TextInput } from './ui'
 
 /**
@@ -115,32 +115,24 @@ export function Onboarding({ userId, onDone }) {
   }
 
   return (
-    <div className="flex min-h-dvh flex-col justify-center px-6 py-12">
-      <div className="mx-auto w-full max-w-sm">
-        {/* Stage 3 of the signup flow, with this screen's own two parts
-            called out underneath so the last stretch has a visible end. */}
-        <div className="mb-7">
-          <SignupSteps current={3} />
-          <p className="mt-3 text-[12px] font-medium text-faint">
-            Step {step} of 2 — {step === 1 ? 'about you' : 'your first job'}
-          </p>
-        </div>
-
-        {step === 1 ? (
+    <AuthShell
+      title={step === 1 ? 'Tell us about you' : 'Your first job'}
+      subtitle={
+        step === 1
+          ? 'So WorkBud can label things properly.'
+          : 'Each job tracks its own hours and budget. You can add more later.'
+      }
+      step={3}
+      onBack={step === 2 ? () => setStep(1) : undefined}
+      footer={<>Step {step} of 2 — {step === 1 ? 'about you' : 'your first job'}</>}
+    >
+      {step === 1 ? (
           <form onSubmit={goToStep2} className="flex flex-col gap-4">
-            <header className="mb-2">
-              <span className="mb-3 flex size-11 items-center justify-center rounded-2xl bg-brand-soft text-brand">
-                <UserRound size={22} />
-              </span>
-              <h1 className="text-[24px] font-bold tracking-tight">
-                Tell us about you
-              </h1>
-              <p className="mt-1 text-[14.5px] text-muted">
-                So WorkBud can label things properly.
-              </p>
-            </header>
+            <span className="mb-1 flex size-11 items-center justify-center rounded-2xl bg-brand-soft text-brand">
+              <UserRound size={22} />
+            </span>
 
-            <div className="grid grid-cols-[1fr_auto] gap-3">
+            <div className="grid grid-cols-[1fr_5rem] gap-3">
               <Field label="First name">
                 <TextInput
                   value={firstName}
@@ -156,7 +148,7 @@ export function Onboarding({ userId, onDone }) {
                   onChange={(e) => setMiddleInitial(e.target.value)}
                   placeholder="S"
                   maxLength={4}
-                  className="w-16 text-center"
+                  className="text-center"
                 />
               </Field>
             </div>
@@ -205,17 +197,9 @@ export function Onboarding({ userId, onDone }) {
           </form>
         ) : (
           <form onSubmit={handleFinish} className="flex flex-col gap-4">
-            <header className="mb-2">
-              <span className="mb-3 flex size-11 items-center justify-center rounded-2xl bg-brand-soft text-brand">
-                <Briefcase size={22} />
-              </span>
-              <h1 className="text-[24px] font-bold tracking-tight">
-                Your first job
-              </h1>
-              <p className="mt-1 text-[14.5px] text-muted">
-                Each job tracks its own hours and budget. You can add more later.
-              </p>
-            </header>
+            <span className="mb-1 flex size-11 items-center justify-center rounded-2xl bg-brand-soft text-brand">
+              <Briefcase size={22} />
+            </span>
 
             <Field label="Job name">
               <TextInput
@@ -269,16 +253,8 @@ export function Onboarding({ userId, onDone }) {
               <Check size={17} />
               Start tracking
             </Button>
-            <button
-              type="button"
-              onClick={() => setStep(1)}
-              className="text-[14px] font-medium text-muted"
-            >
-              Back
-            </button>
           </form>
         )}
-      </div>
-    </div>
+    </AuthShell>
   )
 }
