@@ -141,6 +141,9 @@ export function Button({
     primary: 'bg-hero text-white shadow-hero active:brightness-95',
     secondary: 'bg-surface-2 text-ink active:brightness-95',
     danger: 'bg-over text-white active:brightness-90',
+    // Destructive, but not shouting: a filled red button at the foot of every
+    // edit form is louder than the action deserves before it's asked for.
+    dangerGhost: 'text-over active:bg-over-soft',
     ghost: 'text-muted active:bg-surface-2',
   }
 

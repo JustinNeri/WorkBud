@@ -5,12 +5,16 @@ import { Sheet } from './Sheet'
 import { Alert, Button, Field, FormSection, NumberInput, TextInput } from './ui'
 
 /**
- * Create or edit one job. `job` null → new. Deleting is offered only when
- * editing, and only when it isn't the user's last job.
+ * Create or edit one job. `job` null → new.
+ *
+ * Deleting lives here, behind a two-step confirm — including for a user's last
+ * job. Refusing that one left people who wanted to start over with a job they
+ * could rename but never remove; the dashboard already has an empty state, so
+ * there is nothing to protect them from.
  */
 const FORM_ID = 'wb-job-form'
 
-export function JobSheet({ open, job, canDelete, onClose, onSubmit, onDelete }) {
+export function JobSheet({ open, job, lastJob, onClose, onSubmit, onDelete }) {
   const editing = Boolean(job)
 
   const [name, setName] = useState(job?.name ?? '')
@@ -151,7 +155,7 @@ export function JobSheet({ open, job, canDelete, onClose, onSubmit, onDelete }) 
           </div>
         </FormSection>
 
-        {editing && canDelete ? (
+        {editing ? (
           <div className="border-t border-line pt-4">
             {confirmingDelete ? (
               <div className="flex flex-col gap-2">
@@ -159,8 +163,19 @@ export function JobSheet({ open, job, canDelete, onClose, onSubmit, onDelete }) 
                   Deleting <span className="font-semibold text-ink">{job.name}</span>{' '}
                   also deletes every entry logged against it. This can&apos;t be
                   undone.
+                  {lastJob
+                    ? ' It is your only job, so the dashboard stays empty until you add another.'
+                    : ''}
                 </p>
-                <Button variant="danger" busy={busy} onClick={handleDelete}>
+                {/* type="button": a bare <button> inside a form defaults to
+                    submit, so confirming a delete also fired a save of the job
+                    being deleted. */}
+                <Button
+                  variant="danger"
+                  type="button"
+                  busy={busy}
+                  onClick={handleDelete}
+                >
                   Delete job and its entries
                 </Button>
                 <Button
@@ -173,7 +188,7 @@ export function JobSheet({ open, job, canDelete, onClose, onSubmit, onDelete }) 
               </div>
             ) : (
               <Button
-                variant="ghost"
+                variant="dangerGhost"
                 type="button"
                 onClick={() => setConfirmingDelete(true)}
               >
