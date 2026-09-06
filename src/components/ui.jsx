@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Check, Eye, EyeOff, Loader2 } from 'lucide-react'
+import { Check, ChevronDown, Eye, EyeOff, Loader2 } from 'lucide-react'
 
 const baseField =
   'w-full rounded-2xl border border-line bg-surface-2 px-4 py-3.5 text-ink placeholder:text-faint transition-colors focus:border-brand focus:bg-surface'
@@ -88,6 +88,30 @@ export function NumberInput({ adornment, className = '', ...props }) {
         className={`${baseField} ${adornment ? 'pl-8' : ''} ${className}`}
         {...props}
       />
+    </div>
+  )
+}
+
+/**
+ * Native <select> with the platform arrow drawn back on.
+ *
+ * appearance-none is needed to make the box match the other fields, but it
+ * also strips the arrow — leaving a control that looks like a text input and
+ * gives no hint it opens a list. The chevron is decorative and pointer-events
+ * none, so the whole box still opens the native picker.
+ */
+export function Select({ className = '', children, ...props }) {
+  return (
+    <div className="relative">
+      <select
+        className={`${baseField} appearance-none pr-10 ${className}`}
+        {...props}
+      >
+        {children}
+      </select>
+      <span className="pointer-events-none absolute inset-y-0 right-3.5 flex items-center text-faint">
+        <ChevronDown size={16} />
+      </span>
     </div>
   )
 }
