@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import { Trash2 } from 'lucide-react'
+import { Clock, Trash2, Wallet } from 'lucide-react'
 import { currencySymbol } from '../lib/format'
 import { Sheet } from './Sheet'
-import { Alert, Button, Field, NumberInput, TextInput } from './ui'
+import { Alert, Button, Field, FormSection, NumberInput, TextInput } from './ui'
 
 /**
  * Create or edit one job. `job` null → new. Deleting is offered only when
@@ -101,48 +101,55 @@ export function JobSheet({ open, job, canDelete, onClose, onSubmit, onDelete }) 
           />
         </Field>
 
-        <div className="grid grid-cols-2 gap-3">
-          <Field label="Target hours">
-            <NumberInput
-              value={hours}
-              onChange={(e) => setHours(e.target.value)}
-              placeholder="480"
-              min="0"
-              step="1"
-            />
-          </Field>
-          <Field label="Monthly budget">
-            <NumberInput
-              adornment={currencySymbol()}
-              value={budget}
-              onChange={(e) => setBudget(e.target.value)}
-              placeholder="3000"
-              min="0"
-              step="1"
-            />
-          </Field>
-        </div>
+        <FormSection label="Hours target" icon={Clock} tone="brand">
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Target hours">
+              <NumberInput
+                value={hours}
+                onChange={(e) => setHours(e.target.value)}
+                placeholder="480"
+                min="0"
+                step="1"
+              />
+            </Field>
+            <Field label="Deadline">
+              <TextInput
+                type="date"
+                value={deadline}
+                onChange={(e) => setDeadline(e.target.value)}
+              />
+            </Field>
+          </div>
+          <p className="mt-1.5 text-xs text-faint">
+            The deadline is optional — it powers the “hours per day to finish”
+            figure.
+          </p>
+        </FormSection>
 
-        <Field
-          label="Deadline"
-          hint="Optional — powers the “hours per day to finish” figure."
-        >
-          <TextInput
-            type="date"
-            value={deadline}
-            onChange={(e) => setDeadline(e.target.value)}
-          />
-        </Field>
+        <FormSection label="Money" icon={Wallet} tone="money">
+          <div className="flex flex-col gap-3">
+            <Field label="Monthly budget">
+              <NumberInput
+                adornment={currencySymbol()}
+                value={budget}
+                onChange={(e) => setBudget(e.target.value)}
+                placeholder="3000"
+                min="0"
+                step="1"
+              />
+            </Field>
 
-        <Field label="Hourly rate" hint="Leave at 0 for an unpaid placement.">
-          <NumberInput
-            adornment={currencySymbol()}
-            value={rate}
-            onChange={(e) => setRate(e.target.value)}
-            min="0"
-            step="0.01"
-          />
-        </Field>
+            <Field label="Hourly rate" hint="Leave at 0 for an unpaid placement.">
+              <NumberInput
+                adornment={currencySymbol()}
+                value={rate}
+                onChange={(e) => setRate(e.target.value)}
+                min="0"
+                step="0.01"
+              />
+            </Field>
+          </div>
+        </FormSection>
 
         {editing && canDelete ? (
           <div className="border-t border-line pt-4">

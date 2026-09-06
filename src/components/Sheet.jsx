@@ -71,7 +71,7 @@ export function Sheet({ open, onClose, title, footer, children }) {
 
         <div
           className={`no-scrollbar overflow-y-auto overscroll-contain px-5 pt-4 ${
-            footer ? 'pb-4' : 'pb-[max(1.25rem,env(safe-area-inset-bottom))]'
+            footer ? 'pb-7' : 'pb-[max(1.25rem,env(safe-area-inset-bottom))]'
           }`}
         >
           {children}
@@ -81,7 +81,13 @@ export function Sheet({ open, onClose, title, footer, children }) {
             the submit button sat below the fold, so committing an entry meant
             scrolling past every field to find it. */}
         {footer ? (
-          <div className="shrink-0 border-t border-line bg-surface px-5 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <div className="relative shrink-0 border-t border-line bg-surface px-5 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+            {/* Fade the last of the scroll area into the bar, so content that
+                continues below reads as continuing rather than as cut off. */}
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-x-0 -top-7 h-7 bg-gradient-to-t from-surface to-transparent"
+            />
             {footer}
           </div>
         ) : null}
