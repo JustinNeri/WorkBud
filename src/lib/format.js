@@ -49,6 +49,40 @@ export function formatHours(value) {
   return `${Number.isInteger(n) ? n : n.toFixed(2).replace(/0$/, '')}h`
 }
 
+/**
+ * What the user does, asked at onboarding and changeable in settings.
+ *
+ * The standard employment-status taxonomy (intern/apprentice, part-time,
+ * full-time, self-employed, contractor, unemployed) with the OJT case called
+ * out first, since that's the app's primary user. One list for both screens,
+ * because the dashboard reads these strings back: a role with no end date gets
+ * a different card from a placement counting down.
+ */
+export const OCCUPATIONS = [
+  'Student — OJT / Internship',
+  'Student — not working',
+  'Employed — full-time',
+  'Employed — part-time',
+  'Freelancer / Contractor',
+  'Business owner / Self-employed',
+  'Apprentice / Trainee',
+  'Between jobs',
+  'Other',
+]
+
+// Employment continues until someone ends it; a placement finishes on a date
+// known up front. Only the second kind has a deadline to count down to, so the
+// first is never nagged to set one.
+const ONGOING = new Set([
+  'Employed — full-time',
+  'Employed — part-time',
+  'Freelancer / Contractor',
+  'Business owner / Self-employed',
+])
+
+/** True for roles with no natural end date. */
+export const isOngoingRole = (occupation) => ONGOING.has(occupation ?? '')
+
 /** Fixed vocabulary so spending can be grouped; the label carries the detail. */
 export const EXPENSE_CATEGORIES = [
   { value: 'transport', label: 'Transport' },
@@ -180,6 +214,18 @@ export const todayISO = () => toISODate()
 /** First day of `date`'s calendar month, as YYYY-MM-DD. */
 export function monthStartISO(date = new Date()) {
   return toISODate(new Date(date.getFullYear(), date.getMonth(), 1))
+}
+
+/** Last day of `date`'s calendar month, as YYYY-MM-DD. Day 0 of the next month. */
+export function monthEndISO(date = new Date()) {
+  return toISODate(new Date(date.getFullYear(), date.getMonth() + 1, 0))
+}
+
+/** Local calendar date `days` before today, as YYYY-MM-DD. */
+export function daysAgoISO(days, from = new Date()) {
+  const date = new Date(from)
+  date.setDate(date.getDate() - days)
+  return toISODate(date)
 }
 
 /** YYYY-MM-DD → local Date (never through Date.parse, which assumes UTC). */
