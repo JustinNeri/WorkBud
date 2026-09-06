@@ -270,7 +270,7 @@ export function Dashboard({ user }) {
         <JobSheet
           open
           job={jobSheet.job}
-          canDelete={jobs.length > 1}
+          lastJob={jobs.length === 1}
           onClose={() => setJobSheet(null)}
           onSubmit={(values) =>
             jobSheet.job ? updateJob(jobSheet.job.id, values) : addJob(values)

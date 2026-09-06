@@ -242,21 +242,31 @@ export function useWorkbud(userId) {
     return {}
   }, [])
 
-  const deleteJob = useCallback(async (id) => {
-    const { error: err } = await supabase.from('jobs').delete().eq('id', id)
-    if (err) return { error: errorMessage(err) }
-    // The FK cascades in the database; mirror that locally.
-    setJobs((prev) => prev.filter((j) => j.id !== id))
-    setAllExpenses((prev) => {
-      const gone = new Set(
-        allLogs.filter((l) => l.job_id === id).map((l) => l.id),
+  const deleteJob = useCallback(
+    async (id) => {
+      const { error: err } = await supabase.from('jobs').delete().eq('id', id)
+      if (err) return { error: errorMessage(err) }
+
+      const remaining = jobs.filter((j) => j.id !== id)
+      // The FK cascades in the database; mirror that locally.
+      setJobs(remaining)
+      setAllExpenses((prev) => {
+        const gone = new Set(
+          allLogs.filter((l) => l.job_id === id).map((l) => l.id),
+        )
+        return prev.filter((e) => !gone.has(e.log_id))
+      })
+      setAllLogs((prev) => prev.filter((l) => l.job_id !== id))
+      // Land on a neighbouring job. Clearing the tab outright showed the
+      // "No job yet" empty state even when other jobs were still listed
+      // above it, which read as though the delete had taken everything.
+      setActiveJobId((current) =>
+        current === id ? (remaining[0]?.id ?? null) : current,
       )
-      return prev.filter((e) => !gone.has(e.log_id))
-    })
-    setAllLogs((prev) => prev.filter((l) => l.job_id !== id))
-    setActiveJobId((current) => (current === id ? null : current))
-    return {}
-  }, [allLogs])
+      return {}
+    },
+    [allLogs, jobs],
+  )
 
   const saveProfile = useCallback(
     async (values) => {
