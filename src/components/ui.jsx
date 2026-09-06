@@ -2,12 +2,12 @@ import { useState } from 'react'
 import { Check, ChevronDown, Eye, EyeOff, Loader2 } from 'lucide-react'
 
 const baseField =
-  'w-full rounded-2xl border border-line bg-surface-2 px-4 py-3.5 text-ink placeholder:text-faint transition-colors focus:border-brand focus:bg-surface'
+  'w-full rounded-2xl border border-line bg-surface-2 px-4 py-3 text-ink placeholder:text-faint transition-colors focus:border-brand focus:bg-surface'
 
 export function Field({ label, hint, children }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-[13px] font-medium text-muted">
+      <span className="mb-1 block text-[13px] font-medium text-muted">
         {label}
       </span>
       {children}
@@ -255,5 +255,39 @@ export function SectionHeading({ tone = 'brand', children, action }) {
       <span className="h-px flex-1 bg-line" />
       {action}
     </div>
+  )
+}
+
+/**
+ * A labelled band inside a long form, separated by a rule rather than boxed.
+ *
+ * The log sheet had grown to eight standalone fields in a row, which on a
+ * phone is a wall of identical rounded rectangles with no way in. Grouping
+ * them under quiet headings gives the form structure without nesting another
+ * container around controls that are already containers.
+ */
+export function FormSection({
+  label,
+  icon: Icon,
+  tone = 'neutral',
+  action,
+  first = false,
+  children,
+}) {
+  // Same two hues the dashboard sorts its cards by, so a band about money in
+  // a form and a card about money on the dashboard are recognisably the pair.
+  const tones = { brand: 'text-brand', money: 'text-money', neutral: 'text-faint' }
+
+  return (
+    <section className={first ? '' : 'border-t border-line pt-4'}>
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <h3 className="flex items-center gap-1.5 text-[11.5px] font-bold uppercase tracking-[0.09em] text-faint">
+          {Icon ? <Icon size={13} className={tones[tone]} /> : null}
+          {label}
+        </h3>
+        {action}
+      </div>
+      {children}
+    </section>
   )
 }
