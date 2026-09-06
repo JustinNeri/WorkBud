@@ -1,21 +1,9 @@
 import { useState } from 'react'
 import { KeyRound, LogOut, ShieldCheck, UserRound, Wallet } from 'lucide-react'
 import { supabase } from '../lib/supabase'
-import { CURRENCIES } from '../lib/format'
+import { CURRENCIES, OCCUPATIONS } from '../lib/format'
 import { Sheet } from './Sheet'
 import { Alert, Button, Field, FormSection, NumberInput, Select, TextInput } from './ui'
-
-const OCCUPATIONS = [
-  'Student — OJT / Internship',
-  'Student — not working',
-  'Employed — full-time',
-  'Employed — part-time',
-  'Freelancer / Contractor',
-  'Business owner / Self-employed',
-  'Apprentice / Trainee',
-  'Between jobs',
-  'Other',
-]
 
 const FORM_ID = 'wb-settings-form'
 

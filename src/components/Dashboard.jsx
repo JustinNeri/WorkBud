@@ -1,7 +1,7 @@
 import { useState } from 'react'
-import { Loader2, Pencil, Plus } from 'lucide-react'
+import { CalendarPlus, Loader2, Pencil, Plus } from 'lucide-react'
 import { useWorkbud } from '../hooks/useWorkbud'
-import { todayISO } from '../lib/format'
+import { daysAgoISO, isOngoingRole, todayISO } from '../lib/format'
 import { ActivityFeed } from './ActivityFeed'
 import { BudgetCard } from './BudgetCard'
 import { CategoryBreakdown } from './CategoryBreakdown'
@@ -43,7 +43,9 @@ export function Dashboard({ user }) {
   } = useWorkbud(user.id)
 
   // Each sheet is mounted only while open so its form state starts fresh.
-  const [logSheet, setLogSheet] = useState(null) // null | { log: log|null }
+  // null | { log } to edit, or { log: null, date } to add — date seeds the
+  // form, so "Add past day" opens on yesterday rather than today.
+  const [logSheet, setLogSheet] = useState(null)
   const [jobSheet, setJobSheet] = useState(null) // null | { job: job|null }
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [exportOpen, setExportOpen] = useState(false)
@@ -157,6 +159,12 @@ export function Dashboard({ user }) {
               behind={stats.behind}
               deadlinePassed={stats.deadlinePassed}
               complete={stats.hoursComplete}
+              ongoing={isOngoingRole(profile?.occupation)}
+              entryCount={stats.entryCount}
+              monthHours={stats.monthHours}
+              monthDaysWorked={stats.monthDaysWorked}
+              monthEarned={stats.monthEarned}
+              projectedMonthHours={stats.projectedMonthHours}
               hourlyRate={stats.hourlyRate}
               earned={stats.earned}
               spentAllTime={stats.spentAllTime}
@@ -185,11 +193,25 @@ export function Dashboard({ user }) {
             <SectionHeading
               tone="neutral"
               action={
-                logs.length > 0 ? (
-                  <span className="shrink-0 text-[12px] font-medium text-faint">
-                    {logs.length} {logs.length === 1 ? 'entry' : 'entries'}
-                  </span>
-                ) : null
+                /* Backfilling is the whole reason someone can pick a date in
+                   the sheet at all — people find this app partway through a
+                   placement. The button says so, instead of leaving it to be
+                   discovered by opening the date picker. */
+                <>
+                  {logs.length > 0 ? (
+                    <span className="shrink-0 text-[12px] font-medium text-faint">
+                      {logs.length}
+                    </span>
+                  ) : null}
+                  <button
+                    type="button"
+                    onClick={() => setLogSheet({ log: null, date: daysAgoISO(1) })}
+                    className="inline-flex shrink-0 items-center gap-1 text-[12px] font-semibold text-brand"
+                  >
+                    <CalendarPlus size={12} />
+                    Add past day
+                  </button>
+                </>
               }
             >
               Activity
@@ -227,9 +249,10 @@ export function Dashboard({ user }) {
         <LogSheet
           // Remount when the target changes — the form seeds its state from
           // props once, so switching entries in place would keep the old values.
-          key={logSheet.log?.id ?? 'new'}
+          key={logSheet.log?.id ?? logSheet.date ?? 'new'}
           open
           log={logSheet.log}
+          initialDate={logSheet.date}
           jobName={activeJob?.name}
           expenses={logSheet.log ? expensesFor(logSheet.log.id) : []}
           jobLogs={logs}
