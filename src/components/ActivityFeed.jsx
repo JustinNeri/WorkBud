@@ -1,4 +1,11 @@
-import { CalendarDays, ChevronRight, Clock, Trash2, Wallet } from 'lucide-react'
+import {
+  AlertTriangle,
+  CalendarDays,
+  ChevronRight,
+  Clock,
+  Trash2,
+  Wallet,
+} from 'lucide-react'
 import {
   effectiveHours,
   formatEntryDate,
@@ -26,7 +33,7 @@ function DateBadge({ iso, today }) {
   )
 }
 
-function LogRow({ log, items, onEdit, onDelete, deleting, isToday }) {
+function LogRow({ log, items, onEdit, onDelete, deleting, isToday, overBudget }) {
   const spent = Number(log.amount_spent)
   const hoursSoFar = effectiveHours(log)
   const running = isInProgress(log)
@@ -69,13 +76,20 @@ function LogRow({ log, items, onEdit, onDelete, deleting, isToday }) {
                 <span className="font-normal opacity-70">so far</span>
               ) : null}
             </span>
+            {/* A day that broke the daily cap wears it here, where the day is
+                being scanned — the budget card only reports today. */}
             <span
               className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[12px] font-semibold ${
-                spent > 0 ? 'bg-money-soft text-money' : 'bg-surface-2 text-faint'
+                overBudget
+                  ? 'bg-over-soft text-over'
+                  : spent > 0
+                    ? 'bg-money-soft text-money'
+                    : 'bg-surface-2 text-faint'
               }`}
             >
-              <Wallet size={11} />
+              {overBudget ? <AlertTriangle size={11} /> : <Wallet size={11} />}
               {formatMoney(spent)}
+              {overBudget ? <span className="font-normal">over</span> : null}
             </span>
           </div>
 
@@ -116,6 +130,7 @@ export function ActivityFeed({
   onDelete,
   deletingId,
   todayISO,
+  overDates,
 }) {
   // The heading and the entry count live in the dashboard's SectionHeading, so
   // this feed lines up with the Hours and Money groups above it.
@@ -143,6 +158,7 @@ export function ActivityFeed({
               onDelete={onDelete}
               deleting={deletingId === log.id}
               isToday={log.entry_date === todayISO}
+              overBudget={Boolean(overDates?.has(log.entry_date))}
             />
           ))}
         </ul>

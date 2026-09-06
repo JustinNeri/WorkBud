@@ -39,10 +39,23 @@ create table if not exists public.jobs (
   name           text           not null check (length(trim(name)) between 1 and 60),
   target_hours   numeric(8, 2)  not null default 480 check (target_hours   >= 0),
   monthly_budget numeric(12, 2) not null default 300 check (monthly_budget >= 0),
+  -- 0 means no cap, the same way hourly_rate 0 means unpaid.
+  daily_budget   numeric(12, 2) not null default 0   check (daily_budget   >= 0),
+  deadline       date,
+  hourly_rate    numeric(10, 2) not null default 0   check (hourly_rate    >= 0),
   sort_order     integer        not null default 0,
   created_at     timestamptz    not null default now(),
   updated_at     timestamptz    not null default now()
 );
+
+-- Added after the table shipped; `create table if not exists` above skips an
+-- existing table entirely, so these have to be spelled out separately.
+alter table public.jobs
+  add column if not exists daily_budget numeric(12, 2) not null default 0
+    check (daily_budget >= 0),
+  add column if not exists deadline date,
+  add column if not exists hourly_rate numeric(10, 2) not null default 0
+    check (hourly_rate >= 0);
 
 create index if not exists jobs_user_idx on public.jobs (user_id, sort_order, created_at);
 
@@ -79,9 +92,15 @@ create table if not exists public.expenses (
   log_id     uuid           not null references public.daily_logs (id) on delete cascade,
   user_id    uuid           not null references auth.users (id) on delete cascade,
   label      text           check (label is null or length(label) <= 120),
+  category   text           not null default 'other'
+    check (category in ('transport', 'food', 'supplies', 'fees', 'other')),
   amount     numeric(12, 2) not null default 0 check (amount >= 0),
   created_at timestamptz    not null default now()
 );
+
+alter table public.expenses
+  add column if not exists category text not null default 'other'
+    check (category in ('transport', 'food', 'supplies', 'fees', 'other'));
 
 create index if not exists expenses_log_idx on public.expenses (log_id, created_at);
 
