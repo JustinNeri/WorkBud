@@ -10,6 +10,7 @@ import {
 import { supabase, errorMessage } from '../lib/supabase'
 import { evaluatePassword } from '../lib/password'
 import { ForgotPassword } from './ForgotPassword'
+import { Logo } from './Logo'
 import { OtpStep } from './OtpStep'
 import { SignupSteps } from './SignupSteps'
 import { Alert, Button, Field, PasswordInput, PasswordMeter, TextInput } from './ui'
@@ -208,9 +209,12 @@ export function AuthScreen() {
             {isSignUp ? 'Free — about a minute' : 'OJT + spending, together'}
           </span>
 
-          <h1 className="text-[34px] font-bold leading-[1.1] tracking-tight">
-            WorkBud
-          </h1>
+          <div className="flex items-center gap-3">
+            <Logo size={42} tone="hero" />
+            <h1 className="text-[34px] font-bold leading-[1.1] tracking-tight">
+              WorkBud
+            </h1>
+          </div>
           <p className="mt-2 max-w-[19rem] text-[15px] leading-snug opacity-85">
             {isSignUp
               ? 'Set up once, then every shift, receipt and remaining hour lands in one place.'

@@ -17,7 +17,9 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="WorkBud" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <link rel="icon" type="image/png" href="/favicon.png" />
+    <!-- SVG first so the tab icon stays sharp on any density; PNG is the fallback. -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="64x64" href="/favicon.png" />
 
     <!-- Don't let iOS turn dates/numbers into phone links -->
     <meta name="format-detection" content="telephone=no,date=no,address=no,email=no" />
