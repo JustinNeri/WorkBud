@@ -4,8 +4,11 @@ import { X } from 'lucide-react'
 /**
  * iOS-style bottom sheet: backdrop fades, panel slides up, Escape closes,
  * and the page behind it stops scrolling while it's open.
+ *
+ * `footer` renders outside the scroll area, pinned to the bottom of the panel —
+ * use it for the action that commits the form.
  */
-export function Sheet({ open, onClose, title, children }) {
+export function Sheet({ open, onClose, title, footer, children }) {
   const panelRef = useRef(null)
 
   useEffect(() => {
@@ -66,9 +69,22 @@ export function Sheet({ open, onClose, title, children }) {
           </button>
         </div>
 
-        <div className="no-scrollbar overflow-y-auto overscroll-contain px-5 pt-4 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+        <div
+          className={`no-scrollbar overflow-y-auto overscroll-contain px-5 pt-4 ${
+            footer ? 'pb-4' : 'pb-[max(1.25rem,env(safe-area-inset-bottom))]'
+          }`}
+        >
           {children}
         </div>
+
+        {/* A pinned action bar. These forms are long enough that on a phone
+            the submit button sat below the fold, so committing an entry meant
+            scrolling past every field to find it. */}
+        {footer ? (
+          <div className="shrink-0 border-t border-line bg-surface px-5 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+            {footer}
+          </div>
+        ) : null}
       </div>
     </div>
   )

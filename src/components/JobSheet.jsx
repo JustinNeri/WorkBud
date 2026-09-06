@@ -8,6 +8,8 @@ import { Alert, Button, Field, NumberInput, TextInput } from './ui'
  * Create or edit one job. `job` null → new. Deleting is offered only when
  * editing, and only when it isn't the user's last job.
  */
+const FORM_ID = 'wb-job-form'
+
 export function JobSheet({ open, job, canDelete, onClose, onSubmit, onDelete }) {
   const editing = Boolean(job)
 
@@ -73,8 +75,22 @@ export function JobSheet({ open, job, canDelete, onClose, onSubmit, onDelete }) 
       open={open}
       onClose={onClose}
       title={editing ? 'Edit job' : 'New job'}
+      footer={
+        <>
+          <Alert>{error}</Alert>
+          {/* Outside <form>, so the form attribute is what still submits it. */}
+          <Button
+            type="submit"
+            form={FORM_ID}
+            busy={busy}
+            className={error ? 'mt-2' : ''}
+          >
+            {editing ? 'Save job' : 'Create job'}
+          </Button>
+        </>
+      }
     >
-      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <form id={FORM_ID} onSubmit={handleSubmit} className="flex flex-col gap-4">
         <Field label="Job name">
           <TextInput
             value={name}
@@ -128,14 +144,8 @@ export function JobSheet({ open, job, canDelete, onClose, onSubmit, onDelete }) 
           />
         </Field>
 
-        <Alert>{error}</Alert>
-
-        <Button type="submit" busy={busy} className="mt-1">
-          {editing ? 'Save job' : 'Create job'}
-        </Button>
-
         {editing && canDelete ? (
-          <div className="mt-2 border-t border-line pt-4">
+          <div className="border-t border-line pt-4">
             {confirmingDelete ? (
               <div className="flex flex-col gap-2">
                 <p className="text-[13px] leading-snug text-muted">
