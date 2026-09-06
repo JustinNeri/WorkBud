@@ -73,7 +73,7 @@ export function Sheet({ open, onClose, title, footer, children }) {
             taller than the screen, so the header and the action bar keep their
             own height instead of being squeezed off a short phone viewport. */}
         <div
-          className={`no-scrollbar min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pt-3.5 ${
+          className={`no-scrollbar min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain px-5 pt-3.5 ${
             footer ? 'pb-6' : 'pb-[max(1.25rem,env(safe-area-inset-bottom))]'
           }`}
         >

@@ -164,7 +164,7 @@ export function SettingsSheet({
         </FormSection>
 
         <FormSection label="Account" icon={ShieldCheck}>
-          <p className="mb-3 text-[13px] leading-snug text-muted">
+          <p className="mb-3 text-[13px] leading-snug break-words text-muted">
             Signed in as <span className="font-medium text-ink">{email}</span>
           </p>
           <div className="flex flex-col gap-2">
