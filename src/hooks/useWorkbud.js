@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase, errorMessage } from '../lib/supabase'
 import {
   effectiveHours,
+  monthEndISO,
   monthStartISO,
   setCurrency,
   toISODate,
@@ -285,9 +286,11 @@ export function useWorkbud(userId) {
     const now = new Date(minuteTick)
     const loggedHours = logs.reduce((sum, l) => sum + effectiveHours(l, now), 0)
     const firstOfMonth = monthStartISO()
-    const spentThisMonth = logs
-      .filter((l) => l.entry_date >= firstOfMonth)
-      .reduce((sum, l) => sum + Number(l.amount_spent), 0)
+    const thisMonth = logs.filter((l) => l.entry_date >= firstOfMonth)
+    const spentThisMonth = thisMonth.reduce(
+      (sum, l) => sum + Number(l.amount_spent),
+      0,
+    )
 
     const pct = (value, total) =>
       total > 0 ? Math.min((value / total) * 100, 100) : 0
@@ -297,6 +300,8 @@ export function useWorkbud(userId) {
     const weekAgo = new Date()
     weekAgo.setDate(weekAgo.getDate() - 6)
     const weekStart = toISODate(weekAgo)
+    const tomorrow = new Date()
+    tomorrow.setDate(tomorrow.getDate() + 1)
     const weekHours = logs
       .filter((l) => l.entry_date >= weekStart)
       .reduce((sum, l) => sum + effectiveHours(l, now), 0)
@@ -317,6 +322,17 @@ export function useWorkbud(userId) {
     const weekdaysLeft = deadline ? weekdaysUntil(deadline) : null
     const requiredPerDay =
       weekdaysLeft && weekdaysLeft > 0 ? hoursLeft / weekdaysLeft : null
+
+    // --- the month so far, for a job that has no deadline to count down to.
+    // Projection runs from tomorrow so today isn't counted twice, and leans on
+    // the average over days actually worked rather than calendar days.
+    const monthHours = thisMonth.reduce((sum, l) => sum + effectiveHours(l, now), 0)
+    const monthDaysWorked = new Set(
+      thisMonth.filter((l) => effectiveHours(l, now) > 0).map((l) => l.entry_date),
+    ).size
+    const monthDaysAvg = monthDaysWorked > 0 ? monthHours / monthDaysWorked : 0
+    const weekdaysLeftInMonth = weekdaysUntil(monthEndISO(), toISODate(tomorrow))
+    const projectedMonthHours = monthHours + monthDaysAvg * weekdaysLeftInMonth
 
     // --- where the money goes
     const logIds = new Set(logs.map((l) => l.id))
@@ -345,6 +361,13 @@ export function useWorkbud(userId) {
         daysWorked > 0 &&
         requiredPerDay > loggedHours / daysWorked,
       deadlinePassed: Boolean(deadline) && weekdaysLeft === 0 && hoursLeft > 0,
+
+      monthHours,
+      monthDaysWorked,
+      monthEarned: monthHours * hourlyRate,
+      weekdaysLeftInMonth,
+      // Only worth showing once there's enough history to extrapolate from.
+      projectedMonthHours: monthDaysWorked > 0 ? projectedMonthHours : null,
 
       categoryTotals,
 

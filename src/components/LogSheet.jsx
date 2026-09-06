@@ -4,6 +4,7 @@ import {
   EXPENSE_CATEGORIES,
   computeHours,
   currencySymbol,
+  daysAgoISO,
   effectiveHours,
   formatEntryDate,
   formatHours,
@@ -26,6 +27,13 @@ import {
 
 const FORM_ID = 'wb-log-form'
 
+// Evaluated on render, not at module load: a PWA left open overnight would
+// otherwise still call yesterday "today".
+const DATE_SHORTCUTS = [
+  { label: 'Today', iso: () => todayISO() },
+  { label: 'Yesterday', iso: () => daysAgoISO(1) },
+]
+
 let tempId = 0
 const newItem = () => ({
   key: `new-${tempId++}`,
@@ -40,10 +48,15 @@ const newItem = () => ({
  * Hours come from time in/out minus the break, so the user never does the
  * arithmetic — but the field stays editable for days that don't fit a shift.
  * Spending is a list of things bought; the day's total is their sum.
+ *
+ * Any past date is fair game. Most people start using this partway through a
+ * placement and need the weeks they already worked to count, so the date is a
+ * first-class field with shortcuts, not a formality fixed to today.
  */
 export function LogSheet({
   open,
   log,
+  initialDate,
   jobName,
   expenses = [],
   jobLogs = [],
@@ -53,7 +66,7 @@ export function LogSheet({
 }) {
   const editing = Boolean(log)
 
-  const [date, setDate] = useState(log?.entry_date ?? todayISO())
+  const [date, setDate] = useState(log?.entry_date ?? initialDate ?? todayISO())
   const [timeIn, setTimeIn] = useState(log?.time_in?.slice(0, 5) ?? '')
   const [timeOut, setTimeOut] = useState(log?.time_out?.slice(0, 5) ?? '')
   const [breakMins, setBreakMins] = useState(
@@ -90,6 +103,10 @@ export function LogSheet({
    * legitimate (a morning and an afternoon block), so the second entry is
    * allowed — the user is just told, and offered the existing one instead.
    */
+  // Older than the two shortcut chips: the date is worth spelling out, since
+  // nothing else on the sheet says which day is being filled in.
+  const olderDay = !DATE_SHORTCUTS.some((sc) => sc.iso() === date)
+
   const duplicate = useMemo(
     () =>
       editing ? null : (jobLogs.find((l) => l.entry_date === date) ?? null),
@@ -162,7 +179,7 @@ export function LogSheet({
     <Sheet
       open={open}
       onClose={onClose}
-      title={editing ? 'Edit entry' : `Log today${jobName ? ` · ${jobName}` : ''}`}
+      title={editing ? 'Edit entry' : `Log a day${jobName ? ` · ${jobName}` : ''}`}
       footer={
         <>
           <Alert>{error}</Alert>
@@ -179,15 +196,43 @@ export function LogSheet({
       }
     >
       <form id={FORM_ID} onSubmit={handleSubmit} className="flex flex-col gap-3.5">
-        <Field label="Date">
-          <TextInput
-            type="date"
-            value={date}
-            max={todayISO()}
-            onChange={(e) => setDate(e.target.value)}
-            required
-          />
-        </Field>
+        <div>
+          <Field label="Date">
+            <TextInput
+              type="date"
+              value={date}
+              max={todayISO()}
+              onChange={(e) => setDate(e.target.value)}
+              required
+            />
+          </Field>
+
+          {/* Two taps for the days people actually backfill, and the picker
+              behind them for anything older. Outside the <Field> on purpose:
+              a button inside its <label> would also fire the date picker. */}
+          <div className="mt-1.5 flex items-center gap-1.5">
+            {DATE_SHORTCUTS.map((shortcut) => {
+              const iso = shortcut.iso()
+              const on = date === iso
+              return (
+                <button
+                  key={shortcut.label}
+                  type="button"
+                  onClick={() => setDate(iso)}
+                  aria-pressed={on}
+                  className={`rounded-full px-2.5 py-1 text-[12px] font-semibold transition ${
+                    on ? 'bg-brand-soft text-brand' : 'bg-surface-2 text-muted'
+                  }`}
+                >
+                  {shortcut.label}
+                </button>
+              )
+            })}
+            <span className="ml-auto text-[11.5px] text-faint">
+              {olderDay ? formatEntryDate(date) : 'Or pick any earlier day'}
+            </span>
+          </div>
+        </div>
 
         {duplicate ? (
           <div className="rounded-xl bg-warn-soft px-3.5 py-3 text-[13px] leading-snug">
