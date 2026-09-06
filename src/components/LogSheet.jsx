@@ -178,7 +178,7 @@ export function LogSheet({
         </>
       }
     >
-      <form id={FORM_ID} onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <form id={FORM_ID} onSubmit={handleSubmit} className="flex flex-col gap-3.5">
         <Field label="Date">
           <TextInput
             type="date"
@@ -220,7 +220,7 @@ export function LogSheet({
               value. Rather than tune padding per browser, the pair only goes
               two-up at a width where any of them fits. Break and hours below
               stay two-up: plain number inputs have no such widget. */}
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
             <Field label="Time in">
               <TextInput
                 type="time"
@@ -243,7 +243,7 @@ export function LogSheet({
             </Field>
           </div>
 
-          <div className="mt-3 grid grid-cols-2 gap-3">
+          <div className="mt-2.5 grid grid-cols-2 gap-3">
             <Field label="Break (mins)">
               <NumberInput
                 value={breakMins}
@@ -305,11 +305,11 @@ export function LogSheet({
               "Jeepney fare" back. Stacking gives the label the full width it
               needs and turns each expense into an object you can see the
               edges of. */}
-          <div className="flex flex-col gap-2.5">
+          <div className="flex flex-col gap-2">
             {items.map((item) => (
               <div
                 key={item.key}
-                className="rounded-2xl border border-line p-2.5"
+                className="rounded-2xl border border-line p-2"
               >
                 <div className="flex items-center gap-2">
                   <TextInput
@@ -336,7 +336,7 @@ export function LogSheet({
                   </button>
                 </div>
 
-                <div className="mt-2 grid grid-cols-2 gap-2">
+                <div className="mt-1.5 grid grid-cols-2 gap-2">
                   <Select
                     value={item.category}
                     onChange={(e) => updateItem(item.key, { category: e.target.value })}
@@ -366,7 +366,7 @@ export function LogSheet({
           <button
             type="button"
             onClick={() => setItems((prev) => [...prev, newItem()])}
-            className="mt-2.5 inline-flex items-center gap-1.5 text-[13px] font-semibold text-brand"
+            className="mt-2 inline-flex items-center gap-1.5 text-[13px] font-semibold text-brand"
           >
             <Plus size={15} />
             Add another expense
@@ -375,14 +375,12 @@ export function LogSheet({
 
         <FormSection label="Note" icon={NotebookPen}>
           <TextArea
+            rows={2}
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            placeholder="Half day, went to the site office"
+            placeholder="Optional — half day, went to the site office"
             maxLength={280}
           />
-          <p className="mt-1.5 text-xs text-faint">
-            Optional — how the day went overall.
-          </p>
         </FormSection>
 
       </form>
