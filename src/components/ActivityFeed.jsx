@@ -14,8 +14,8 @@ function DateBadge({ iso, today }) {
   const date = fromISODate(iso)
   return (
     <div
-      className={`flex size-11 shrink-0 flex-col items-center justify-center rounded-xl ${
-        today ? 'bg-brand text-white' : 'bg-surface-2 text-muted'
+      className={`flex size-11 shrink-0 flex-col items-center justify-center rounded-2xl ${
+        today ? 'bg-brand text-white' : 'bg-brand-soft text-brand'
       }`}
     >
       <span className="text-[9px] font-bold uppercase tracking-wide opacity-80">
@@ -117,21 +117,12 @@ export function ActivityFeed({
   deletingId,
   todayISO,
 }) {
+  // The heading and the entry count live in the dashboard's SectionHeading, so
+  // this feed lines up with the Hours and Money groups above it.
   return (
     <section className="animate-rise" style={{ animationDelay: '230ms' }}>
-      <div className="mb-2 flex items-baseline justify-between px-1">
-        <h2 className="text-[12px] font-bold uppercase tracking-wide text-faint">
-          Activity
-        </h2>
-        {logs.length > 0 ? (
-          <span className="text-[12px] text-faint">
-            {logs.length} {logs.length === 1 ? 'entry' : 'entries'}
-          </span>
-        ) : null}
-      </div>
-
       {logs.length === 0 ? (
-        <div className="rounded-2xl bg-surface px-6 py-12 text-center shadow-card">
+        <div className="rounded-3xl bg-surface px-6 py-12 text-center shadow-card">
           <span className="mx-auto mb-3 flex size-12 items-center justify-center rounded-2xl bg-brand-soft text-brand">
             <CalendarDays size={22} />
           </span>
@@ -142,7 +133,7 @@ export function ActivityFeed({
           </p>
         </div>
       ) : (
-        <ul className="divide-y divide-line overflow-hidden rounded-2xl bg-surface shadow-card">
+        <ul className="divide-y divide-line overflow-hidden rounded-3xl bg-surface shadow-card">
           {logs.map((log) => (
             <LogRow
               key={log.id}
