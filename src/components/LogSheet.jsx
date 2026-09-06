@@ -212,7 +212,15 @@ export function LogSheet({
 
         {/* --- shift ------------------------------------------------------ */}
         <FormSection label="Shift" icon={Clock} tone="brand">
-          <div className="grid grid-cols-2 gap-3">
+          {/* One column on a phone, two only once there is room.
+              A native time control sizes itself — its value and its picker
+              button share one row, and every engine reserves a different
+              amount for that button. Two of them side by side on a 390px
+              screen left too little and the button landed on top of the
+              value. Rather than tune padding per browser, the pair only goes
+              two-up at a width where any of them fits. Break and hours below
+              stay two-up: plain number inputs have no such widget. */}
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             <Field label="Time in">
               <TextInput
                 type="time"
