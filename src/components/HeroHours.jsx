@@ -1,4 +1,5 @@
-import { Check, Clock } from 'lucide-react'
+import { CalendarClock, Check, Clock } from 'lucide-react'
+import { daysUntil, formatEntryDate } from '../lib/format'
 import { Ring } from './Ring'
 
 /**
@@ -7,8 +8,18 @@ import { Ring } from './Ring'
  * Proportional figures, not tabular: at display sizes tabular-nums gives every
  * digit a zero's width and the number reads loose.
  */
-export function HeroHours({ logged, target, remaining, percent, complete }) {
+export function HeroHours({
+  logged,
+  target,
+  remaining,
+  percent,
+  complete,
+  deadline,
+}) {
   const fmt = (n) => (Number.isInteger(n) ? String(n) : n.toFixed(2).replace(/0$/, ''))
+  // The date, not the countdown — the pace card below already does the maths,
+  // and what people want at a glance is the day they're working towards.
+  const daysLeft = deadline ? daysUntil(deadline) : null
 
   return (
     <section className="animate-rise relative overflow-hidden rounded-[28px] bg-hero px-5 pt-4 pb-5 text-hero-ink shadow-hero">
@@ -60,6 +71,15 @@ export function HeroHours({ logged, target, remaining, percent, complete }) {
             </>
           )}
         </p>
+
+        {deadline && !complete ? (
+          <p className="mt-2 flex items-center justify-center gap-1.5 text-[12px] font-medium opacity-80">
+            <CalendarClock size={13} />
+            {daysLeft < 0
+              ? `Deadline was ${formatEntryDate(deadline)}`
+              : `Deadline ${formatEntryDate(deadline)}`}
+          </p>
+        ) : null}
       </div>
     </section>
   )

@@ -150,6 +150,7 @@ export function Dashboard({ user }) {
               remaining={stats.hoursRemaining}
               percent={stats.hoursPct}
               complete={stats.hoursComplete}
+              deadline={stats.deadline}
             />
 
             <PaceCard
