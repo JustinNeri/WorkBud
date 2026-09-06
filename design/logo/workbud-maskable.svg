@@ -6,8 +6,12 @@
       <stop offset="1" stop-color="#7c3aed"/>
     </linearGradient>
   </defs>
-  <rect width="512" height="512" rx="114" fill="url(#wb-tile)"/>
-  <g fill="none" stroke-width="56" stroke-linecap="round" stroke-linejoin="round">
+  <!-- Full bleed, no corner radius: Android applies its own mask. The mark is
+       scaled to 0.82 so its corners stay inside the 80% safe circle whatever
+       shape the launcher crops to. -->
+  <rect width="512" height="512" fill="url(#wb-tile)"/>
+  <g transform="translate(256 256) scale(0.82) translate(-256 -256)"
+     fill="none" stroke-width="56" stroke-linecap="round" stroke-linejoin="round">
     <path d="M104 182 L176 358 L256 254" stroke="#ffffff"/>
     <path d="M256 254 L336 358 L408 142" stroke="#6ee7b7"/>
   </g>

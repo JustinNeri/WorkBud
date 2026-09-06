@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 220" width="900" height="220" role="img" aria-label="WorkBud">
+  <title>WorkBud</title>
+  <defs>
+    <linearGradient id="wb-hours" x1="0.1" y1="0" x2="0.9" y2="1">
+      <stop offset="0" stop-color="#4f46e5"/>
+      <stop offset="1" stop-color="#7c3aed"/>
+    </linearGradient>
+  </defs>
+  <!-- Mark at 0.4 scale, baseline-aligned with the cap height of the word. -->
+  <g transform="translate(0 4) scale(0.4)"
+     fill="none" stroke-width="56" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M104 182 L176 358 L256 254" stroke="url(#wb-hours)"/>
+    <path d="M256 254 L336 358 L408 142" stroke="#059669"/>
+  </g>
+  <text x="216" y="148" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif"
+        font-size="132" font-weight="700" letter-spacing="-4" fill="#101116">WorkBud</text>
+</svg>
