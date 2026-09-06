@@ -1,10 +1,11 @@
 import { useState } from 'react'
-import { Download, Loader2, Pencil, Plus, Settings } from 'lucide-react'
+import { Loader2, Pencil, Plus } from 'lucide-react'
 import { useWorkbud } from '../hooks/useWorkbud'
 import { todayISO } from '../lib/format'
 import { ActivityFeed } from './ActivityFeed'
 import { BudgetCard } from './BudgetCard'
 import { CategoryBreakdown } from './CategoryBreakdown'
+import { DashboardHeader } from './DashboardHeader'
 import { ExportSheet } from './ExportSheet'
 import { HeroHours } from './HeroHours'
 import { JobSheet } from './JobSheet'
@@ -17,7 +18,7 @@ import { SettingsSheet } from './SettingsSheet'
 import { Sheet } from './Sheet'
 import { StatTiles } from './StatTiles'
 import { TodayNudge } from './TodayNudge'
-import { Alert, Button } from './ui'
+import { Alert, Button, SectionHeading } from './ui'
 
 export function Dashboard({ user }) {
   const {
@@ -83,40 +84,13 @@ export function Dashboard({ user }) {
   const initial = (firstName?.[0] ?? user.email?.[0] ?? '?').toUpperCase()
 
   return (
-    <div className="min-h-dvh pb-32">
-      <header className="flex items-center justify-between px-5 pt-[max(1.25rem,env(safe-area-inset-top))] pb-4">
-        <div className="flex min-w-0 items-center gap-3">
-          <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-hero text-[15px] font-bold text-white">
-            {initial}
-          </span>
-          <div className="min-w-0">
-            <p className="text-[12.5px] leading-tight text-muted">Welcome back</p>
-            <h1 className="truncate text-[19px] font-bold leading-tight tracking-tight">
-              {firstName || 'WorkBud'}
-            </h1>
-          </div>
-        </div>
-        <div className="flex shrink-0 items-center gap-2">
-          {activeJob ? (
-            <button
-              type="button"
-              onClick={() => setExportOpen(true)}
-              aria-label="Export"
-              className="rounded-full bg-surface p-2.5 text-muted shadow-card transition active:brightness-95"
-            >
-              <Download size={20} />
-            </button>
-          ) : null}
-          <button
-            type="button"
-            onClick={() => setSettingsOpen(true)}
-            aria-label="Settings"
-            className="rounded-full bg-surface p-2.5 text-muted shadow-card transition active:brightness-95"
-          >
-            <Settings size={20} />
-          </button>
-        </div>
-      </header>
+    <div className="relative isolate min-h-dvh pb-32">
+      <DashboardHeader
+        name={firstName || 'WorkBud'}
+        initial={initial}
+        onExport={activeJob ? () => setExportOpen(true) : null}
+        onSettings={() => setSettingsOpen(true)}
+      />
 
       <div className="px-5 pb-3">
         <JobTabs
@@ -143,26 +117,30 @@ export function Dashboard({ user }) {
           </div>
         ) : (
           <>
-            <div className="flex items-center justify-between px-1">
-              <h2 className="truncate text-[13px] font-bold uppercase tracking-wide text-faint">
-                {activeJob.name}
-              </h2>
-              <button
-                type="button"
-                onClick={() => setJobSheet({ job: activeJob })}
-                className="inline-flex items-center gap-1 text-[12.5px] font-semibold text-brand"
-              >
-                <Pencil size={12} />
-                Edit
-              </button>
-            </div>
-
             <TodayNudge
               key={activeJob.id}
               jobId={activeJob.id}
               loggedToday={stats.loggedToday}
               onLog={() => setLogSheet({ log: null })}
             />
+
+            {/* The job's name is already the active tab above, so this row
+                carries its settings instead of repeating it. */}
+            <SectionHeading
+              tone="brand"
+              action={
+                <button
+                  type="button"
+                  onClick={() => setJobSheet({ job: activeJob })}
+                  className="inline-flex shrink-0 items-center gap-1 text-[12px] font-semibold text-brand"
+                >
+                  <Pencil size={11} />
+                  Edit job
+                </button>
+              }
+            >
+              Hours
+            </SectionHeading>
 
             <HeroHours
               logged={stats.loggedHours}
@@ -192,6 +170,8 @@ export function Dashboard({ user }) {
               daysWorked={stats.daysWorked}
             />
 
+            <SectionHeading tone="money">Money</SectionHeading>
+
             <BudgetCard
               spent={stats.spentThisMonth}
               budget={stats.monthlyBudget}
@@ -202,7 +182,20 @@ export function Dashboard({ user }) {
 
             <CategoryBreakdown totals={stats.categoryTotals} />
 
-            <div className="mt-2">
+            <SectionHeading
+              tone="neutral"
+              action={
+                logs.length > 0 ? (
+                  <span className="shrink-0 text-[12px] font-medium text-faint">
+                    {logs.length} {logs.length === 1 ? 'entry' : 'entries'}
+                  </span>
+                ) : null
+              }
+            >
+              Activity
+            </SectionHeading>
+
+            <div>
               <ActivityFeed
                 logs={logs}
                 expensesFor={expensesFor}
