@@ -2,11 +2,11 @@ import { useState } from 'react'
 import { Check, ChevronDown, Eye, EyeOff, Loader2 } from 'lucide-react'
 
 const baseField =
-  'w-full rounded-2xl border border-line bg-surface-2 px-4 py-3 text-ink placeholder:text-faint transition-colors focus:border-brand focus:bg-surface'
+  'w-full min-w-0 rounded-2xl border border-line bg-surface-2 px-4 py-3 text-ink placeholder:text-faint transition-colors focus:border-brand focus:bg-surface'
 
 export function Field({ label, hint, children }) {
   return (
-    <label className="block">
+    <label className="block min-w-0">
       <span className="mb-1 block text-[13px] font-medium text-muted">
         {label}
       </span>
