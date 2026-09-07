@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { AlertTriangle, Clock, NotebookPen, Plus, Wallet, X } from 'lucide-react'
+import { Clock, NotebookPen, Plus, Wallet, X } from 'lucide-react'
 import {
   EXPENSE_CATEGORIES,
   computeHours,
@@ -361,10 +361,10 @@ export function LogSheet({
           {dailyBudget > 0 ? (
             <p
               className={`mb-2 flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-[12px] font-semibold ${
-                overBy > 0 ? 'bg-over-soft text-over' : 'bg-surface-2 text-muted'
+                overBy > 0 ? 'bg-warn-soft text-warn' : 'bg-surface-2 text-muted'
               }`}
             >
-              {overBy > 0 ? <AlertTriangle size={12} /> : <Wallet size={12} />}
+              <Wallet size={12} />
               <span>
                 {overBy > 0
                   ? `${formatMoney(overBy)} over the ${formatMoney(dailyBudget, {
