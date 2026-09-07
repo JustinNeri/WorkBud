@@ -4,6 +4,7 @@ import { useWorkbud } from '../hooks/useWorkbud'
 import { daysAgoISO, isOngoingRole, todayISO } from '../lib/format'
 import { ActivityFeed } from './ActivityFeed'
 import { BudgetCard } from './BudgetCard'
+import { CatchUpCard } from './CatchUpCard'
 import { CategoryBreakdown } from './CategoryBreakdown'
 import { DashboardHeader } from './DashboardHeader'
 import { ExportSheet } from './ExportSheet'
@@ -192,6 +193,15 @@ export function Dashboard({ user }) {
               dailyRemaining={stats.dailyRemaining}
               overToday={stats.overToday}
               daysOverThisMonth={stats.daysOverThisMonth}
+            />
+
+            <CatchUpCard
+              overspent={stats.overspentThisMonth}
+              perDay={stats.catchUpPerDay}
+              target={stats.catchUpTarget}
+              dailyBudget={stats.dailyBudget}
+              daysLeft={stats.daysLeftInMonth}
+              canCatchUp={stats.canCatchUp}
             />
 
             <CategoryBreakdown totals={stats.categoryTotals} />

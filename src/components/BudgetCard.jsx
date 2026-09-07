@@ -89,17 +89,21 @@ export function BudgetCard({
 
       {/* The daily cap, when the job sets one. It sits under the month rather
           than beside it: the month is the commitment, the day is the pace that
-          keeps it — and a day over is worth seeing before the month tips. */}
+          keeps it — and a day over is worth seeing before the month tips.
+
+          Amber, and no warning triangle: a day over budget is a thing to
+          correct, not an emergency, and the catch-up card below already says
+          how. The words carry the state, so nothing here depends on colour. */}
       {dailyBudget > 0 ? (
         <>
           <div className="mt-3 h-px bg-ink/10" />
           <div className="mt-2.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
             <p
               className={`flex items-center gap-1.5 text-[12.5px] font-semibold ${
-                overToday ? 'text-over' : 'text-muted'
+                overToday ? 'text-warn' : 'text-muted'
               }`}
             >
-              {overToday ? <AlertTriangle size={13} /> : null}
+              <Wallet size={13} />
               <span>
                 Today {formatMoney(spentToday)} of{' '}
                 {formatMoney(dailyBudget, { compact: true })}
@@ -107,7 +111,7 @@ export function BudgetCard({
               </span>
             </p>
             {daysOverThisMonth > 0 ? (
-              <span className="rounded-full bg-surface/70 px-2 py-0.5 text-[11.5px] font-semibold text-over">
+              <span className="rounded-full bg-surface/70 px-2 py-0.5 text-[11.5px] font-semibold text-warn">
                 {daysOverThisMonth} {daysOverThisMonth === 1 ? 'day' : 'days'} over
               </span>
             ) : null}

@@ -44,6 +44,9 @@ native app, offline shell included.
   while you're typing an expense, the budget card shows where today stands, and
   any day that went over is flagged in the activity feed. Leave it at 0 and
   nothing about it appears.
+- A **catch-up figure** when you do go over: the overspend spread across the
+  days the month has left, so "₱410 over" becomes "spend ₱483 a day instead of
+  ₱500 for the 24 days left and you finish level."
 - A monthly budget meter, a spend-by-category breakdown, and the number the
   hero card is really about: what the placement has cost you out of pocket, or
   your net if the job pays.

@@ -1,11 +1,4 @@
-import {
-  AlertTriangle,
-  CalendarDays,
-  ChevronRight,
-  Clock,
-  Trash2,
-  Wallet,
-} from 'lucide-react'
+import { CalendarDays, ChevronRight, Clock, Trash2, Wallet } from 'lucide-react'
 import {
   effectiveHours,
   formatEntryDate,
@@ -33,7 +26,7 @@ function DateBadge({ iso, today }) {
   )
 }
 
-function LogRow({ log, items, onEdit, onDelete, deleting, isToday, overBudget }) {
+function LogRow({ log, items, onEdit, onDelete, deleting, isToday, overBy }) {
   const spent = Number(log.amount_spent)
   const hoursSoFar = effectiveHours(log)
   const running = isInProgress(log)
@@ -77,19 +70,25 @@ function LogRow({ log, items, onEdit, onDelete, deleting, isToday, overBudget })
               ) : null}
             </span>
             {/* A day that broke the daily cap wears it here, where the day is
-                being scanned — the budget card only reports today. */}
+                being scanned — the budget card only reports today. Amber, not
+                red: these rows are read in a scroll, and a column of red
+                alarms down the feed is a reason to stop opening the app.
+                The overage is spelled out because "₱850.00 over" alone reads
+                as though the whole 850 was the excess. */}
             <span
               className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[12px] font-semibold ${
-                overBudget
-                  ? 'bg-over-soft text-over'
+                overBy > 0
+                  ? 'bg-warn-soft text-warn'
                   : spent > 0
                     ? 'bg-money-soft text-money'
                     : 'bg-surface-2 text-faint'
               }`}
             >
-              {overBudget ? <AlertTriangle size={11} /> : <Wallet size={11} />}
+              <Wallet size={11} />
               {formatMoney(spent)}
-              {overBudget ? <span className="font-normal">over</span> : null}
+              {overBy > 0 ? (
+                <span className="font-normal">· {formatMoney(overBy)} over</span>
+              ) : null}
             </span>
           </div>
 
@@ -158,7 +157,7 @@ export function ActivityFeed({
               onDelete={onDelete}
               deleting={deletingId === log.id}
               isToday={log.entry_date === todayISO}
-              overBudget={Boolean(overDates?.has(log.entry_date))}
+              overBy={overDates?.get(log.entry_date) ?? 0}
             />
           ))}
         </ul>
