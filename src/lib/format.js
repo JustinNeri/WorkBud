@@ -291,6 +291,14 @@ export function daysUntil(endISO, fromISO = todayISO()) {
   )
 }
 
+/**
+ * Calendar days from today to the end of the month, today included — so a plan
+ * made this morning still counts the day it is made. Never below 1.
+ */
+export function daysLeftInMonth(from = new Date()) {
+  return daysUntil(monthEndISO(from), toISODate(from)) + 1
+}
+
 /** "September 2025" — the budget card's period label. */
 export function formatMonth(date = new Date()) {
   return monthName.format(date)
