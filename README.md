@@ -5,7 +5,7 @@ just worked — time in, time out, break, what you spent getting there — and
 WorkBud keeps the running total your school actually asks for, plus an honest
 picture of what the placement is costing you.
 
-**Live:** [workbud-nine.vercel.app](https://workbud-nine.vercel.app)
+**Live:** [workbud-ph.vercel.app](https://workbud-ph.vercel.app/)
 
 Built as a mobile-first PWA: install it to the home screen and it opens like a
 native app, offline shell included.
