@@ -303,3 +303,18 @@ export function daysLeftInMonth(from = new Date()) {
 export function formatMonth(date = new Date()) {
   return monthName.format(date)
 }
+
+/**
+ * The date of the `count`-th weekday (Mon–Fri) counting from `fromISO`, which
+ * counts as the first if it is one. Pairs with weekdaysUntil for projections.
+ */
+export function addWeekdays(fromISO, count) {
+  let left = Math.max(1, Math.ceil(count))
+  const cursor = fromISODate(fromISO)
+  while (left > 0) {
+    const day = cursor.getDay()
+    if (day !== 0 && day !== 6) left -= 1
+    if (left > 0) cursor.setDate(cursor.getDate() + 1)
+  }
+  return toISODate(cursor)
+}

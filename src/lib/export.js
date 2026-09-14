@@ -16,6 +16,19 @@ const esc = (s) =>
  *  silently shifts every column after it. */
 const csvCell = (value) => `"${String(value ?? '').replace(/"/g, '""')}"`
 
+const byDate = (a, b) => (a.entry_date < b.entry_date ? -1 : 1)
+
+const toCsv = (header, rows) =>
+  [header, ...rows].map((r) => r.map(csvCell).join(',')).join('\r\n')
+
+const printDate = (iso) =>
+  fromISODate(iso).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  })
+
+/** Every column: shift, break, money, the day's expense items and its note. */
 export function buildCsv(logs, expensesFor) {
   const header = [
     'Date',
@@ -28,72 +41,69 @@ export function buildCsv(logs, expensesFor) {
     'Note',
   ]
 
-  const rows = [...logs]
-    .sort((a, b) => (a.entry_date < b.entry_date ? -1 : 1))
-    .map((l) =>
-      [
-        l.entry_date,
-        l.time_in?.slice(0, 5) ?? '',
-        l.time_out?.slice(0, 5) ?? '',
-        l.break_minutes ?? 0,
-        Number(l.hours_worked),
-        Number(l.amount_spent),
-        expensesFor(l.id)
-          .map((e) => `${e.label || categoryLabel(e.category)}: ${Number(e.amount)}`)
-          .join('; '),
-        l.description ?? '',
-      ].map(csvCell).join(','),
-    )
+  const rows = [...logs].sort(byDate).map((l) => [
+    l.entry_date,
+    l.time_in?.slice(0, 5) ?? '',
+    l.time_out?.slice(0, 5) ?? '',
+    l.break_minutes ?? 0,
+    Number(l.hours_worked),
+    Number(l.amount_spent),
+    expensesFor(l.id)
+      .map((e) => `${e.label || categoryLabel(e.category)}: ${Number(e.amount)}`)
+      .join('; '),
+    l.description ?? '',
+  ])
 
-  return [header.map(csvCell).join(','), ...rows].join('\r\n')
+  return toCsv(header, rows)
 }
 
 /**
- * A printable Daily Time Record — the thing an OJT coordinator actually signs.
- * Opened in a new window so the user can print or save as PDF; the browser's
- * own print dialog avoids shipping a PDF library for one screen.
+ * Hours and the day's note only — the record a coordinator reads to see what
+ * was done at the office. No break, no money, no expense items: those are the
+ * trainee's own business, not the school's.
  */
-export function buildDtrHtml({ job, profile, logs, expensesFor, email }) {
-  const ordered = [...logs].sort((a, b) =>
-    a.entry_date < b.entry_date ? -1 : 1,
-  )
+export function buildTimeLogCsv(logs) {
+  const header = ['Date', 'Time in', 'Time out', 'Hours', 'Work done']
 
-  const totalHours = ordered.reduce((s, l) => s + Number(l.hours_worked), 0)
-  const totalSpent = ordered.reduce((s, l) => s + Number(l.amount_spent), 0)
+  const rows = [...logs].sort(byDate).map((l) => [
+    l.entry_date,
+    l.time_in?.slice(0, 5) ?? '',
+    l.time_out?.slice(0, 5) ?? '',
+    Number(l.hours_worked),
+    l.description ?? '',
+  ])
 
+  return toCsv(header, rows)
+}
+
+/** Name, date range and total hours shared by both printable records. */
+function recordMeta({ profile, logs, email }) {
   const fullName = [profile?.first_name, profile?.middle_initial, profile?.last_name]
     .filter(Boolean)
     .join(' ')
 
-  const range = ordered.length
-    ? `${formatEntryDate(ordered[0].entry_date)} – ${formatEntryDate(
-        ordered[ordered.length - 1].entry_date,
+  const range = logs.length
+    ? `${formatEntryDate(logs[0].entry_date)} – ${formatEntryDate(
+        logs[logs.length - 1].entry_date,
       )}`
     : '—'
 
-  const rows = ordered
-    .map((l) => {
-      const items = expensesFor(l.id)
-        .map((e) => `${esc(e.label || categoryLabel(e.category))} ${formatMoney(e.amount)}`)
-        .join(', ')
-      return `<tr>
-        <td>${fromISODate(l.entry_date).toLocaleDateString('en-US', {
-          month: 'short',
-          day: 'numeric',
-          year: 'numeric',
-        })}</td>
-        <td>${esc(formatTime(l.time_in) ?? '—')}</td>
-        <td>${esc(formatTime(l.time_out) ?? '—')}</td>
-        <td class="num">${l.break_minutes || 0}</td>
-        <td class="num">${Number(l.hours_worked)}</td>
-        <td class="num">${esc(formatMoney(l.amount_spent))}</td>
-        <td class="small">${items || esc(l.description ?? '')}</td>
-      </tr>`
-    })
-    .join('')
+  return {
+    name: fullName || email || '—',
+    range,
+    totalHours: logs.reduce((s, l) => s + Number(l.hours_worked), 0),
+  }
+}
 
+/**
+ * The printable page around a record's table: heading, trainee details,
+ * signature lines. Opened in a new window so the user can print or save as
+ * PDF; the browser's own print dialog avoids shipping a PDF library for one
+ * screen.
+ */
+function recordPage({ title, job, profile, meta, head, body, foot, columns }) {
   return `<!doctype html>
-<html><head><meta charset="utf-8"><title>DTR — ${esc(job?.name ?? 'WorkBud')}</title>
+<html><head><meta charset="utf-8"><title>${esc(title)} — ${esc(job?.name ?? 'WorkBud')}</title>
 <style>
   * { box-sizing: border-box; }
   body { font: 12px/1.45 -apple-system, "Segoe UI", Roboto, sans-serif; color: #111; margin: 32px; }
@@ -105,8 +115,11 @@ export function buildDtrHtml({ job, profile, logs, expensesFor, email }) {
   table { width: 100%; border-collapse: collapse; }
   th, td { border: 1px solid #d5d7e0; padding: 6px 8px; text-align: left; vertical-align: top; }
   th { background: #f3f4f8; font-size: 10px; text-transform: uppercase; letter-spacing: .04em; }
+  tr { break-inside: avoid; }
   .num { text-align: right; font-variant-numeric: tabular-nums; }
+  .nowrap { white-space: nowrap; }
   .small { font-size: 11px; color: #444; }
+  .notes { white-space: pre-wrap; }
   tfoot td { font-weight: 700; background: #fafafe; }
   .sign { margin-top: 42px; display: flex; gap: 48px; }
   .sign div { flex: 1; border-top: 1px solid #333; padding-top: 6px; font-size: 11px; color: #444; }
@@ -114,27 +127,19 @@ export function buildDtrHtml({ job, profile, logs, expensesFor, email }) {
 </style></head>
 <body>
   <h1>Daily Time Record</h1>
-  <p class="sub">${esc(job?.name ?? '')} · ${esc(range)}</p>
+  <p class="sub">${esc(job?.name ?? '')} · ${esc(meta.range)}</p>
 
   <div class="meta">
-    <div><span>Name</span>${esc(fullName || email || '—')}</div>
+    <div><span>Name</span>${esc(meta.name)}</div>
     <div><span>Occupation</span>${esc(profile?.occupation ?? '—')}</div>
     <div><span>Target hours</span>${Number(job?.target_hours ?? 0)}</div>
-    <div><span>Hours completed</span>${totalHours}</div>
+    <div><span>Hours completed</span>${meta.totalHours}</div>
   </div>
 
   <table>
-    <thead><tr>
-      <th>Date</th><th>Time in</th><th>Time out</th><th class="num">Break</th>
-      <th class="num">Hours</th><th class="num">Spent</th><th>Expenses / note</th>
-    </tr></thead>
-    <tbody>${rows || '<tr><td colspan="7">No entries.</td></tr>'}</tbody>
-    <tfoot><tr>
-      <td colspan="4">Total — ${ordered.length} day${ordered.length === 1 ? '' : 's'}</td>
-      <td class="num">${totalHours}</td>
-      <td class="num">${esc(formatMoney(totalSpent))}</td>
-      <td></td>
-    </tr></tfoot>
+    <thead><tr>${head}</tr></thead>
+    <tbody>${body || `<tr><td colspan="${columns}">No entries.</td></tr>`}</tbody>
+    <tfoot><tr>${foot}</tr></tfoot>
   </table>
 
   <div class="sign">
@@ -146,4 +151,77 @@ export function buildDtrHtml({ job, profile, logs, expensesFor, email }) {
     Use your browser's Print to save this as a PDF.
   </p>
 </body></html>`
+}
+
+const daysLabel = (n) => `${n} day${n === 1 ? '' : 's'}`
+
+/** The full record — shift, break, money and what was bought. */
+export function buildDtrHtml({ job, profile, logs, expensesFor, email }) {
+  const ordered = [...logs].sort(byDate)
+  const meta = recordMeta({ profile, logs: ordered, email })
+  const totalSpent = ordered.reduce((s, l) => s + Number(l.amount_spent), 0)
+
+  const body = ordered
+    .map((l) => {
+      const items = expensesFor(l.id)
+        .map((e) => `${esc(e.label || categoryLabel(e.category))} ${formatMoney(e.amount)}`)
+        .join(', ')
+      return `<tr>
+        <td class="nowrap">${printDate(l.entry_date)}</td>
+        <td class="nowrap">${esc(formatTime(l.time_in) ?? '—')}</td>
+        <td class="nowrap">${esc(formatTime(l.time_out) ?? '—')}</td>
+        <td class="num">${l.break_minutes || 0}</td>
+        <td class="num">${Number(l.hours_worked)}</td>
+        <td class="num">${esc(formatMoney(l.amount_spent))}</td>
+        <td class="small">${items || esc(l.description ?? '')}</td>
+      </tr>`
+    })
+    .join('')
+
+  return recordPage({
+    title: 'DTR',
+    job,
+    profile,
+    meta,
+    columns: 7,
+    head: `<th>Date</th><th>Time in</th><th>Time out</th><th class="num">Break</th>
+      <th class="num">Hours</th><th class="num">Spent</th><th>Expenses / note</th>`,
+    body,
+    foot: `<td colspan="4">Total — ${daysLabel(ordered.length)}</td>
+      <td class="num">${meta.totalHours}</td>
+      <td class="num">${esc(formatMoney(totalSpent))}</td>
+      <td></td>`,
+  })
+}
+
+/** Hours only, with the day's note as the account of the work done. */
+export function buildTimeLogHtml({ job, profile, logs, email }) {
+  const ordered = [...logs].sort(byDate)
+  const meta = recordMeta({ profile, logs: ordered, email })
+
+  const body = ordered
+    .map(
+      (l) => `<tr>
+        <td class="nowrap">${printDate(l.entry_date)}</td>
+        <td class="nowrap">${esc(formatTime(l.time_in) ?? '—')}</td>
+        <td class="nowrap">${esc(formatTime(l.time_out) ?? '—')}</td>
+        <td class="num">${Number(l.hours_worked)}</td>
+        <td class="small notes">${esc(l.description ?? '')}</td>
+      </tr>`,
+    )
+    .join('')
+
+  return recordPage({
+    title: 'Time log',
+    job,
+    profile,
+    meta,
+    columns: 5,
+    head: `<th>Date</th><th>Time in</th><th>Time out</th><th class="num">Hours</th>
+      <th style="width:50%">Work done</th>`,
+    body,
+    foot: `<td colspan="3">Total — ${daysLabel(ordered.length)}</td>
+      <td class="num">${meta.totalHours}</td>
+      <td></td>`,
+  })
 }

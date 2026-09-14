@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase, errorMessage } from '../lib/supabase'
 import {
+  addWeekdays,
   daysLeftInMonth,
   effectiveHours,
   monthEndISO,
@@ -25,6 +26,22 @@ const LOG_COLS =
 
 const EXPENSE_COLS = 'id, log_id, label, amount, category, created_at'
 
+const MILESTONE_COLS =
+  'id, job_id, title, due_date, target_hours, done_at, created_at'
+
+/** Open milestones first, soonest due (undated last); finished ones after,
+ *  most recently finished first. */
+function byMilestone(a, b) {
+  if (Boolean(a.done_at) !== Boolean(b.done_at)) return a.done_at ? 1 : -1
+  if (a.done_at) return a.done_at < b.done_at ? 1 : -1
+  if (a.due_date !== b.due_date) {
+    if (!a.due_date) return 1
+    if (!b.due_date) return -1
+    return a.due_date < b.due_date ? -1 : 1
+  }
+  return a.created_at < b.created_at ? -1 : 1
+}
+
 /**
  * Profile + jobs + logs for the signed-in user, with everything derived for
  * whichever job tab is active. RLS scopes all reads server-side, so no
@@ -38,6 +55,7 @@ export function useWorkbud(userId) {
   const [jobs, setJobs] = useState([])
   const [allLogs, setAllLogs] = useState([])
   const [allExpenses, setAllExpenses] = useState([])
+  const [allMilestones, setAllMilestones] = useState([])
   const [activeJobId, setActiveJobId] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -51,7 +69,7 @@ export function useWorkbud(userId) {
   }, [])
 
   const load = useCallback(async () => {
-    const [profileRes, jobsRes, logsRes, expensesRes] = await Promise.all([
+    const [profileRes, jobsRes, logsRes, expensesRes, milestonesRes] = await Promise.all([
       supabase
         .from('profiles')
         .select(
@@ -73,6 +91,7 @@ export function useWorkbud(userId) {
         .from('expenses')
         .select(EXPENSE_COLS)
         .order('created_at', { ascending: true }),
+      supabase.from('milestones').select(MILESTONE_COLS),
     ])
 
     if (!profileRes.error && profileRes.data) {
@@ -91,9 +110,14 @@ export function useWorkbud(userId) {
     }
     if (!logsRes.error) setAllLogs(logsRes.data ?? [])
     if (!expensesRes.error) setAllExpenses(expensesRes.data ?? [])
+    if (!milestonesRes.error) setAllMilestones(milestonesRes.data ?? [])
 
     const failure =
-      profileRes.error || jobsRes.error || logsRes.error || expensesRes.error
+      profileRes.error ||
+      jobsRes.error ||
+      logsRes.error ||
+      expensesRes.error ||
+      milestonesRes.error
     setError(failure ? errorMessage(failure) : null)
     setLoading(false)
   }, [userId])
@@ -113,6 +137,11 @@ export function useWorkbud(userId) {
   const logs = useMemo(
     () => allLogs.filter((l) => l.job_id === activeJobId),
     [allLogs, activeJobId],
+  )
+
+  const milestones = useMemo(
+    () => allMilestones.filter((m) => m.job_id === activeJobId).sort(byMilestone),
+    [allMilestones, activeJobId],
   )
 
   /**
@@ -258,6 +287,7 @@ export function useWorkbud(userId) {
         return prev.filter((e) => !gone.has(e.log_id))
       })
       setAllLogs((prev) => prev.filter((l) => l.job_id !== id))
+      setAllMilestones((prev) => prev.filter((m) => m.job_id !== id))
       // Land on a neighbouring job. Clearing the tab outright showed the
       // "No job yet" empty state even when other jobs were still listed
       // above it, which read as though the delete had taken everything.
@@ -268,6 +298,63 @@ export function useWorkbud(userId) {
     },
     [allLogs, jobs],
   )
+
+  // --- milestone mutations, scoped to the active job like logs
+  const addMilestone = useCallback(
+    async (values) => {
+      if (!activeJobId) return { error: 'Create a job first.' }
+      const { data, error: err } = await supabase
+        .from('milestones')
+        .insert({ ...values, user_id: userId, job_id: activeJobId })
+        .select(MILESTONE_COLS)
+        .single()
+
+      if (err) return { error: errorMessage(err) }
+      setAllMilestones((prev) => [...prev, data])
+      return {}
+    },
+    [userId, activeJobId],
+  )
+
+  const updateMilestone = useCallback(async (id, values) => {
+    const { data, error: err } = await supabase
+      .from('milestones')
+      .update(values)
+      .eq('id', id)
+      .select(MILESTONE_COLS)
+      .single()
+
+    if (err) return { error: errorMessage(err) }
+    setAllMilestones((prev) => prev.map((m) => (m.id === id ? data : m)))
+    return {}
+  }, [])
+
+  const deleteMilestone = useCallback(async (id) => {
+    const { error: err } = await supabase.from('milestones').delete().eq('id', id)
+    if (err) return { error: errorMessage(err) }
+    setAllMilestones((prev) => prev.filter((m) => m.id !== id))
+    return {}
+  }, [])
+
+  /** Tick or untick. Optimistic — a checkbox that waits on the network reads
+   *  as broken — and rolled back with the dashboard error if the write fails. */
+  const toggleMilestone = useCallback(async (milestone) => {
+    const doneAt = milestone.done_at ? null : new Date().toISOString()
+    const set = (value) =>
+      setAllMilestones((prev) =>
+        prev.map((m) => (m.id === milestone.id ? { ...m, done_at: value } : m)),
+      )
+
+    set(doneAt)
+    const { error: err } = await supabase
+      .from('milestones')
+      .update({ done_at: doneAt })
+      .eq('id', milestone.id)
+    if (err) {
+      set(milestone.done_at)
+      setError(errorMessage(err))
+    }
+  }, [])
 
   const saveProfile = useCallback(
     async (values) => {
@@ -379,6 +466,44 @@ export function useWorkbud(userId) {
     const catchUpPerDay = overspentThisMonth > 0 ? overspentThisMonth / daysLeft : 0
     const catchUpTarget = dailyBudget - catchUpPerDay
 
+    // --- hour badges. Walk the days oldest first and note the date the running
+    // total first crossed each quarter of the target. For those still ahead,
+    // project a date from the average over days actually worked — starting
+    // tomorrow if today is already logged, so today isn't counted twice.
+    const hourBadges = []
+    if (targetHours > 0) {
+      const thresholds = [25, 50, 75, 100].map((percent) => ({
+        percent,
+        hours: (targetHours * percent) / 100,
+      }))
+      const reached = new Map()
+      let running = 0
+      for (const l of [...logs].reverse()) {
+        running += effectiveHours(l, now)
+        for (const t of thresholds) {
+          if (!reached.has(t.percent) && running >= t.hours) {
+            reached.set(t.percent, l.entry_date)
+          }
+        }
+      }
+
+      const avgWorked = daysWorked > 0 ? loggedHours / daysWorked : 0
+      const projectFrom = logs.some((l) => l.entry_date === todayISO())
+        ? toISODate(tomorrow)
+        : todayISO()
+      for (const t of thresholds) {
+        const reachedOn = reached.get(t.percent) ?? null
+        hourBadges.push({
+          ...t,
+          reachedOn,
+          projectedOn:
+            !reachedOn && avgWorked > 0
+              ? addWeekdays(projectFrom, (t.hours - loggedHours) / avgWorked)
+              : null,
+        })
+      }
+    }
+
     // --- where the money goes
     const logIds = new Set(logs.map((l) => l.id))
     const byCategory = new Map()
@@ -415,6 +540,7 @@ export function useWorkbud(userId) {
       projectedMonthHours: monthDaysWorked > 0 ? projectedMonthHours : null,
 
       categoryTotals,
+      hourBadges,
 
       weekHours,
       daysWorked,
@@ -465,10 +591,15 @@ export function useWorkbud(userId) {
     activeJobId,
     setActiveJobId,
     logs,
+    milestones,
     stats,
     loading,
     error,
     reload: load,
+    addMilestone,
+    updateMilestone,
+    deleteMilestone,
+    toggleMilestone,
     addLog,
     updateLog,
     deleteLog,
