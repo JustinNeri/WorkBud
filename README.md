@@ -56,9 +56,21 @@ native app, offline shell included.
 Tabs across the top switch between placements. Each carries its own target
 hours, deadline, monthly budget and hourly rate, and its own logs.
 
+**Milestones**
+
+- Your own checkpoints per job — orientation, midterm evaluation, narrative
+  report — each with an optional due date and hours goal. Tick them off as you
+  go; overdue and due-this-week ones say so.
+- Automatic hour badges at 25%, 50%, 75% and 100% of the target, showing the
+  day each was reached, or an estimated date at your current pace.
+
 **Export**
 
-Any date range as a printable DTR (daily time record) or a CSV file.
+Any date range, printable or as a CSV, in two versions:
+
+- **Time log** — date, time in, time out, hours and the day's note (the work
+  done). No break or expense columns: this is the one to hand your coordinator.
+- **Full record** — everything, including break and the day's expenses.
 
 **Accounts**
 
@@ -114,7 +126,7 @@ data. Without these the app shows a setup card instead of a blank screen.
 **2. Database**
 
 Run [`supabase/schema.sql`](supabase/schema.sql) in the Supabase SQL editor. It
-creates the four tables, their RLS policies, and the trigger that gives every
+creates the five tables, their RLS policies, and the trigger that gives every
 new auth user a profile row. It's idempotent, so re-running it is safe — and
 re-running it is also how an existing database picks up columns added later.
 
@@ -140,7 +152,7 @@ npm run dev
 
 ## Data model
 
-Four tables, all with RLS on, all scoped to `auth.uid()` — a user can only ever
+Five tables, all with RLS on, all scoped to `auth.uid()` — a user can only ever
 read or write their own rows.
 
 | Table | Holds |
@@ -149,6 +161,7 @@ read or write their own rows.
 | `jobs` | A placement or job: name, target hours, deadline, monthly budget, daily budget, hourly rate. A user can have several. |
 | `daily_logs` | One logged day: date, time in/out, break, hours worked, day total spent, note. Belongs to a job. |
 | `expenses` | The individual things bought on a day: label, category, amount. Belongs to a log. |
+| `milestones` | A checkpoint on a job: title, optional due date and hours goal, when it was done. Belongs to a job. |
 
 `daily_logs.hours_worked` stores the day's *planned* total; what the dashboard
 counts is derived at render time, which is how a shift can tick upward without

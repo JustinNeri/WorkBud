@@ -299,3 +299,53 @@ $$;
 
 revoke execute on function public.email_registered(text) from public;
 grant  execute on function public.email_registered(text) to anon, authenticated;
+
+-- ---------------------------------------------------------------------------
+-- 9. milestones — user-defined checkpoints on a job (orientation, midterm
+--    evaluation, final report). Hour badges are derived in the app, not stored.
+-- ---------------------------------------------------------------------------
+create table if not exists public.milestones (
+  id           uuid          primary key default gen_random_uuid(),
+  user_id      uuid          not null references auth.users (id) on delete cascade,
+  job_id       uuid          not null references public.jobs (id) on delete cascade,
+  title        text          not null check (length(trim(title)) between 1 and 80),
+  due_date     date,
+  target_hours numeric(8, 2) check (target_hours is null or target_hours > 0),
+  done_at      timestamptz,
+  created_at   timestamptz   not null default now(),
+  updated_at   timestamptz   not null default now()
+);
+
+comment on table  public.milestones              is 'User-defined checkpoints for a job, e.g. midterm evaluation.';
+comment on column public.milestones.target_hours is 'Optional hours goal; null means a plain dated checkpoint.';
+comment on column public.milestones.done_at      is 'Null until the user marks it done.';
+
+create index if not exists milestones_job_idx
+  on public.milestones (job_id, due_date nulls last, created_at);
+
+drop trigger if exists milestones_set_updated_at on public.milestones;
+create trigger milestones_set_updated_at
+  before update on public.milestones
+  for each row execute function public.set_updated_at();
+
+alter table public.milestones enable row level security;
+
+drop policy if exists "milestones_select_own" on public.milestones;
+create policy "milestones_select_own" on public.milestones
+  for select to authenticated using ((select auth.uid()) = user_id);
+
+drop policy if exists "milestones_insert_own" on public.milestones;
+create policy "milestones_insert_own" on public.milestones
+  for insert to authenticated with check ((select auth.uid()) = user_id);
+
+drop policy if exists "milestones_update_own" on public.milestones;
+create policy "milestones_update_own" on public.milestones
+  for update to authenticated
+  using ((select auth.uid()) = user_id)
+  with check ((select auth.uid()) = user_id);
+
+drop policy if exists "milestones_delete_own" on public.milestones;
+create policy "milestones_delete_own" on public.milestones
+  for delete to authenticated using ((select auth.uid()) = user_id);
+
+grant select, insert, update, delete on public.milestones to authenticated;

@@ -12,6 +12,8 @@ import { HeroHours } from './HeroHours'
 import { JobSheet } from './JobSheet'
 import { JobTabs } from './JobTabs'
 import { LogSheet } from './LogSheet'
+import { MilestoneSheet } from './MilestoneSheet'
+import { MilestonesCard } from './MilestonesCard'
 import { Onboarding } from './Onboarding'
 import { PaceCard } from './PaceCard'
 import { PasswordSheet } from './PasswordSheet'
@@ -41,6 +43,11 @@ export function Dashboard({ user }) {
     updateJob,
     deleteJob,
     saveProfile,
+    milestones,
+    addMilestone,
+    updateMilestone,
+    deleteMilestone,
+    toggleMilestone,
   } = useWorkbud(user.id)
 
   // Each sheet is mounted only while open so its form state starts fresh.
@@ -48,6 +55,7 @@ export function Dashboard({ user }) {
   // form, so "Add past day" opens on yesterday rather than today.
   const [logSheet, setLogSheet] = useState(null)
   const [jobSheet, setJobSheet] = useState(null) // null | { job: job|null }
+  const [milestoneSheet, setMilestoneSheet] = useState(null) // null | { milestone }
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [exportOpen, setExportOpen] = useState(false)
   const [passwordOpen, setPasswordOpen] = useState(false)
@@ -180,6 +188,32 @@ export function Dashboard({ user }) {
               daysWorked={stats.daysWorked}
             />
 
+            <SectionHeading
+              tone="brand"
+              action={
+                <button
+                  type="button"
+                  onClick={() => setMilestoneSheet({ milestone: null })}
+                  className="inline-flex shrink-0 items-center gap-1 text-[12px] font-semibold text-brand"
+                >
+                  <Plus size={12} />
+                  Add milestone
+                </button>
+              }
+            >
+              Milestones
+            </SectionHeading>
+
+            <MilestonesCard
+              milestones={milestones}
+              badges={stats.hourBadges}
+              loggedHours={stats.loggedHours}
+              avgPerDay={stats.avgPerDay}
+              onAdd={() => setMilestoneSheet({ milestone: null })}
+              onEdit={(milestone) => setMilestoneSheet({ milestone })}
+              onToggle={toggleMilestone}
+            />
+
             <SectionHeading tone="money">Money</SectionHeading>
 
             <BudgetCard
@@ -294,6 +328,21 @@ export function Dashboard({ user }) {
             jobSheet.job ? updateJob(jobSheet.job.id, values) : addJob(values)
           }
           onDelete={deleteJob}
+        />
+      ) : null}
+
+      {milestoneSheet ? (
+        <MilestoneSheet
+          open
+          milestone={milestoneSheet.milestone}
+          targetHours={stats.targetHours}
+          onClose={() => setMilestoneSheet(null)}
+          onSubmit={(values) =>
+            milestoneSheet.milestone
+              ? updateMilestone(milestoneSheet.milestone.id, values)
+              : addMilestone(values)
+          }
+          onDelete={deleteMilestone}
         />
       ) : null}
 
