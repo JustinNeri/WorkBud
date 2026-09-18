@@ -11,11 +11,13 @@ const STEPS = ['Account', 'Verify', 'Set up']
  * the setup form after it felt like the app was stalling. Naming the stops up
  * front is most of the difference between the two flows.
  *
- * @param {{current: 1|2|3, tone?: 'ink'|'hero'}} props
+ * One palette, not two: these used to carry a second white-on-gradient tone
+ * for when the auth headings sat on the purple panel. The headings moved to the
+ * light column beside it, so that tone had no caller left.
+ *
+ * @param {{current: 1|2|3}} props
  */
-export function SignupSteps({ current, tone = 'ink' }) {
-  const hero = tone === 'hero'
-
+export function SignupSteps({ current }) {
   return (
     <ol
       className="flex items-center gap-2"
@@ -31,24 +33,12 @@ export function SignupSteps({ current, tone = 'ink' }) {
             <div className="flex flex-1 flex-col gap-1.5">
               <span
                 className={`h-1 rounded-full transition-colors ${
-                  hero
-                    ? done || active
-                      ? 'bg-hero-ink/90'
-                      : 'bg-hero-ink/25'
-                    : done || active
-                      ? 'bg-brand'
-                      : 'bg-surface-2'
+                  done || active ? 'bg-brand' : 'bg-surface-2'
                 }`}
               />
               <span
                 className={`inline-flex items-center gap-1 text-[11px] font-semibold tracking-wide ${
-                  hero
-                    ? active
-                      ? 'text-hero-ink'
-                      : 'text-hero-ink/60'
-                    : active
-                      ? 'text-brand'
-                      : 'text-faint'
+                  active ? 'text-brand' : 'text-faint'
                 }`}
               >
                 {done ? <Check size={11} strokeWidth={3} /> : null}

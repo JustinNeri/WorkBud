@@ -127,7 +127,7 @@ export function ForgotPassword({ initialEmail = '', onBack }) {
         ) : (
           <>
             {confirmed ? 'We sent a code to ' : 'If an account exists for '}
-            <span className="font-semibold text-hero-ink">{email}</span>
+            <span className="font-semibold text-ink">{email}</span>
             {confirmed ? '. ' : ', a code is on its way. '}
             Enter it below with your new password.
           </>
@@ -143,7 +143,7 @@ export function ForgotPassword({ initialEmail = '', onBack }) {
               type="button"
               onClick={sendCode}
               disabled={busy}
-              className="font-semibold text-hero-ink underline underline-offset-2 disabled:opacity-50"
+              className="cursor-pointer font-semibold text-brand underline underline-offset-2 disabled:opacity-50"
             >
               Resend code
             </button>

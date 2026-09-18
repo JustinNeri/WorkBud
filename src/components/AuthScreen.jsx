@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ArrowRight, Check, Loader2, Lock, Mail, Sparkles } from 'lucide-react'
+import { ArrowRight, Check, Loader2, Lock, Mail } from 'lucide-react'
 import { supabase, errorMessage } from '../lib/supabase'
 import { evaluatePassword } from '../lib/password'
 import { AuthShell } from './AuthShell'
@@ -184,12 +184,6 @@ export function AuthScreen() {
 
   return (
     <AuthShell
-      badge={
-        <>
-          <Sparkles size={12} />
-          {isSignUp ? 'Free — about a minute' : 'OJT + spending, together'}
-        </>
-      }
       title={isSignUp ? 'Create your account' : 'Welcome back'}
       subtitle={
         isSignUp
@@ -222,10 +216,10 @@ export function AuthScreen() {
             role="tab"
             aria-selected={mode === value}
             onClick={() => selectMode(value)}
-            className={`h-10 rounded-xl text-[14px] font-semibold transition ${
+            className={`h-10 cursor-pointer rounded-xl text-[14px] font-semibold transition ${
               mode === value
                 ? 'bg-surface text-ink shadow-card'
-                : 'text-muted active:text-ink'
+                : 'text-muted hover:text-ink active:text-ink'
             }`}
           >
             {label}
@@ -271,7 +265,7 @@ export function AuthScreen() {
               <button
                 type="button"
                 onClick={switchToSignIn}
-                className="font-semibold text-brand underline underline-offset-2"
+                className="cursor-pointer font-semibold text-brand underline underline-offset-2"
               >
                 Sign in instead
               </button>
@@ -324,7 +318,7 @@ export function AuthScreen() {
           <button
             type="button"
             onClick={() => setResetting(true)}
-            className="-mt-2 self-end text-[13px] font-semibold text-brand"
+            className="-mt-2 cursor-pointer self-end text-[13px] font-semibold text-brand hover:underline hover:underline-offset-2"
           >
             Forgot password?
           </button>
