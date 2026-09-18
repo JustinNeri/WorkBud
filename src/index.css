@@ -251,6 +251,37 @@ input[type='number'] {
   &::-webkit-scrollbar { display: none; }
 }
 
+/* ---------------------------------------------------------------------------
+   The content column.
+
+   Every page-level band — header, job tabs, the dashboard grid, the floating
+   action button — is measured by this one rule, so they stay in a single
+   column no matter the viewport. Without it the phone layout simply grew to
+   fill a desktop monitor: a 1900px-wide hero card with a 158px ring floating
+   in the middle of it, which is what "stretchy" looks like.
+
+   Two widths, not a fluid one. Below lg the app stays the single column it was
+   designed as, capped so a tablet doesn't stretch it. At lg the cap opens up
+   because the dashboard switches to two columns there, and each half lands
+   close to the phone width the cards were drawn for.
+
+   The padding matches px-5 / lg:px-8, so anything that needs to bleed to the
+   column edge (the scrolling job tabs) can cancel it with -mx-5 / lg:-mx-8.
+--------------------------------------------------------------------------- */
+.wb-shell {
+  margin-inline: auto;
+  width: 100%;
+  max-width: 37.5rem; /* 600px */
+  padding-inline: 1.25rem;
+}
+
+@media (min-width: 64rem) {
+  .wb-shell {
+    max-width: 70rem; /* 1120px */
+    padding-inline: 2rem;
+  }
+}
+
 /* The one gradient surface in the app — the hero card. */
 @utility bg-hero {
   background-image: linear-gradient(135deg, var(--wb-hero-from), var(--wb-hero-to));

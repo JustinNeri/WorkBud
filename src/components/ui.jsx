@@ -66,7 +66,7 @@ export function PasswordInput({ icon: Icon, className = '', ...props }) {
         onClick={() => setVisible((v) => !v)}
         aria-label={visible ? 'Hide password' : 'Show password'}
         aria-pressed={visible}
-        className="absolute inset-y-0 right-0 flex w-12 items-center justify-center text-muted transition-colors active:text-ink"
+        className="absolute inset-y-0 right-0 flex w-12 cursor-pointer items-center justify-center text-muted transition-colors hover:text-ink active:text-ink"
       >
         {visible ? <EyeOff size={18} /> : <Eye size={18} />}
       </button>
@@ -108,7 +108,7 @@ export function Select({ className = '', children, ...props }) {
   return (
     <div className="relative min-w-0">
       <select
-        className={`${baseField} appearance-none pr-10 ${className}`}
+        className={`${baseField} cursor-pointer appearance-none pr-10 ${className}`}
         {...props}
       >
         {children}
@@ -137,19 +137,22 @@ export function Button({
   children,
   ...props
 }) {
+  // Hover states matter only on a pointer device, but the app is used on both,
+  // and a desktop button that never responds until it is clicked is most of why
+  // a touch-first layout feels inert on a monitor.
   const variants = {
-    primary: 'bg-hero text-white shadow-hero active:brightness-95',
-    secondary: 'bg-surface-2 text-ink active:brightness-95',
-    danger: 'bg-over text-white active:brightness-90',
+    primary: 'bg-hero text-white shadow-hero hover:brightness-110 active:brightness-95',
+    secondary: 'bg-surface-2 text-ink hover:brightness-105 active:brightness-95',
+    danger: 'bg-over text-white hover:brightness-110 active:brightness-90',
     // Destructive, but not shouting: a filled red button at the foot of every
     // edit form is louder than the action deserves before it's asked for.
-    dangerGhost: 'text-over active:bg-over-soft',
-    ghost: 'text-muted active:bg-surface-2',
+    dangerGhost: 'text-over hover:bg-over-soft active:bg-over-soft',
+    ghost: 'text-muted hover:bg-surface-2 hover:text-ink active:bg-surface-2',
   }
 
   return (
     <button
-      className={`inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl text-[15px] font-semibold transition disabled:opacity-50 ${variants[variant]} ${className}`}
+      className={`inline-flex h-12 w-full cursor-pointer items-center justify-center gap-2 rounded-2xl text-[15px] font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${variants[variant]} ${className}`}
       disabled={busy || props.disabled}
       {...props}
     >

@@ -103,7 +103,7 @@ export function Dashboard({ user }) {
         onSettings={() => setSettingsOpen(true)}
       />
 
-      <div className="px-5 pb-3">
+      <div className="wb-shell pb-3">
         <JobTabs
           jobs={jobs}
           activeJobId={activeJobId}
@@ -112,7 +112,7 @@ export function Dashboard({ user }) {
         />
       </div>
 
-      <main className="flex flex-col gap-3 px-5">
+      <main className="wb-shell flex flex-col gap-3">
         {error ? <Alert>{error}</Alert> : null}
 
         {!activeJob ? (
@@ -135,165 +135,197 @@ export function Dashboard({ user }) {
               onLog={() => setLogSheet({ log: null })}
             />
 
-            {/* The job's name is already the active tab above, so this row
-                carries its settings instead of repeating it. */}
-            <SectionHeading
-              tone="brand"
-              action={
-                <button
-                  type="button"
-                  onClick={() => setJobSheet({ job: activeJob })}
-                  className="inline-flex shrink-0 items-center gap-1 text-[12px] font-semibold text-brand"
+            {/* Two columns from lg up, on the seam the page already had: the
+                hours and the checkpoints that measure them on one side, the
+                money and the day-by-day feed on the other.
+
+                Stacked, the children fall in exactly the order the single
+                column used, so nothing about the phone layout changes. The
+                split exists because the cards were drawn at phone width — left
+                as one column on a monitor they either stretch to 1900px around
+                a 158px ring, or sit in a narrow strip with the rest of the
+                screen empty. Two columns of roughly phone width use the room
+                without redrawing a single card.
+
+                items-start so a short column doesn't stretch to match a long
+                one; each stack keeps its own height. */}
+            <div className="grid gap-3 lg:grid-cols-2 lg:items-start lg:gap-x-7">
+              <div className="flex flex-col gap-3">
+                {/* The job's name is already the active tab above, so this row
+                    carries its settings instead of repeating it. */}
+                <SectionHeading
+                  tone="brand"
+                  action={
+                    <button
+                      type="button"
+                      onClick={() => setJobSheet({ job: activeJob })}
+                      className="inline-flex shrink-0 cursor-pointer items-center gap-1 text-[12px] font-semibold text-brand hover:underline hover:underline-offset-2"
+                    >
+                      <Pencil size={11} />
+                      Edit job
+                    </button>
+                  }
                 >
-                  <Pencil size={11} />
-                  Edit job
-                </button>
-              }
-            >
-              Hours
-            </SectionHeading>
+                  Hours
+                </SectionHeading>
 
-            <HeroHours
-              logged={stats.loggedHours}
-              target={stats.targetHours}
-              remaining={stats.hoursRemaining}
-              percent={stats.hoursPct}
-              complete={stats.hoursComplete}
-              deadline={stats.deadline}
-            />
+                <HeroHours
+                  logged={stats.loggedHours}
+                  target={stats.targetHours}
+                  remaining={stats.hoursRemaining}
+                  percent={stats.hoursPct}
+                  complete={stats.hoursComplete}
+                  deadline={stats.deadline}
+                />
 
-            <PaceCard
-              deadline={stats.deadline}
-              weekdaysLeft={stats.weekdaysLeft}
-              requiredPerDay={stats.requiredPerDay}
-              behind={stats.behind}
-              deadlinePassed={stats.deadlinePassed}
-              complete={stats.hoursComplete}
-              ongoing={isOngoingRole(profile?.occupation)}
-              entryCount={stats.entryCount}
-              monthHours={stats.monthHours}
-              monthDaysWorked={stats.monthDaysWorked}
-              monthEarned={stats.monthEarned}
-              projectedMonthHours={stats.projectedMonthHours}
-              hourlyRate={stats.hourlyRate}
-              earned={stats.earned}
-              spentAllTime={stats.spentAllTime}
-              net={stats.net}
-              costPerHour={stats.costPerHour}
-            />
+                <PaceCard
+                  deadline={stats.deadline}
+                  weekdaysLeft={stats.weekdaysLeft}
+                  requiredPerDay={stats.requiredPerDay}
+                  behind={stats.behind}
+                  deadlinePassed={stats.deadlinePassed}
+                  complete={stats.hoursComplete}
+                  ongoing={isOngoingRole(profile?.occupation)}
+                  entryCount={stats.entryCount}
+                  monthHours={stats.monthHours}
+                  monthDaysWorked={stats.monthDaysWorked}
+                  monthEarned={stats.monthEarned}
+                  projectedMonthHours={stats.projectedMonthHours}
+                  hourlyRate={stats.hourlyRate}
+                  earned={stats.earned}
+                  spentAllTime={stats.spentAllTime}
+                  net={stats.net}
+                  costPerHour={stats.costPerHour}
+                />
 
-            <StatTiles
-              weekHours={stats.weekHours}
-              avgPerDay={stats.avgPerDay}
-              daysWorked={stats.daysWorked}
-            />
+                <StatTiles
+                  weekHours={stats.weekHours}
+                  avgPerDay={stats.avgPerDay}
+                  daysWorked={stats.daysWorked}
+                />
 
-            <SectionHeading
-              tone="brand"
-              action={
-                <button
-                  type="button"
-                  onClick={() => setMilestoneSheet({ milestone: null })}
-                  className="inline-flex shrink-0 items-center gap-1 text-[12px] font-semibold text-brand"
+                <SectionHeading
+                  tone="brand"
+                  action={
+                    <button
+                      type="button"
+                      onClick={() => setMilestoneSheet({ milestone: null })}
+                      className="inline-flex shrink-0 cursor-pointer items-center gap-1 text-[12px] font-semibold text-brand hover:underline hover:underline-offset-2"
+                    >
+                      <Plus size={12} />
+                      Add milestone
+                    </button>
+                  }
                 >
-                  <Plus size={12} />
-                  Add milestone
-                </button>
-              }
-            >
-              Milestones
-            </SectionHeading>
+                  Milestones
+                </SectionHeading>
 
-            <MilestonesCard
-              milestones={milestones}
-              badges={stats.hourBadges}
-              loggedHours={stats.loggedHours}
-              avgPerDay={stats.avgPerDay}
-              onAdd={() => setMilestoneSheet({ milestone: null })}
-              onEdit={(milestone) => setMilestoneSheet({ milestone })}
-              onToggle={toggleMilestone}
-            />
+                <MilestonesCard
+                  milestones={milestones}
+                  badges={stats.hourBadges}
+                  loggedHours={stats.loggedHours}
+                  avgPerDay={stats.avgPerDay}
+                  onAdd={() => setMilestoneSheet({ milestone: null })}
+                  onEdit={(milestone) => setMilestoneSheet({ milestone })}
+                  onToggle={toggleMilestone}
+                />
+              </div>
 
-            <SectionHeading tone="money">Money</SectionHeading>
+              {/* Money leads this column, so its heading is the first child and
+                  loses the top margin that separated it from the hours above.
+                  Stacked on a phone that margin is still wanted — the two
+                  groups are back to being one scroll. */}
+              <div className="flex flex-col gap-3 max-lg:mt-2">
+                <SectionHeading tone="money">Money</SectionHeading>
 
-            <BudgetCard
-              spent={stats.spentThisMonth}
-              budget={stats.monthlyBudget}
-              remaining={stats.budgetRemaining}
-              percent={stats.budgetPct}
-              over={stats.overBudget}
-              dailyBudget={stats.dailyBudget}
-              spentToday={stats.spentToday}
-              dailyRemaining={stats.dailyRemaining}
-              overToday={stats.overToday}
-              daysOverThisMonth={stats.daysOverThisMonth}
-            />
+                <BudgetCard
+                  spent={stats.spentThisMonth}
+                  budget={stats.monthlyBudget}
+                  remaining={stats.budgetRemaining}
+                  percent={stats.budgetPct}
+                  over={stats.overBudget}
+                  dailyBudget={stats.dailyBudget}
+                  spentToday={stats.spentToday}
+                  dailyRemaining={stats.dailyRemaining}
+                  overToday={stats.overToday}
+                  daysOverThisMonth={stats.daysOverThisMonth}
+                />
 
-            <CatchUpCard
-              overspent={stats.overspentThisMonth}
-              perDay={stats.catchUpPerDay}
-              target={stats.catchUpTarget}
-              dailyBudget={stats.dailyBudget}
-              daysLeft={stats.daysLeftInMonth}
-              canCatchUp={stats.canCatchUp}
-            />
+                <CatchUpCard
+                  overspent={stats.overspentThisMonth}
+                  perDay={stats.catchUpPerDay}
+                  target={stats.catchUpTarget}
+                  dailyBudget={stats.dailyBudget}
+                  daysLeft={stats.daysLeftInMonth}
+                  canCatchUp={stats.canCatchUp}
+                />
 
-            <CategoryBreakdown totals={stats.categoryTotals} />
+                <CategoryBreakdown totals={stats.categoryTotals} />
 
-            <SectionHeading
-              tone="neutral"
-              action={
-                /* Backfilling is the whole reason someone can pick a date in
-                   the sheet at all — people find this app partway through a
-                   placement. The button says so, instead of leaving it to be
-                   discovered by opening the date picker. */
-                <>
-                  {logs.length > 0 ? (
-                    <span className="shrink-0 text-[12px] font-medium text-faint">
-                      {logs.length}
-                    </span>
-                  ) : null}
-                  <button
-                    type="button"
-                    onClick={() => setLogSheet({ log: null, date: daysAgoISO(1) })}
-                    className="inline-flex shrink-0 items-center gap-1 text-[12px] font-semibold text-brand"
-                  >
-                    <CalendarPlus size={12} />
-                    Add past day
-                  </button>
-                </>
-              }
-            >
-              Activity
-            </SectionHeading>
+                <SectionHeading
+                  tone="neutral"
+                  action={
+                    /* Backfilling is the whole reason someone can pick a date in
+                       the sheet at all — people find this app partway through a
+                       placement. The button says so, instead of leaving it to be
+                       discovered by opening the date picker. */
+                    <>
+                      {logs.length > 0 ? (
+                        <span className="shrink-0 text-[12px] font-medium text-faint">
+                          {logs.length}
+                        </span>
+                      ) : null}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setLogSheet({ log: null, date: daysAgoISO(1) })
+                        }
+                        className="inline-flex shrink-0 cursor-pointer items-center gap-1 text-[12px] font-semibold text-brand hover:underline hover:underline-offset-2"
+                      >
+                        <CalendarPlus size={12} />
+                        Add past day
+                      </button>
+                    </>
+                  }
+                >
+                  Activity
+                </SectionHeading>
 
-            <div>
-              <ActivityFeed
-                logs={logs}
-                expensesFor={expensesFor}
-                deletingId={deletingId}
-                todayISO={todayISO()}
-                overDates={stats.overDates}
-                onEdit={(log) => setLogSheet({ log })}
-                onDelete={(log) => {
-                  setDeleteError(null)
-                  setPendingDelete(log)
-                }}
-              />
+                <ActivityFeed
+                  logs={logs}
+                  expensesFor={expensesFor}
+                  deletingId={deletingId}
+                  todayISO={todayISO()}
+                  overDates={stats.overDates}
+                  onEdit={(log) => setLogSheet({ log })}
+                  onDelete={(log) => {
+                    setDeleteError(null)
+                    setPendingDelete(log)
+                  }}
+                />
+              </div>
             </div>
           </>
         )}
       </main>
 
+      {/* Fixed, but measured by the content column rather than the window.
+          Pinned to the viewport's right edge it ended up stranded in the empty
+          margin on a monitor, a long way from the cards it acts on; spanning
+          the column instead lands it against the content's own right edge at
+          every width, and unchanged on a phone. The positioner stays
+          click-through so it never blocks the page beneath it. */}
       {activeJob ? (
-        <button
-          type="button"
-          onClick={() => setLogSheet({ log: null })}
-          aria-label="Log an entry"
-          className="fixed right-5 bottom-[max(1.5rem,env(safe-area-inset-bottom))] flex size-14 items-center justify-center rounded-full bg-hero text-white shadow-hero transition active:scale-95"
-        >
-          <Plus size={26} />
-        </button>
+        <div className="wb-shell pointer-events-none fixed inset-x-0 bottom-[max(1.5rem,env(safe-area-inset-bottom))] z-30">
+          <button
+            type="button"
+            onClick={() => setLogSheet({ log: null })}
+            aria-label="Log an entry"
+            className="pointer-events-auto ml-auto flex size-14 cursor-pointer items-center justify-center rounded-full bg-hero text-white shadow-hero transition hover:brightness-110 active:scale-95"
+          >
+            <Plus size={26} />
+          </button>
+        </div>
       ) : null}
 
       {logSheet ? (

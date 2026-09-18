@@ -88,7 +88,7 @@ export function OtpStep({ email, onBack }) {
       subtitle={
         <>
           We sent a verification code to{' '}
-          <span className="font-semibold text-hero-ink">{email}</span>
+          <span className="font-semibold text-ink">{email}</span>
         </>
       }
       step={2}
@@ -101,7 +101,7 @@ export function OtpStep({ email, onBack }) {
             type="button"
             onClick={handleResend}
             disabled={busy}
-            className="font-semibold text-hero-ink underline underline-offset-2 disabled:opacity-50"
+            className="cursor-pointer font-semibold text-brand underline underline-offset-2 disabled:opacity-50"
           >
             Resend code
           </button>
