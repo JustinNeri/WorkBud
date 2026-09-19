@@ -301,3 +301,32 @@ export function FormSection({
     </section>
   )
 }
+
+/**
+ * A checkbox that matches the fields around it.
+ *
+ * The native control is kept and only visually hidden, so the label, the
+ * keyboard, focus order and the form all behave the way the platform already
+ * makes them behave — the box beside it is decoration driven by peer-checked.
+ * Building this out of a div and a click handler is how checkboxes stop being
+ * reachable by keyboard.
+ */
+export function Checkbox({ label, hint, className = '', ...props }) {
+  return (
+    <label className={`inline-flex cursor-pointer items-start gap-2.5 select-none ${className}`}>
+      <input type="checkbox" className="peer sr-only" {...props} />
+      <span
+        aria-hidden="true"
+        className="mt-px flex size-[18px] shrink-0 items-center justify-center rounded-[6px] border border-line bg-surface-2 text-transparent transition-colors peer-checked:border-brand-fill peer-checked:bg-brand-fill peer-checked:text-white peer-focus-visible:outline-2 peer-focus-visible:outline-offset-2 peer-focus-visible:outline-brand"
+      >
+        <Check size={12} strokeWidth={3.5} />
+      </span>
+      <span className="min-w-0">
+        <span className="block text-[13px] font-medium text-muted">{label}</span>
+        {hint ? (
+          <span className="mt-0.5 block text-[12px] leading-snug text-faint">{hint}</span>
+        ) : null}
+      </span>
+    </label>
+  )
+}
