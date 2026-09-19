@@ -479,13 +479,15 @@ export function useWorkbud(userId) {
     const spentToday = spentByDate.get(todayISO()) ?? 0
     // date → how much that day went over. A map rather than a set, so a row in
     // the feed can say by how much instead of only that it happened.
+    //
+    // This one stays strictly per-day: a day that broke the cap did break it,
+    // and no amount of thrift afterwards makes that untrue. It is a record of
+    // what happened, not a balance.
     const overDates = new Map()
-    let overspentThisMonth = 0
     if (dailyBudget > 0) {
       for (const [date, amount] of spentByDate) {
         if (amount <= dailyBudget) continue
         overDates.set(date, amount - dailyBudget)
-        if (date >= firstOfMonth) overspentThisMonth += amount - dailyBudget
       }
     }
     const daysOverThisMonth = [...overDates.keys()].filter(
@@ -495,6 +497,33 @@ export function useWorkbud(userId) {
     // --- catching up. The overspend spread across the days the month has left,
     // which is the number that turns "you went over" into something to do about
     // it. Counting today in: the day it's read is a day it can be acted on.
+    //
+    // This used to be the sum of each day's excess and nothing else, so it
+    // counted every day you went over and ignored every day you came in under.
+    // That only holds together if days cannot compensate for one another — but
+    // compensating is precisely what this card asks you to do with the rest of
+    // the month. Allowing future thrift to count while past thrift did not is
+    // what left a month sitting at ₱1,410 of a ₱5,000 budget still insisting
+    // there was ₱410 to make back, with a zero-spend day doing nothing to it.
+    //
+    // It is now a net position: what the daily cap has allowed so far, against
+    // what was actually spent. The allowance accrues from the first day logged
+    // this month rather than from the 1st, so someone who starts tracking
+    // mid-month doesn't bank credit for days they were never watching.
+    const firstEntryThisMonth = thisMonth.reduce(
+      (earliest, l) =>
+        earliest === null || l.entry_date < earliest ? l.entry_date : earliest,
+      null,
+    )
+    const allowanceToDate =
+      dailyBudget *
+      Math.max(
+        firstEntryThisMonth ? daysUntil(todayISO(), firstEntryThisMonth) + 1 : 1,
+        1,
+      )
+    const overspentThisMonth =
+      dailyBudget > 0 ? Math.max(spentThisMonth - allowanceToDate, 0) : 0
+
     const daysLeft = daysLeftInMonth()
     const catchUpPerDay = overspentThisMonth > 0 ? overspentThisMonth / daysLeft : 0
     const catchUpTarget = dailyBudget - catchUpPerDay
