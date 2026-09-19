@@ -26,9 +26,9 @@ export function BudgetCard({
   const tone = over ? 'over' : near ? 'warn' : 'money'
 
   const skins = {
-    money: { card: 'bg-money-soft', chip: 'bg-money text-white', accent: 'text-money' },
-    warn: { card: 'bg-warn-soft', chip: 'bg-warn text-white', accent: 'text-warn' },
-    over: { card: 'bg-over-soft', chip: 'bg-over text-white', accent: 'text-over' },
+    money: { card: 'bg-money-soft', chip: 'bg-money-fill text-white', accent: 'text-money' },
+    warn: { card: 'bg-warn-soft', chip: 'bg-warn-fill text-white', accent: 'text-warn' },
+    over: { card: 'bg-over-soft', chip: 'bg-over-fill text-white', accent: 'text-over' },
   }
   const skin = skins[tone]
 

@@ -22,7 +22,7 @@ export function HeroHours({
   const daysLeft = deadline ? daysUntil(deadline) : null
 
   return (
-    <section className="animate-rise relative overflow-hidden rounded-[28px] bg-hero px-5 pt-4 pb-5 text-hero-ink shadow-hero">
+    <section className="animate-rise relative overflow-hidden rounded-[28px] bg-hero px-5 pt-4 pb-5 text-hero-ink shadow-hero ring-1 ring-white/10">
       {/* Two blurred blooms lift the flat gradient off the page — the same
           device the auth panel uses, so the app opens and continues alike. */}
       <div

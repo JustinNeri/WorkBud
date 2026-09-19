@@ -63,7 +63,7 @@ function MilestoneRow({ milestone: m, loggedHours, onEdit, onToggle }) {
       >
         <span
           className={`flex size-6 items-center justify-center rounded-full border-2 transition-colors ${
-            done ? 'border-money bg-money text-white' : 'border-line text-transparent'
+            done ? 'border-money-fill bg-money-fill text-white' : 'border-line text-transparent'
           }`}
         >
           <Check size={13} strokeWidth={3} />
@@ -123,7 +123,7 @@ function HourBadge({ badge }) {
     >
       <span
         className={`flex size-7 items-center justify-center rounded-full ${
-          reached ? 'bg-brand text-white' : 'border border-dashed border-faint text-faint'
+          reached ? 'bg-brand-fill text-white' : 'border border-dashed border-faint text-faint'
         }`}
       >
         {reached ? <Check size={13} strokeWidth={3} /> : <Trophy size={12} />}

@@ -30,7 +30,7 @@ export function DashboardHeader({ name, initial, onExport, onSettings }) {
 
       <div className="wb-shell flex items-center justify-between pt-[max(1.25rem,env(safe-area-inset-top))] pb-4">
         <div className="flex min-w-0 items-center gap-3">
-          <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-hero text-[16px] font-bold text-white shadow-hero">
+          <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-action text-[16px] font-bold text-white shadow-hero">
             {initial}
           </span>
           <div className="min-w-0">

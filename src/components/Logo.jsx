@@ -29,8 +29,8 @@ export function Logo({ size = 40, tone = 'brand', className = '' }) {
       {hero ? null : (
         <defs>
           <linearGradient id={gradientId} x1="0.1" y1="0" x2="0.9" y2="1">
-            <stop offset="0" stopColor="#4f46e5" />
-            <stop offset="1" stopColor="#7c3aed" />
+            <stop offset="0" stopColor="#818cf8" />
+            <stop offset="1" stopColor="#a78bfa" />
           </linearGradient>
         </defs>
       )}
@@ -46,7 +46,7 @@ export function Logo({ size = 40, tone = 'brand', className = '' }) {
         />
         <path
           d="M256 254 L336 358 L408 142"
-          stroke={hero ? '#6ee7b7' : '#059669'}
+          stroke={hero ? '#6ee7b7' : '#10b981'}
         />
       </g>
     </svg>
