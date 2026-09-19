@@ -150,9 +150,14 @@ export function Dashboard({ user }) {
                 without redrawing a single card.
 
                 items-start so a short column doesn't stretch to match a long
-                one; each stack keeps its own height. */}
-            <div className="grid gap-3 lg:grid-cols-2 lg:items-start lg:gap-x-7">
-              <div className="flex flex-col gap-3">
+                one; each stack keeps its own height.
+
+                grid-cols-1 (minmax(0,1fr)) and min-w-0 on each stack matter on
+                a phone: without them the implicit column grows to the widest
+                unbreakable line inside it — a truncated note in the feed — and
+                pushes the whole page wider than the screen. */}
+            <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 lg:items-start lg:gap-x-7">
+              <div className="flex min-w-0 flex-col gap-3">
                 {/* The job's name is already the active tab above, so this row
                     carries its settings instead of repeating it. */}
                 <SectionHeading
@@ -236,7 +241,7 @@ export function Dashboard({ user }) {
                   loses the top margin that separated it from the hours above.
                   Stacked on a phone that margin is still wanted — the two
                   groups are back to being one scroll. */}
-              <div className="flex flex-col gap-3 max-lg:mt-2">
+              <div className="flex min-w-0 flex-col gap-3 max-lg:mt-2">
                 <SectionHeading tone="money">Money</SectionHeading>
 
                 <BudgetCard
