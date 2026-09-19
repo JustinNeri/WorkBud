@@ -1,5 +1,5 @@
-import { useEffect, useRef } from 'react'
-import { X } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
+import { ChevronDown, X } from 'lucide-react'
 
 /**
  * iOS-style bottom sheet: backdrop fades, panel slides up, Escape closes,
@@ -10,6 +10,36 @@ import { X } from 'lucide-react'
  */
 export function Sheet({ open, onClose, title, footer, children }) {
   const panelRef = useRef(null)
+  const scrollRef = useRef(null)
+  const [moreBelow, setMoreBelow] = useState(false)
+
+  // Whether the form continues past the bottom edge. Re-measured on scroll and
+  // whenever the content changes size — ticking "I didn't work this day" or
+  // adding an expense can make a sheet that fit start to overflow, or the
+  // reverse.
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!open || !el) return
+
+    const measure = () =>
+      setMoreBelow(el.scrollHeight - el.scrollTop - el.clientHeight > 24)
+
+    measure()
+    el.addEventListener('scroll', measure, { passive: true })
+    const observer = new ResizeObserver(measure)
+    observer.observe(el)
+    for (const child of el.children) observer.observe(child)
+
+    return () => {
+      el.removeEventListener('scroll', measure)
+      observer.disconnect()
+    }
+  }, [open])
+
+  function scrollDown() {
+    const el = scrollRef.current
+    el?.scrollBy({ top: el.clientHeight * 0.7, behavior: 'smooth' })
+  }
 
   useEffect(() => {
     if (!open) return
@@ -72,12 +102,32 @@ export function Sheet({ open, onClose, title, footer, children }) {
         {/* min-h-0 with flex-1: the scroll area, not the panel, absorbs a form
             taller than the screen, so the header and the action bar keep their
             own height instead of being squeezed off a short phone viewport. */}
-        <div
-          className={`no-scrollbar min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain px-5 pt-3.5 ${
-            footer ? 'pb-6' : 'pb-[max(1.25rem,env(safe-area-inset-bottom))]'
-          }`}
-        >
-          {children}
+        <div className="relative flex min-h-0 flex-1 flex-col">
+          <div
+            ref={scrollRef}
+            className={`no-scrollbar min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain px-5 pt-3.5 ${
+              footer ? 'pb-6' : 'pb-[max(1.25rem,env(safe-area-inset-bottom))]'
+            }`}
+          >
+            {children}
+          </div>
+
+          {/* The scrollbar is hidden, so on a phone nothing said the form went
+              on below the fold, or that the expenses were down there at all.
+              This shows only while there is more to see, and scrolls to it. */}
+          <button
+            type="button"
+            onClick={scrollDown}
+            aria-label="Scroll down for more"
+            tabIndex={moreBelow ? 0 : -1}
+            aria-hidden={!moreBelow}
+            className={`absolute bottom-8 left-1/2 z-10 flex -translate-x-1/2 cursor-pointer items-center gap-1 rounded-full bg-surface-2 py-1.5 pr-3 pl-2.5 text-[12px] font-semibold text-muted shadow-card ring-1 ring-line transition-all duration-200 hover:text-ink active:scale-95 ${
+              moreBelow ? 'opacity-100' : 'pointer-events-none translate-y-2 opacity-0'
+            }`}
+          >
+            <ChevronDown size={15} className="animate-bounce" />
+            More below
+          </button>
         </div>
 
         {/* A pinned action bar. These forms are long enough that on a phone
