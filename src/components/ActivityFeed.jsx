@@ -1,6 +1,8 @@
+import { useState } from 'react'
 import {
   CalendarDays,
   CalendarX2,
+  ChevronDown,
   ChevronRight,
   Clock,
   Trash2,
@@ -142,6 +144,39 @@ function LogRow({ log, items, onEdit, onDelete, deleting, isToday, overBy }) {
   )
 }
 
+// Rows shown before "Show all". Enough to cover the last working week, which
+// is what someone checking the feed after a shift is usually looking at.
+const PREVIEW_COUNT = 5
+
+/** "Sep" for this year, "Dec 2025" for any other, so a long placement that
+    crosses New Year never shows two chips that read the same. */
+function monthLabel(key) {
+  const [year, month] = key.split('-').map(Number)
+  const date = new Date(year, month - 1, 1)
+  const sameYear = year === new Date().getFullYear()
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    ...(sameYear ? {} : { year: 'numeric' }),
+  })
+}
+
+function Chip({ active, onClick, children }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={`shrink-0 cursor-pointer rounded-full px-3 py-1.5 text-[12.5px] font-semibold transition ${
+        active
+          ? 'bg-brand-fill text-white shadow-card'
+          : 'bg-surface text-muted shadow-card hover:text-ink active:brightness-95'
+      }`}
+    >
+      {children}
+    </button>
+  )
+}
+
 export function ActivityFeed({
   logs,
   expensesFor,
@@ -151,6 +186,36 @@ export function ActivityFeed({
   todayISO,
   overDates,
 }) {
+  const [month, setMonth] = useState('all') // 'all' | 'YYYY-MM'
+  const [expanded, setExpanded] = useState(false)
+
+  // Months that actually have entries, newest first — logs already arrive in
+  // that order, so first-seen order is the right one.
+  const months = [...new Set(logs.map((l) => l.entry_date.slice(0, 7)))]
+
+  // A month picked on one job may not exist on the next, or its last entry
+  // may have just been deleted; fall back to everything rather than an empty
+  // list with no obvious way out.
+  const activeMonth = months.includes(month) ? month : 'all'
+  const filtered =
+    activeMonth === 'all'
+      ? logs
+      : logs.filter((l) => l.entry_date.startsWith(activeMonth))
+  const visible = expanded ? filtered : filtered.slice(0, PREVIEW_COUNT)
+  const hidden = filtered.length - visible.length
+
+  const monthHours =
+    activeMonth === 'all'
+      ? 0
+      : filtered.reduce((sum, l) => sum + effectiveHours(l), 0)
+  const monthDays = filtered.filter((l) => !l.absent).length
+
+  function pickMonth(key) {
+    setMonth(key)
+    // A new month starts collapsed, the same as the feed does on load.
+    setExpanded(false)
+  }
+
   // The heading and the entry count live in the dashboard's SectionHeading, so
   // this feed lines up with the Hours and Money groups above it.
   return (
@@ -167,20 +232,70 @@ export function ActivityFeed({
           </p>
         </div>
       ) : (
-        <ul className="divide-y divide-line overflow-hidden rounded-3xl bg-surface shadow-card">
-          {logs.map((log) => (
-            <LogRow
-              key={log.id}
-              log={log}
-              items={expensesFor(log.id)}
-              onEdit={onEdit}
-              onDelete={onDelete}
-              deleting={deletingId === log.id}
-              isToday={log.entry_date === todayISO}
-              overBy={overDates?.get(log.entry_date) ?? 0}
-            />
-          ))}
-        </ul>
+        <>
+          {/* Only worth a filter once there is more than one month to pick. */}
+          {months.length > 1 ? (
+            <div
+              role="group"
+              aria-label="Filter by month"
+              className="no-scrollbar -mx-1 mb-2.5 flex gap-1.5 overflow-x-auto px-1 pb-1"
+            >
+              <Chip active={activeMonth === 'all'} onClick={() => pickMonth('all')}>
+                All
+              </Chip>
+              {months.map((key) => (
+                <Chip
+                  key={key}
+                  active={activeMonth === key}
+                  onClick={() => pickMonth(key)}
+                >
+                  {monthLabel(key)}
+                </Chip>
+              ))}
+            </div>
+          ) : null}
+
+          {activeMonth !== 'all' ? (
+            <p className="mb-2 px-1 text-[12.5px] text-muted">
+              <span className="font-semibold text-ink">{formatHours(monthHours)}</span>{' '}
+              over {monthDays} {monthDays === 1 ? 'day' : 'days'} in{' '}
+              {monthLabel(activeMonth)}
+            </p>
+          ) : null}
+
+          <ul className="divide-y divide-line overflow-hidden rounded-3xl bg-surface shadow-card">
+            {visible.map((log) => (
+              <LogRow
+                key={log.id}
+                log={log}
+                items={expensesFor(log.id)}
+                onEdit={onEdit}
+                onDelete={onDelete}
+                deleting={deletingId === log.id}
+                isToday={log.entry_date === todayISO}
+                overBy={overDates?.get(log.entry_date) ?? 0}
+              />
+            ))}
+          </ul>
+
+          {filtered.length > PREVIEW_COUNT ? (
+            <button
+              type="button"
+              onClick={() => setExpanded((v) => !v)}
+              aria-expanded={expanded}
+              className="mt-2.5 flex w-full cursor-pointer items-center justify-center gap-1.5 rounded-2xl bg-surface py-3 text-[13px] font-semibold text-brand shadow-card transition hover:brightness-110 active:brightness-95"
+            >
+              {expanded ? 'Show less' : `Show all ${filtered.length}`}
+              {!expanded ? (
+                <span className="font-medium text-faint">· {hidden} more</span>
+              ) : null}
+              <ChevronDown
+                size={15}
+                className={`transition-transform ${expanded ? 'rotate-180' : ''}`}
+              />
+            </button>
+          ) : null}
+        </>
       )}
     </section>
   )
