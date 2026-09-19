@@ -15,7 +15,7 @@ function DateBadge({ iso, today }) {
   return (
     <div
       className={`flex size-11 shrink-0 flex-col items-center justify-center rounded-2xl ${
-        today ? 'bg-brand text-white' : 'bg-brand-soft text-brand'
+        today ? 'bg-brand-fill text-white' : 'bg-brand-soft text-brand'
       }`}
     >
       <span className="text-[9px] font-bold uppercase tracking-wide opacity-80">

@@ -321,7 +321,7 @@ export function Dashboard({ user }) {
             type="button"
             onClick={() => setLogSheet({ log: null })}
             aria-label="Log an entry"
-            className="pointer-events-auto ml-auto flex size-14 cursor-pointer items-center justify-center rounded-full bg-hero text-white shadow-hero transition hover:brightness-110 active:scale-95"
+            className="pointer-events-auto ml-auto flex size-14 cursor-pointer items-center justify-center rounded-full bg-action text-white shadow-hero transition hover:brightness-110 active:scale-95"
           >
             <Plus size={26} />
           </button>

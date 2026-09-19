@@ -34,7 +34,7 @@ export function TodayNudge({ jobId, loggedToday, onLog }) {
 
   return (
     <div className="animate-rise flex items-center gap-3 rounded-2xl bg-brand-soft px-3.5 py-3">
-      <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-brand text-white">
+      <span className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-brand-fill text-white">
         <BellRing size={15} />
       </span>
       <p className="flex-1 text-[13px] leading-snug">

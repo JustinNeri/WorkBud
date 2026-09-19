@@ -21,7 +21,7 @@ export function JobTabs({ jobs, activeJobId, onSelect, onAdd }) {
             aria-current={active ? 'true' : undefined}
             className={`shrink-0 cursor-pointer rounded-full px-3.5 py-2 text-[13px] font-semibold transition ${
               active
-                ? 'bg-brand text-white shadow-card'
+                ? 'bg-brand-fill text-white shadow-card'
                 : 'bg-surface text-muted shadow-card hover:text-ink hover:brightness-95 active:brightness-95'
             }`}
           >

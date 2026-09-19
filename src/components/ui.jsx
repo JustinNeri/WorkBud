@@ -141,9 +141,9 @@ export function Button({
   // and a desktop button that never responds until it is clicked is most of why
   // a touch-first layout feels inert on a monitor.
   const variants = {
-    primary: 'bg-hero text-white shadow-hero hover:brightness-110 active:brightness-95',
+    primary: 'bg-action text-white shadow-hero hover:brightness-110 active:brightness-95',
     secondary: 'bg-surface-2 text-ink hover:brightness-105 active:brightness-95',
-    danger: 'bg-over text-white hover:brightness-110 active:brightness-90',
+    danger: 'bg-over-fill text-white hover:brightness-110 active:brightness-90',
     // Destructive, but not shouting: a filled red button at the foot of every
     // edit form is louder than the action deserves before it's asked for.
     dangerGhost: 'text-over hover:bg-over-soft active:bg-over-soft',
