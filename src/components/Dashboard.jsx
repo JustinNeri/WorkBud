@@ -176,6 +176,8 @@ export function Dashboard({ user }) {
                   percent={stats.hoursPct}
                   complete={stats.hoursComplete}
                   deadline={stats.deadline}
+                  expectedFinish={stats.expectedFinish}
+                  finishVsDeadline={stats.finishVsDeadline}
                 />
 
                 <PaceCard
@@ -187,15 +189,12 @@ export function Dashboard({ user }) {
                   complete={stats.hoursComplete}
                   ongoing={isOngoingRole(profile?.occupation)}
                   entryCount={stats.entryCount}
+                  daysAbsent={stats.daysAbsent}
                   monthHours={stats.monthHours}
                   monthDaysWorked={stats.monthDaysWorked}
                   monthEarned={stats.monthEarned}
                   projectedMonthHours={stats.projectedMonthHours}
                   hourlyRate={stats.hourlyRate}
-                  earned={stats.earned}
-                  spentAllTime={stats.spentAllTime}
-                  net={stats.net}
-                  costPerHour={stats.costPerHour}
                 />
 
                 <StatTiles

@@ -349,3 +349,38 @@ create policy "milestones_delete_own" on public.milestones
   for delete to authenticated using ((select auth.uid()) = user_id);
 
 grant select, insert, update, delete on public.milestones to authenticated;
+
+-- ---------------------------------------------------------------------------
+-- 10. Planned pace, start date, and days off
+--
+--     Added after launch. `create table if not exists` above skips an existing
+--     table outright, so new columns have to be spelled out separately — the
+--     same pattern used for daily_budget and hourly_rate.
+--
+--     daily_hours is the shift the user expects to work on a normal day. It is
+--     what the "expected finish" projection divides the remaining hours by, so
+--     it answers a question the deadline alone cannot: not "how many hours a
+--     day would I need", but "when do I actually land at the pace I keep".
+--
+--     absent marks a day the user did not go in. It is a logged day with zero
+--     hours rather than a missing row, because a gap in the record is
+--     ambiguous — it could equally be a day nobody got round to filling in.
+--     Recording it makes the absence deliberate, keeps it in the DTR where a
+--     coordinator expects to see it accounted for, and pushes the projected
+--     finish out by exactly the day that was lost.
+-- ---------------------------------------------------------------------------
+alter table public.jobs
+  add column if not exists daily_hours numeric(5, 2) not null default 8
+    check (daily_hours >= 0 and daily_hours <= 24),
+  add column if not exists start_date date;
+
+comment on column public.jobs.daily_hours is
+  'Hours the user plans to work on a normal day; drives the expected finish date.';
+comment on column public.jobs.start_date is
+  'First day of the placement. Optional; informational alongside the deadline.';
+
+alter table public.daily_logs
+  add column if not exists absent boolean not null default false;
+
+comment on column public.daily_logs.absent is
+  'True for a day the user did not work. Hours stay 0; the note carries the reason.';
