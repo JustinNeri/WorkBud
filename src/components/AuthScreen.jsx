@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { ArrowRight, Check, Loader2, Lock, Mail } from 'lucide-react'
+import { useLocation, useNavigate } from 'react-router'
 import {
   supabase,
   errorMessage,
@@ -8,7 +9,6 @@ import {
 } from '../lib/supabase'
 import { evaluatePassword } from '../lib/password'
 import { AuthShell } from './AuthShell'
-import { ForgotPassword } from './ForgotPassword'
 import { OtpStep } from './OtpStep'
 import {
   Alert,
@@ -22,8 +22,13 @@ import {
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 
-export function AuthScreen() {
-  const [mode, setMode] = useState('signin') // 'signin' | 'signup'
+const PATHS = { signin: '/login', signup: '/signup' }
+
+export function AuthScreen({ mode }) {
+  // 'signin' | 'signup' — owned by the URL, so each tab is linkable and the
+  // browser's back button moves between them.
+  const navigate = useNavigate()
+  const location = useLocation()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
@@ -34,23 +39,33 @@ export function AuthScreen() {
   const [emailState, setEmailState] = useState(null)
   // Set once signUp has mailed a code; swaps this screen for the OTP step.
   const [awaitingCode, setAwaitingCode] = useState(null)
-  const [resetting, setResetting] = useState(false)
   // Seeded from the last choice made on this device, and ticked by default:
   // staying signed in is what the app did before this checkbox existed.
   const [remember, setRemember] = useState(isRemembered)
+
+  // Both routes render this component in the same spot, so React keeps its
+  // state across a tab switch. Keep the email but clear the rest — including
+  // when the switch came from the back button rather than a tab.
+  const [shownMode, setShownMode] = useState(mode)
+  if (mode !== shownMode) {
+    setShownMode(mode)
+    setPassword('')
+    setConfirm('')
+    setError(null)
+    setNotice(location.state?.notice ?? null)
+    setEmailState(null)
+  }
 
   const isSignUp = mode === 'signup'
   const strength = evaluatePassword(password, email)
   const mismatch = confirm.length > 0 && confirm !== password
 
-  function selectMode(next) {
+  // Carry the router state along so a post-sign-in redirect survives
+  // switching tabs.
+  function selectMode(next, notice) {
     if (next === mode) return
-    setMode(next)
-    setPassword('')
-    setConfirm('')
-    setError(null)
-    setNotice(null)
-    setEmailState(null)
+    const { notice: _stale, ...state } = location.state ?? {}
+    navigate(PATHS[next], { state: notice ? { ...state, notice } : state })
   }
 
   function handleEmailChange(e) {
@@ -84,8 +99,12 @@ export function AuthScreen() {
   }
 
   function switchToSignIn() {
-    selectMode('signin')
-    setNotice('You already have an account — sign in with your password.')
+    // The notice rides along in router state: the navigation renders as a
+    // transition, so a setNotice() here could be wiped by the reset above.
+    selectMode(
+      'signin',
+      'You already have an account — sign in with your password.',
+    )
   }
 
   async function handleSubmit(e) {
@@ -189,15 +208,6 @@ export function AuthScreen() {
 
   if (awaitingCode) {
     return <OtpStep email={awaitingCode} onBack={() => setAwaitingCode(null)} />
-  }
-
-  if (resetting) {
-    return (
-      <ForgotPassword
-        initialEmail={email.trim()}
-        onBack={() => setResetting(false)}
-      />
-    )
   }
 
   const trimmed = email.trim()
@@ -351,7 +361,11 @@ export function AuthScreen() {
             />
             <button
               type="button"
-              onClick={() => setResetting(true)}
+              onClick={() =>
+                navigate('/forgot-password', {
+                  state: { ...location.state, email: email.trim() },
+                })
+              }
               className="mt-px shrink-0 cursor-pointer text-[13px] font-semibold text-brand hover:underline hover:underline-offset-2"
             >
               Forgot password?
