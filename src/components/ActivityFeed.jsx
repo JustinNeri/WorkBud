@@ -60,12 +60,14 @@ function LogRow({ log, items, onEdit, onDelete, deleting, isToday, overBy }) {
         <DateBadge iso={log.entry_date} today={isToday} />
 
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <span className="text-[14px] font-semibold">
+          {/* Wraps as whole pieces: on a narrow phone the shift drops under
+              the date instead of splitting "Thu, Sep 17" across two lines. */}
+          <div className="flex flex-wrap items-baseline gap-x-2">
+            <span className="whitespace-nowrap text-[14px] font-semibold">
               {formatEntryDate(log.entry_date)}
             </span>
             {shift ? (
-              <span className="truncate text-[12px] text-faint">{shift}</span>
+              <span className="whitespace-nowrap text-[12px] text-faint">{shift}</span>
             ) : null}
           </div>
 
