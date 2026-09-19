@@ -74,7 +74,7 @@ export function useWorkbud(userId) {
       supabase
         .from('profiles')
         .select(
-          'id, first_name, last_name, middle_initial, age, occupation, currency, onboarded_at',
+          'id, first_name, last_name, middle_initial, age, occupation, currency, avatar_path, onboarded_at',
         )
         .eq('id', userId)
         .maybeSingle(),
@@ -364,7 +364,7 @@ export function useWorkbud(userId) {
         .update(values)
         .eq('id', userId)
         .select(
-          'id, first_name, last_name, middle_initial, age, occupation, currency, onboarded_at',
+          'id, first_name, last_name, middle_initial, age, occupation, currency, avatar_path, onboarded_at',
         )
         .single()
 

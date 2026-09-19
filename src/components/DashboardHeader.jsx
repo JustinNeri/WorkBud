@@ -1,4 +1,5 @@
 import { Download, Settings } from 'lucide-react'
+import { Avatar } from './Avatar'
 
 /**
  * Greeting, avatar and the two page-level actions.
@@ -15,7 +16,13 @@ function greeting(date = new Date()) {
   return 'Good evening'
 }
 
-export function DashboardHeader({ name, initial, onExport, onSettings }) {
+export function DashboardHeader({
+  name,
+  initial,
+  avatarUrl,
+  onExport,
+  onSettings,
+}) {
   return (
     <header className="relative">
       {/* A wash of the brand tint behind the header, fading into the canvas —
@@ -30,9 +37,7 @@ export function DashboardHeader({ name, initial, onExport, onSettings }) {
 
       <div className="wb-shell flex items-center justify-between pt-[max(1.25rem,env(safe-area-inset-top))] pb-4">
         <div className="flex min-w-0 items-center gap-3">
-          <span className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-action text-[16px] font-bold text-white shadow-hero">
-            {initial}
-          </span>
+          <Avatar src={avatarUrl} initial={initial} size={44} />
           <div className="min-w-0">
             <p className="text-[12.5px] leading-tight text-muted">{greeting()}</p>
             <h1 className="truncate text-[19px] font-bold leading-tight tracking-tight">
