@@ -189,9 +189,9 @@ export function ActivityFeed({
   const [month, setMonth] = useState('all') // 'all' | 'YYYY-MM'
   const [expanded, setExpanded] = useState(false)
 
-  // Months that actually have entries, newest first — logs already arrive in
-  // that order, so first-seen order is the right one.
-  const months = [...new Set(logs.map((l) => l.entry_date.slice(0, 7)))]
+  // Months that actually have entries, oldest first so the chips read like a
+  // calendar (Jun, Aug, Sep). "YYYY-MM" keys sort correctly as plain strings.
+  const months = [...new Set(logs.map((l) => l.entry_date.slice(0, 7)))].sort()
 
   // A month picked on one job may not exist on the next, or its last entry
   // may have just been deleted; fall back to everything rather than an empty
