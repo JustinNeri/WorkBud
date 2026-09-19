@@ -1,6 +1,8 @@
-import { CalendarClock, Check, Clock } from 'lucide-react'
+import { CalendarCheck2, CalendarClock, Check, Clock } from 'lucide-react'
 import { daysUntil, formatEntryDate } from '../lib/format'
 import { Ring } from './Ring'
+
+const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`
 
 /**
  * The single number this dashboard leads with — OJT hours logged.
@@ -15,11 +17,18 @@ export function HeroHours({
   percent,
   complete,
   deadline,
+  expectedFinish,
+  finishVsDeadline,
 }) {
   const fmt = (n) => (Number.isInteger(n) ? String(n) : n.toFixed(2).replace(/0$/, ''))
   // The date, not the countdown — the pace card below already does the maths,
   // and what people want at a glance is the day they're working towards.
   const daysLeft = deadline ? daysUntil(deadline) : null
+
+  // finishVsDeadline is in calendar days and positive when the projection
+  // lands after the deadline. Null when there is no deadline to measure it
+  // against, which is a different thing from landing exactly on it.
+  const late = finishVsDeadline !== null && finishVsDeadline > 0
 
   return (
     <section className="animate-rise relative overflow-hidden rounded-[28px] bg-hero px-5 pt-4 pb-5 text-hero-ink shadow-hero ring-1 ring-white/10">
@@ -79,6 +88,36 @@ export function HeroHours({
               ? `Deadline was ${formatEntryDate(deadline)}`
               : `Deadline ${formatEntryDate(deadline)}`}
           </p>
+        ) : null}
+
+        {/* Where this actually lands, at the hours-a-day the job is set to.
+            It sits under the deadline because it only means anything next to
+            one: on its own it is a date, beside the deadline it is an answer.
+            Shown without a deadline too — a job with no end date still has a
+            finish worth knowing. */}
+        {expectedFinish && !complete ? (
+          <div className="mt-3 rounded-2xl bg-white/10 px-3 py-2.5 text-center ring-1 ring-white/10">
+            <p className="flex items-center justify-center gap-1.5 text-[10.5px] font-bold uppercase tracking-[0.09em] opacity-65">
+              <CalendarCheck2 size={12} />
+              Expected finish
+            </p>
+            <p className="mt-1 text-[16px] font-bold tracking-tight">
+              {formatEntryDate(expectedFinish)}
+            </p>
+            {finishVsDeadline !== null ? (
+              <p
+                className={`mt-0.5 text-[12px] font-semibold ${
+                  late ? 'text-over' : 'text-money'
+                }`}
+              >
+                {late
+                  ? `${plural(finishVsDeadline, 'day')} past the deadline`
+                  : finishVsDeadline === 0
+                    ? 'Right on the deadline'
+                    : `${plural(Math.abs(finishVsDeadline), 'day')} to spare`}
+              </p>
+            ) : null}
+          </div>
         ) : null}
       </div>
     </section>

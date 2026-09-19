@@ -3,6 +3,7 @@ import { supabase, errorMessage } from '../lib/supabase'
 import {
   addWeekdays,
   daysLeftInMonth,
+  daysUntil,
   effectiveHours,
   monthEndISO,
   monthStartISO,
@@ -19,10 +20,10 @@ function byNewest(a, b) {
 }
 
 const JOB_COLS =
-  'id, name, target_hours, monthly_budget, daily_budget, deadline, hourly_rate, sort_order, created_at'
+  'id, name, target_hours, monthly_budget, daily_budget, deadline, hourly_rate, daily_hours, start_date, sort_order, created_at'
 
 const LOG_COLS =
-  'id, job_id, entry_date, hours_worked, amount_spent, description, time_in, time_out, break_minutes, created_at'
+  'id, job_id, entry_date, hours_worked, amount_spent, description, time_in, time_out, break_minutes, absent, created_at'
 
 const EXPENSE_COLS = 'id, log_id, label, amount, category, created_at'
 
@@ -410,18 +411,50 @@ export function useWorkbud(userId) {
       logs.filter((l) => effectiveHours(l, now) > 0).map((l) => l.entry_date),
     ).size
 
-    // --- cost of working. Spend here is all-time for this job, not just this
-    // month, because the question is what the whole placement has cost.
-    const spentAllTime = logs.reduce((sum, l) => sum + Number(l.amount_spent), 0)
+    // Only the rate survives here. The all-time spend, earnings, net and
+    // cost-per-hour it used to feed were the pace card's "what this placement
+    // has cost you" half, which was removed — the money section further down
+    // the page already owns that question.
     const hourlyRate = Number(activeJob?.hourly_rate) || 0
-    const earned = loggedHours * hourlyRate
 
     // --- pace. Weekdays only; a 7-day figure isn't something anyone can act on.
     const deadline = activeJob?.deadline ?? null
+    const startDate = activeJob?.start_date ?? null
     const hoursLeft = Math.max(targetHours - loggedHours, 0)
     const weekdaysLeft = deadline ? weekdaysUntil(deadline) : null
     const requiredPerDay =
       weekdaysLeft && weekdaysLeft > 0 ? hoursLeft / weekdaysLeft : null
+
+    // Days recorded as not worked. These are real rows carrying zero hours,
+    // not gaps, so they already hold hoursLeft up — which is exactly how a
+    // missed day pushes the projected finish out below. Nothing extra has to
+    // be done to "penalise" an absence; the arithmetic does it.
+    const daysAbsent = new Set(
+      logs.filter((l) => l.absent).map((l) => l.entry_date),
+    ).size
+
+    // Today counts as a day still available to work unless it is already
+    // logged, in which case projecting from it would count it twice. Shared
+    // with the hour badges further down.
+    const projectFrom = logs.some((l) => l.entry_date === todayISO())
+      ? toISODate(tomorrow)
+      : todayISO()
+
+    // --- when this actually finishes, at the pace the user says they work.
+    //
+    // requiredPerDay answers "how hard would I have to push to hit the
+    // deadline". This answers the question people actually ask, which is
+    // "carrying on as I am, when do I land" — remaining hours divided by a
+    // normal day's hours, counted out in weekdays.
+    const dailyHours = Number(activeJob?.daily_hours) || 0
+    const expectedFinish =
+      hoursLeft > 0 && dailyHours > 0
+        ? addWeekdays(projectFrom, hoursLeft / dailyHours)
+        : null
+    // Positive means it lands after the deadline, in calendar days — which is
+    // what someone asking "am I going to make it" is counting in.
+    const finishVsDeadline =
+      expectedFinish && deadline ? daysUntil(expectedFinish, deadline) : null
 
     // --- the month so far, for a job that has no deadline to count down to.
     // Projection runs from tomorrow so today isn't counted twice, and leans on
@@ -488,9 +521,6 @@ export function useWorkbud(userId) {
       }
 
       const avgWorked = daysWorked > 0 ? loggedHours / daysWorked : 0
-      const projectFrom = logs.some((l) => l.entry_date === todayISO())
-        ? toISODate(tomorrow)
-        : todayISO()
       for (const t of thresholds) {
         const reachedOn = reached.get(t.percent) ?? null
         hourBadges.push({
@@ -516,13 +546,14 @@ export function useWorkbud(userId) {
       .sort((a, b) => b.amount - a.amount)
 
     return {
-      spentAllTime,
       hourlyRate,
-      earned,
-      net: earned - spentAllTime,
-      costPerHour: loggedHours > 0 ? spentAllTime / loggedHours : 0,
 
       deadline,
+      startDate,
+      dailyHours,
+      daysAbsent,
+      expectedFinish,
+      finishVsDeadline,
       weekdaysLeft,
       requiredPerDay,
       // Behind only counts once we know both the pace needed and the pace held.

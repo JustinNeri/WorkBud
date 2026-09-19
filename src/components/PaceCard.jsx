@@ -2,8 +2,7 @@ import {
   AlertTriangle,
   CalendarClock,
   CalendarRange,
-  TrendingDown,
-  TrendingUp,
+  CalendarX2,
 } from 'lucide-react'
 import { daysUntil, formatEntryDate, formatMoney } from '../lib/format'
 
@@ -11,14 +10,20 @@ const round = (n) => (Number.isInteger(n) ? String(n) : n.toFixed(1))
 const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`
 
 /**
- * Answers the two questions the meters can't: will I finish, and what has this
- * cost me. Each half hides itself until the job carries the data it needs, so
- * an unpaid placement with no deadline shows nothing rather than zeros.
+ * Will I finish, and what has got in the way.
+ *
+ * Each row hides itself until the job carries the data it needs, so a
+ * placement with no deadline and no days off shows nothing rather than zeros.
  *
  * "Will I finish" only means something for work that ends. A placement counts
  * down to its deadline; a job someone is simply employed in has no last day, so
  * for those the same slot reports the month so far and where it's heading —
  * the closest thing to a finish line an ongoing role has.
+ *
+ * This card used to carry a second half totalling what the placement had cost
+ * out of pocket. It was removed on request: the money already has a whole
+ * section of its own further down the page, and a running "this is what it has
+ * cost you" under the pace figures read as editorial rather than useful.
  */
 export function PaceCard({
   deadline,
@@ -29,15 +34,12 @@ export function PaceCard({
   complete,
   ongoing,
   entryCount,
+  daysAbsent = 0,
   monthHours,
   monthDaysWorked,
   monthEarned,
   projectedMonthHours,
   hourlyRate,
-  earned,
-  spentAllTime,
-  net,
-  costPerHour,
 }) {
   const showPace = Boolean(deadline) && !complete
   // No deadline: an ongoing role gets the month instead, and a placement that
@@ -45,11 +47,12 @@ export function PaceCard({
   // entry — a dashboard with nothing on it yet should stay quiet.
   const showMonth = !deadline && ongoing && entryCount > 0
   const showPrompt = !deadline && !ongoing && entryCount > 0
-  const showCost = spentAllTime > 0 || hourlyRate > 0
-  if (!showPace && !showMonth && !showPrompt && !showCost) return null
+  const showAbsent = daysAbsent > 0
+  if (!showPace && !showMonth && !showPrompt && !showAbsent) return null
 
   const daysLeft = deadline ? daysUntil(deadline) : null
   const paid = hourlyRate > 0
+  const showDivider = showPace || showMonth || showPrompt
 
   return (
     <section
@@ -134,38 +137,25 @@ export function PaceCard({
         </div>
       ) : null}
 
-      {(showPace || showMonth || showPrompt) && showCost ? (
-        <div className="h-px bg-line" />
-      ) : null}
+      {showDivider && showAbsent ? <div className="h-px bg-line" /> : null}
 
-      {showCost ? (
+      {/* Days off, stated plainly rather than as a telling-off. They are the
+          reason the expected finish moved, so saying so here closes the loop
+          between the day that was missed and the date that slipped. */}
+      {showAbsent ? (
         <div className="flex items-start gap-2.5">
-          <span
-            className={`flex size-9 shrink-0 items-center justify-center rounded-xl ${
-              paid && net >= 0
-                ? 'bg-money-soft text-money'
-                : 'bg-over-soft text-over'
-            }`}
-          >
-            {paid && net >= 0 ? <TrendingUp size={17} /> : <TrendingDown size={17} />}
+          <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-warn-soft text-warn">
+            <CalendarX2 size={17} />
           </span>
 
           <div className="min-w-0 flex-1">
             <p className="text-[14px] font-semibold leading-tight">
-              {paid
-                ? `${formatMoney(net)} net`
-                : `${formatMoney(spentAllTime)} out of pocket`}
+              {plural(daysAbsent, 'day')} not worked
             </p>
             <p className="mt-0.5 text-[12.5px] leading-snug text-muted">
-              {paid
-                ? `${formatMoney(earned)} earned · ${formatMoney(spentAllTime)} spent`
-                : 'Unpaid placement — this is what getting there has cost you.'}
+              Logged as days off, so they appear in your DTR and are already
+              built into the expected finish above.
             </p>
-            {costPerHour > 0 ? (
-              <p className="mt-1 text-[12.5px] text-faint">
-                {formatMoney(costPerHour)} spent per hour worked
-              </p>
-            ) : null}
           </div>
         </div>
       ) : null}

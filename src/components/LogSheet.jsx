@@ -17,6 +17,7 @@ import { Sheet } from './Sheet'
 import {
   Alert,
   Button,
+  Checkbox,
   Field,
   FormSection,
   NumberInput,
@@ -86,6 +87,10 @@ export function LogSheet({
         }))
       : [newItem()],
   )
+  // A day off is a logged day carrying zero hours, not a missing row: a gap
+  // in the record is ambiguous, because it reads the same as a day nobody got
+  // round to filling in.
+  const [absent, setAbsent] = useState(Boolean(log?.absent))
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
 
@@ -145,7 +150,9 @@ export function LogSheet({
   async function handleSubmit(e) {
     e.preventDefault()
 
-    const hoursValue = hours === '' ? 0 : Number(hours)
+    // A day marked as not worked carries no shift, whatever is still sitting
+    // in the time fields from before the box was ticked.
+    const hoursValue = absent ? 0 : hours === '' ? 0 : Number(hours)
     if (!date) return setError('Pick a date for this entry.')
     if (!Number.isFinite(hoursValue) || hoursValue < 0 || hoursValue > 24)
       return setError('Hours must be between 0 and 24.')
@@ -161,7 +168,9 @@ export function LogSheet({
         category: i.category,
       }))
 
-    if (hoursValue === 0 && kept.length === 0 && !note.trim())
+    // Marking the day off is itself what the entry says, so the usual "this
+    // row records nothing" guard doesn't apply to it.
+    if (!absent && hoursValue === 0 && kept.length === 0 && !note.trim())
       return setError('Add some hours, an expense, or a note.')
 
     setBusy(true)
@@ -170,11 +179,12 @@ export function LogSheet({
     const { error: err } = await onSubmit(
       {
         entry_date: date,
+        absent,
         hours_worked: hoursValue,
         amount_spent: kept.reduce((sum, i) => sum + i.amount, 0),
-        time_in: timeIn || null,
-        time_out: timeOut || null,
-        break_minutes: Number(breakMins) || 0,
+        time_in: absent ? null : timeIn || null,
+        time_out: absent ? null : timeOut || null,
+        break_minutes: absent ? 0 : Number(breakMins) || 0,
         description: note.trim() || null,
       },
       kept,
@@ -270,75 +280,89 @@ export function LogSheet({
 
         {/* --- shift ------------------------------------------------------ */}
         <FormSection label="Shift" icon={Clock} tone="brand">
-          {/* One column on a phone, two only once there is room.
-              A native time control sizes itself — its value and its picker
-              button share one row, and every engine reserves a different
-              amount for that button. Two of them side by side on a 390px
-              screen left too little and the button landed on top of the
-              value. Rather than tune padding per browser, the pair only goes
-              two-up at a width where any of them fits. Break and hours below
-              stay two-up: plain number inputs have no such widget. */}
-          <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-            <Field label="Time in">
-              <TextInput
-                type="time"
-                value={timeIn}
-                onChange={(e) => {
-                  setTimeIn(e.target.value)
-                  setHoursOverride(null)
-                }}
-              />
-            </Field>
-            <Field label="Time out">
-              <TextInput
-                type="time"
-                value={timeOut}
-                onChange={(e) => {
-                  setTimeOut(e.target.value)
-                  setHoursOverride(null)
-                }}
-              />
-            </Field>
-          </div>
+          {/* Ticking this empties the shift rather than disabling it: a row of
+              greyed-out time fields invites the user to wonder what they were
+              supposed to put there. */}
+          <Checkbox
+            checked={absent}
+            onChange={(e) => setAbsent(e.target.checked)}
+            label="I didn't work this day"
+            hint="Keeps the day on record with zero hours — it shows in your DTR and pushes the expected finish back."
+          />
 
-          <div className="mt-2.5 grid grid-cols-2 gap-3">
-            <Field label="Break (mins)">
-              <NumberInput
-                value={breakMins}
-                onChange={(e) => {
-                  setBreakMins(e.target.value)
-                  setHoursOverride(null)
-                }}
-                placeholder="60"
-                min="0"
-                max="1439"
-                step="5"
-              />
-            </Field>
-            <Field label="Hours worked">
-              {/* Any decimal: the computed value is minutes/60 rounded to two
-                  places (12.83 for a 12h50m shift), and a quarter-hour step
-                  made the browser reject it on save. */}
-              <NumberInput
-                value={hours}
-                onChange={(e) => setHoursOverride(e.target.value)}
-                placeholder="8.5"
-                step="any"
-                min="0"
-                max="24"
-              />
-            </Field>
-          </div>
+          {absent ? null : (
+            <div className="mt-3">
+              {/* One column on a phone, two only once there is room.
+                  A native time control sizes itself — its value and its picker
+                  button share one row, and every engine reserves a different
+                  amount for that button. Two of them side by side on a 390px
+                  screen left too little and the button landed on top of the
+                  value. Rather than tune padding per browser, the pair only goes
+                  two-up at a width where any of them fits. Break and hours below
+                  stay two-up: plain number inputs have no such widget. */}
+              <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+                <Field label="Time in">
+                  <TextInput
+                    type="time"
+                    value={timeIn}
+                    onChange={(e) => {
+                      setTimeIn(e.target.value)
+                      setHoursOverride(null)
+                    }}
+                  />
+                </Field>
+                <Field label="Time out">
+                  <TextInput
+                    type="time"
+                    value={timeOut}
+                    onChange={(e) => {
+                      setTimeOut(e.target.value)
+                      setHoursOverride(null)
+                    }}
+                  />
+                </Field>
+              </div>
 
-          {computed !== null && hoursOverride === null ? (
-            <p className="mt-2 text-[12.5px] leading-snug text-brand">
-              {running
-                ? `${formatHours(soFar)} so far — counts up to ${formatHours(
-                    computed,
-                  )} at ${formatTime(timeOut)}.`
-                : 'Computed from your shift — edit it to override.'}
-            </p>
-          ) : null}
+              <div className="mt-2.5 grid grid-cols-2 gap-3">
+                <Field label="Break (mins)">
+                  <NumberInput
+                    value={breakMins}
+                    onChange={(e) => {
+                      setBreakMins(e.target.value)
+                      setHoursOverride(null)
+                    }}
+                    placeholder="60"
+                    min="0"
+                    max="1439"
+                    step="5"
+                  />
+                </Field>
+                <Field label="Hours worked">
+                  {/* Any decimal: the computed value is minutes/60 rounded to two
+                      places (12.83 for a 12h50m shift), and a quarter-hour step
+                      made the browser reject it on save. */}
+                  <NumberInput
+                    value={hours}
+                    onChange={(e) => setHoursOverride(e.target.value)}
+                    placeholder="8.5"
+                    step="any"
+                    min="0"
+                    max="24"
+                  />
+                </Field>
+              </div>
+
+              {computed !== null && hoursOverride === null ? (
+                <p className="mt-2 text-[12.5px] leading-snug text-brand">
+                  {running
+                    ? `${formatHours(soFar)} so far — counts up to ${formatHours(
+                        computed,
+                      )} at ${formatTime(timeOut)}.`
+                    : 'Computed from your shift — edit it to override.'}
+                </p>
+              ) : null}
+            </div>
+          )}
         </FormSection>
 
         {/* --- expenses --------------------------------------------------- */}
@@ -460,7 +484,11 @@ export function LogSheet({
             rows={2}
             value={note}
             onChange={(e) => setNote(e.target.value)}
-            placeholder="Optional — half day, went to the site office"
+            placeholder={
+              absent
+                ? 'Why — sick, holiday, no work at the office'
+                : 'Optional — half day, went to the site office'
+            }
             maxLength={280}
           />
         </FormSection>

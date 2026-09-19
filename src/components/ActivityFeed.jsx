@@ -1,4 +1,11 @@
-import { CalendarDays, ChevronRight, Clock, Trash2, Wallet } from 'lucide-react'
+import {
+  CalendarDays,
+  CalendarX2,
+  ChevronRight,
+  Clock,
+  Trash2,
+  Wallet,
+} from 'lucide-react'
 import {
   effectiveHours,
   formatEntryDate,
@@ -28,6 +35,7 @@ function DateBadge({ iso, today }) {
 
 function LogRow({ log, items, onEdit, onDelete, deleting, isToday, overBy }) {
   const spent = Number(log.amount_spent)
+  const absent = Boolean(log.absent)
   const hoursSoFar = effectiveHours(log)
   const running = isInProgress(log)
   const shift =
@@ -62,13 +70,23 @@ function LogRow({ log, items, onEdit, onDelete, deleting, isToday, overBy }) {
           </div>
 
           <div className="mt-1 flex flex-wrap items-center gap-1.5">
-            <span className="inline-flex items-center gap-1 rounded-md bg-brand-soft px-1.5 py-0.5 text-[12px] font-semibold text-brand">
-              <Clock size={11} />
-              {formatHours(hoursSoFar)}
-              {running ? (
-                <span className="font-normal opacity-70">so far</span>
-              ) : null}
-            </span>
+            {/* A day off reads as a stated fact, not a gap. Amber rather than
+                red: not going in is a normal part of a placement, and it is
+                already accounted for in the expected finish. */}
+            {absent ? (
+              <span className="inline-flex items-center gap-1 rounded-md bg-warn-soft px-1.5 py-0.5 text-[12px] font-semibold text-warn">
+                <CalendarX2 size={11} />
+                Did not work
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 rounded-md bg-brand-soft px-1.5 py-0.5 text-[12px] font-semibold text-brand">
+                <Clock size={11} />
+                {formatHours(hoursSoFar)}
+                {running ? (
+                  <span className="font-normal opacity-70">so far</span>
+                ) : null}
+              </span>
+            )}
             {/* A day that broke the daily cap wears it here, where the day is
                 being scanned — the budget card only reports today. Amber, not
                 red: these rows are read in a scroll, and a column of red

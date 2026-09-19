@@ -28,6 +28,20 @@ const printDate = (iso) =>
     year: 'numeric',
   })
 
+/**
+ * The day's note, with an absence stated in front of it.
+ *
+ * A day off is reported in the note column rather than a column of its own.
+ * The printed record has to stay narrow enough to read across, and the place
+ * a coordinator already looks to find out what happened on a given day is the
+ * account-of-the-work column — so that is where "Absent" belongs, ahead of
+ * whatever reason was given.
+ */
+const noteFor = (l) =>
+  l.absent
+    ? `Absent${l.description ? ` — ${l.description}` : ''}`
+    : (l.description ?? '')
+
 /** Every column: shift, break, money, the day's expense items and its note. */
 export function buildCsv(logs, expensesFor) {
   const header = [
@@ -51,7 +65,7 @@ export function buildCsv(logs, expensesFor) {
     expensesFor(l.id)
       .map((e) => `${e.label || categoryLabel(e.category)}: ${Number(e.amount)}`)
       .join('; '),
-    l.description ?? '',
+    noteFor(l),
   ])
 
   return toCsv(header, rows)
@@ -70,7 +84,7 @@ export function buildTimeLogCsv(logs) {
     l.time_in?.slice(0, 5) ?? '',
     l.time_out?.slice(0, 5) ?? '',
     Number(l.hours_worked),
-    l.description ?? '',
+    noteFor(l),
   ])
 
   return toCsv(header, rows)
@@ -92,6 +106,7 @@ function recordMeta({ profile, logs, email }) {
     name: fullName || email || '—',
     range,
     totalHours: logs.reduce((s, l) => s + Number(l.hours_worked), 0),
+    daysAbsent: logs.filter((l) => l.absent).length,
   }
 }
 
@@ -120,6 +135,9 @@ function recordPage({ title, job, profile, meta, head, body, foot, columns }) {
   .nowrap { white-space: nowrap; }
   .small { font-size: 11px; color: #444; }
   .notes { white-space: pre-wrap; }
+  /* A day off, greyed so the worked days are what stands out in a scan. */
+  tr.off td { background: #fafafb; color: #6b7280; }
+  .tag { font-weight: 700; letter-spacing: .03em; }
   tfoot td { font-weight: 700; background: #fafafe; }
   .sign { margin-top: 42px; display: flex; gap: 48px; }
   .sign div { flex: 1; border-top: 1px solid #333; padding-top: 6px; font-size: 11px; color: #444; }
@@ -155,6 +173,12 @@ function recordPage({ title, job, profile, meta, head, body, foot, columns }) {
 
 const daysLabel = (n) => `${n} day${n === 1 ? '' : 's'}`
 
+/** "Total — 42 days (3 not worked)". The parenthetical only when it applies. */
+const totalLabel = (meta, count) =>
+  meta.daysAbsent > 0
+    ? `Total — ${daysLabel(count)} (${meta.daysAbsent} not worked)`
+    : `Total — ${daysLabel(count)}`
+
 /** The full record — shift, break, money and what was bought. */
 export function buildDtrHtml({ job, profile, logs, expensesFor, email }) {
   const ordered = [...logs].sort(byDate)
@@ -166,14 +190,20 @@ export function buildDtrHtml({ job, profile, logs, expensesFor, email }) {
       const items = expensesFor(l.id)
         .map((e) => `${esc(e.label || categoryLabel(e.category))} ${formatMoney(e.amount)}`)
         .join(', ')
-      return `<tr>
+      return `<tr${l.absent ? ' class="off"' : ''}>
         <td class="nowrap">${printDate(l.entry_date)}</td>
         <td class="nowrap">${esc(formatTime(l.time_in) ?? '—')}</td>
         <td class="nowrap">${esc(formatTime(l.time_out) ?? '—')}</td>
         <td class="num">${l.break_minutes || 0}</td>
         <td class="num">${Number(l.hours_worked)}</td>
         <td class="num">${esc(formatMoney(l.amount_spent))}</td>
-        <td class="small">${items || esc(l.description ?? '')}</td>
+        <td class="small">${
+          l.absent
+            ? `<span class="tag">Absent</span>${
+                l.description ? ` — ${esc(l.description)}` : ''
+              }`
+            : items || esc(l.description ?? '')
+        }</td>
       </tr>`
     })
     .join('')
@@ -187,7 +217,7 @@ export function buildDtrHtml({ job, profile, logs, expensesFor, email }) {
     head: `<th>Date</th><th>Time in</th><th>Time out</th><th class="num">Break</th>
       <th class="num">Hours</th><th class="num">Spent</th><th>Expenses / note</th>`,
     body,
-    foot: `<td colspan="4">Total — ${daysLabel(ordered.length)}</td>
+    foot: `<td colspan="4">${totalLabel(meta, ordered.length)}</td>
       <td class="num">${meta.totalHours}</td>
       <td class="num">${esc(formatMoney(totalSpent))}</td>
       <td></td>`,
@@ -201,12 +231,18 @@ export function buildTimeLogHtml({ job, profile, logs, email }) {
 
   const body = ordered
     .map(
-      (l) => `<tr>
+      (l) => `<tr${l.absent ? ' class="off"' : ''}>
         <td class="nowrap">${printDate(l.entry_date)}</td>
         <td class="nowrap">${esc(formatTime(l.time_in) ?? '—')}</td>
         <td class="nowrap">${esc(formatTime(l.time_out) ?? '—')}</td>
         <td class="num">${Number(l.hours_worked)}</td>
-        <td class="small notes">${esc(l.description ?? '')}</td>
+        <td class="small notes">${
+          l.absent
+            ? `<span class="tag">Absent</span>${
+                l.description ? ` — ${esc(l.description)}` : ''
+              }`
+            : esc(l.description ?? '')
+        }</td>
       </tr>`,
     )
     .join('')
@@ -220,7 +256,7 @@ export function buildTimeLogHtml({ job, profile, logs, email }) {
     head: `<th>Date</th><th>Time in</th><th>Time out</th><th class="num">Hours</th>
       <th style="width:50%">Work done</th>`,
     body,
-    foot: `<td colspan="3">Total — ${daysLabel(ordered.length)}</td>
+    foot: `<td colspan="3">${totalLabel(meta, ordered.length)}</td>
       <td class="num">${meta.totalHours}</td>
       <td></td>`,
   })

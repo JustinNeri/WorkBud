@@ -19,6 +19,13 @@ export function JobSheet({ open, job, lastJob, onClose, onSubmit, onDelete }) {
 
   const [name, setName] = useState(job?.name ?? '')
   const [hours, setHours] = useState(job ? String(Number(job.target_hours)) : '480')
+  // A normal day's shift. Eight is the ordinary full day most placements run,
+  // and it only ever feeds a projection, so a sensible default beats an empty
+  // field the user has to work out the meaning of.
+  const [dailyHours, setDailyHours] = useState(
+    job?.daily_hours != null ? String(Number(job.daily_hours)) : '8',
+  )
+  const [startDate, setStartDate] = useState(job?.start_date ?? '')
   const [budget, setBudget] = useState(
     job ? String(Number(job.monthly_budget)) : '3000',
   )
@@ -42,6 +49,19 @@ export function JobSheet({ open, job, lastJob, onClose, onSubmit, onDelete }) {
     if (!Number.isFinite(budgetValue) || budgetValue < 0)
       return setError('Budget must be zero or more.')
 
+    const dailyHoursValue = dailyHours === '' ? 0 : Number(dailyHours)
+    if (
+      !Number.isFinite(dailyHoursValue) ||
+      dailyHoursValue < 0 ||
+      dailyHoursValue > 24
+    )
+      return setError('Hours per day must be between 0 and 24.')
+
+    // Neither date is required — plenty of people set one and not the other —
+    // but a placement that ends before it begins is a typo worth catching.
+    if (startDate && deadline && startDate > deadline)
+      return setError('The start date is after the deadline.')
+
     const dailyValue = dailyBudget === '' ? 0 : Number(dailyBudget)
     if (!Number.isFinite(dailyValue) || dailyValue < 0)
       return setError('Daily budget must be zero or more.')
@@ -56,6 +76,8 @@ export function JobSheet({ open, job, lastJob, onClose, onSubmit, onDelete }) {
     const { error: err } = await onSubmit({
       name: name.trim(),
       target_hours: hoursValue,
+      daily_hours: dailyHoursValue,
+      start_date: startDate || null,
       monthly_budget: budgetValue,
       daily_budget: dailyValue,
       deadline: deadline || null,
@@ -114,6 +136,7 @@ export function JobSheet({ open, job, lastJob, onClose, onSubmit, onDelete }) {
         </Field>
 
         <FormSection label="Hours target" icon={Clock} tone="brand">
+          {/* The two amounts first, then the two dates: how much, then when. */}
           <div className="grid grid-cols-2 gap-3">
             <Field label="Target hours">
               <NumberInput
@@ -124,6 +147,26 @@ export function JobSheet({ open, job, lastJob, onClose, onSubmit, onDelete }) {
                 step="1"
               />
             </Field>
+            <Field label="Hours per day">
+              <NumberInput
+                value={dailyHours}
+                onChange={(e) => setDailyHours(e.target.value)}
+                placeholder="8"
+                min="0"
+                max="24"
+                step="any"
+              />
+            </Field>
+          </div>
+
+          <div className="mt-3 grid grid-cols-2 gap-3">
+            <Field label="Start date">
+              <TextInput
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+              />
+            </Field>
             <Field label="Deadline">
               <TextInput
                 type="date"
@@ -132,9 +175,12 @@ export function JobSheet({ open, job, lastJob, onClose, onSubmit, onDelete }) {
               />
             </Field>
           </div>
-          <p className="mt-1.5 text-xs text-faint">
-            The deadline is optional — it powers the “hours per day to finish”
-            figure.
+
+          <p className="mt-2 text-xs leading-snug text-faint">
+            Hours per day is the shift you normally work. The dashboard divides
+            your remaining hours by it to work out the{' '}
+            <span className="font-semibold text-muted">expected finish</span>{' '}
+            date, so every day logged as not worked pushes that date back.
           </p>
         </FormSection>
 
