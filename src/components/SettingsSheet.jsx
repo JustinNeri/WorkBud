@@ -1,7 +1,22 @@
-import { useState } from 'react'
-import { KeyRound, LogOut, ShieldCheck, UserRound, Wallet } from 'lucide-react'
+import { useRef, useState } from 'react'
+import {
+  Camera,
+  KeyRound,
+  LogOut,
+  ShieldCheck,
+  Trash2,
+  UserRound,
+  Wallet,
+} from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import {
+  MAX_PICK_BYTES,
+  avatarUrl,
+  removeAvatar,
+  uploadAvatar,
+} from '../lib/avatar'
 import { CURRENCIES, OCCUPATIONS } from '../lib/format'
+import { Avatar } from './Avatar'
 import { Sheet } from './Sheet'
 import { Alert, Button, Field, FormSection, NumberInput, Select, TextInput } from './ui'
 
@@ -10,6 +25,7 @@ const FORM_ID = 'wb-settings-form'
 /** Account-level settings. Hour and budget targets live on each job instead. */
 export function SettingsSheet({
   open,
+  userId,
   profile,
   email,
   onClose,
@@ -24,6 +40,76 @@ export function SettingsSheet({
   const [currency, setCurrency] = useState(profile?.currency ?? 'PHP')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
+
+  const fileRef = useRef(null)
+  const [avatarPath, setAvatarPath] = useState(profile?.avatar_path ?? null)
+  const [avatarBusy, setAvatarBusy] = useState(false)
+
+  const initial = (firstName.trim()[0] || email?.[0] || '?').toUpperCase()
+
+  /**
+   * Picking a file uploads it immediately and repoints the profile at it.
+   *
+   * Order matters on both ends. The new file goes up before the row is
+   * changed, and the old file is deleted only once the row has been changed —
+   * so at no point does the profile refer to something that isn't there. If
+   * the row update fails, the just-uploaded file is the orphan, and it gets
+   * taken back out rather than left behind.
+   */
+  async function handlePick(e) {
+    const file = e.target.files?.[0]
+    // Clear the input, or picking the same file again after a failure is not
+    // a change and fires no event.
+    e.target.value = ''
+    if (!file) return
+
+    if (!file.type.startsWith('image/'))
+      return setError('That file is not an image.')
+    if (file.size > MAX_PICK_BYTES)
+      return setError('That image is too large — pick one under 12 MB.')
+
+    setAvatarBusy(true)
+    setError(null)
+
+    const previous = avatarPath
+    const { path, error: upErr } = await uploadAvatar(userId, file)
+    if (upErr) {
+      setError(upErr)
+      setAvatarBusy(false)
+      return
+    }
+
+    const { error: saveErr } = await onSave({ avatar_path: path })
+    if (saveErr) {
+      removeAvatar(path)
+      setError(saveErr)
+      setAvatarBusy(false)
+      return
+    }
+
+    setAvatarPath(path)
+    setAvatarBusy(false)
+    // Best-effort: the profile already points elsewhere, so a file left
+    // behind is invisible rather than broken.
+    if (previous) removeAvatar(previous)
+  }
+
+  async function handleRemove() {
+    setAvatarBusy(true)
+    setError(null)
+
+    const previous = avatarPath
+    const { error: err } = await onSave({ avatar_path: null })
+    if (err) {
+      setError(err)
+      setAvatarBusy(false)
+      return
+    }
+
+    setAvatarPath(null)
+    setAvatarBusy(false)
+    if (previous) removeAvatar(previous)
+  }
 
   async function handleSubmit(e) {
     e.preventDefault()
@@ -76,7 +162,49 @@ export function SettingsSheet({
       }
     >
       <form id={FORM_ID} onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <FormSection label="About you" icon={UserRound} tone="brand" first>
+        {/* Uploaded the moment it is picked rather than on Save: the whole
+            point of choosing a picture is seeing it, and holding it back
+            until the form is submitted means staring at a spinner instead.
+            The file input is visually hidden because a native one cannot be
+            styled to sit with the rest of these buttons. */}
+        <FormSection label="Photo" icon={Camera} tone="brand" first>
+          <div className="flex items-center gap-4">
+            <Avatar src={avatarUrl(avatarPath)} initial={initial} size={72} />
+
+            <div className="flex min-w-0 flex-1 flex-col gap-2">
+              <input
+                ref={fileRef}
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                onChange={handlePick}
+                className="sr-only"
+              />
+              <Button
+                type="button"
+                variant="secondary"
+                busy={avatarBusy}
+                onClick={() => fileRef.current?.click()}
+              >
+                <Camera size={16} />
+                {avatarPath ? 'Change photo' : 'Upload photo'}
+              </Button>
+              {avatarPath && !avatarBusy ? (
+                <Button type="button" variant="dangerGhost" onClick={handleRemove}>
+                  <Trash2 size={15} />
+                  Remove
+                </Button>
+              ) : null}
+            </div>
+          </div>
+
+          <p className="mt-2.5 text-xs leading-snug text-faint">
+            Cropped square and resized to 512px on your own device before it is
+            sent, so a photo straight off the camera costs a few KB of data
+            rather than a few MB.
+          </p>
+        </FormSection>
+
+        <FormSection label="About you" icon={UserRound} tone="brand">
           <div className="flex flex-col gap-3">
             {/* The M.I. width lives on the grid track: `w-16` on the input
                 loses to `w-full` from the shared field style, since Tailwind's

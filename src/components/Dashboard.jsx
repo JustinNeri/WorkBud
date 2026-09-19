@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { CalendarPlus, Loader2, Pencil, Plus } from 'lucide-react'
 import { useWorkbud } from '../hooks/useWorkbud'
+import { avatarUrl } from '../lib/avatar'
 import { daysAgoISO, isOngoingRole, todayISO } from '../lib/format'
 import { ActivityFeed } from './ActivityFeed'
 import { BudgetCard } from './BudgetCard'
@@ -99,6 +100,7 @@ export function Dashboard({ user }) {
       <DashboardHeader
         name={firstName || 'WorkBud'}
         initial={initial}
+        avatarUrl={avatarUrl(profile?.avatar_path)}
         onExport={activeJob ? () => setExportOpen(true) : null}
         onSettings={() => setSettingsOpen(true)}
       />
@@ -392,6 +394,7 @@ export function Dashboard({ user }) {
       {settingsOpen ? (
         <SettingsSheet
           open
+          userId={user.id}
           profile={profile}
           email={user.email}
           onClose={() => setSettingsOpen(false)}

@@ -384,3 +384,68 @@ alter table public.daily_logs
 
 comment on column public.daily_logs.absent is
   'True for a day the user did not work. Hours stay 0; the note carries the reason.';
+
+-- ---------------------------------------------------------------------------
+-- 11. Profile pictures
+--
+--     The profile row stores the object's PATH, not a URL. A URL bakes in the
+--     project host and would rot the day the project moves; the app derives
+--     the public URL from the path at render time.
+--
+--     Each upload writes a new timestamped filename rather than overwriting a
+--     stable one, so a changed picture can never be served stale from a cache
+--     that already holds the old bytes under that name.
+-- ---------------------------------------------------------------------------
+alter table public.profiles
+  add column if not exists avatar_path text;
+
+comment on column public.profiles.avatar_path is
+  'Object path inside the avatars bucket, e.g. <user id>/1695100000.jpg. Null when unset.';
+
+-- Public read: an avatar is shown on a screen the viewer is already looking
+-- at, and a signed URL would expire part-way through a session.
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+  'avatars', 'avatars', true, 2097152,
+  array['image/jpeg', 'image/png', 'image/webp']
+)
+on conflict (id) do update
+  set public             = true,
+      file_size_limit    = excluded.file_size_limit,
+      allowed_mime_types = excluded.allowed_mime_types;
+
+-- Writes are confined to a folder named for the user's own id, so nobody can
+-- overwrite anyone else's picture. The bucket being public governs reads only
+-- — these three policies are what stop it being a free-for-all to write to.
+drop policy if exists "avatars_read_all" on storage.objects;
+create policy "avatars_read_all" on storage.objects
+  for select to anon, authenticated
+  using (bucket_id = 'avatars');
+
+drop policy if exists "avatars_insert_own" on storage.objects;
+create policy "avatars_insert_own" on storage.objects
+  for insert to authenticated
+  with check (
+    bucket_id = 'avatars'
+    and (storage.foldername(name))[1] = (select auth.uid())::text
+  );
+
+drop policy if exists "avatars_update_own" on storage.objects;
+create policy "avatars_update_own" on storage.objects
+  for update to authenticated
+  using (
+    bucket_id = 'avatars'
+    and (storage.foldername(name))[1] = (select auth.uid())::text
+  )
+  with check (
+    bucket_id = 'avatars'
+    and (storage.foldername(name))[1] = (select auth.uid())::text
+  );
+
+drop policy if exists "avatars_delete_own" on storage.objects;
+create policy "avatars_delete_own" on storage.objects
+  for delete to authenticated
+  using (
+    bucket_id = 'avatars'
+    and (storage.foldername(name))[1] = (select auth.uid())::text
+  );
