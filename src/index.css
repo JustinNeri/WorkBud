@@ -286,3 +286,58 @@ input[type='number'] {
 @utility bg-hero {
   background-image: linear-gradient(135deg, var(--wb-hero-from), var(--wb-hero-to));
 }
+
+/* ---------------------------------------------------------------------------
+   The auth gradient.
+
+   The first version was linear-gradient(135deg, brand, violet) — two saturated
+   mid-tones the same distance apart in lightness, which is why it read as a
+   flat purple slab rather than a lit surface. Depth needs a lightness range,
+   so this runs indigo → violet → deep plum and lets two soft off-axis glows do
+   the shading. The glows are part of the ramp, not blurred circles floating on
+   top of it: the old ones sat as visible bright patches in the middle of the
+   panel.
+
+   Dark mode gets its own steps rather than a dimmed copy — the light ramp
+   simply darkened turns muddy and loses the hue separation that makes the
+   grade read.
+--------------------------------------------------------------------------- */
+:root {
+  --wb-auth-base: #43299b;
+  --wb-auth-from: #4f46e5;
+  --wb-auth-mid: #5b21b6;
+  --wb-auth-to: #3a1775;
+  --wb-auth-glow-1: rgb(129 140 248 / 0.38);
+  --wb-auth-glow-2: rgb(192 132 252 / 0.26);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --wb-auth-base: #2d1a6b;
+    --wb-auth-from: #3730a3;
+    --wb-auth-mid: #4c1d95;
+    --wb-auth-to: #240e56;
+    --wb-auth-glow-1: rgb(99 102 241 / 0.28);
+    --wb-auth-glow-2: rgb(147 51 234 / 0.20);
+  }
+}
+
+@utility bg-auth {
+  background-color: var(--wb-auth-base);
+  background-image:
+    radial-gradient(60rem 40rem at 10% 4%, var(--wb-auth-glow-1), transparent 62%),
+    radial-gradient(55rem 45rem at 92% 96%, var(--wb-auth-glow-2), transparent 64%),
+    linear-gradient(
+      165deg,
+      var(--wb-auth-from) 0%,
+      var(--wb-auth-mid) 54%,
+      var(--wb-auth-to) 100%
+    );
+}
+
+/* A fine dot field over the gradient. Texture at this opacity isn't seen so
+   much as felt — it stops a large flat fill from banding on a wide monitor. */
+@utility bg-auth-dots {
+  background-image: radial-gradient(rgb(255 255 255 / 0.06) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
