@@ -1,11 +1,24 @@
 import { useState } from 'react'
 import { ArrowRight, Check, Loader2, Lock, Mail } from 'lucide-react'
-import { supabase, errorMessage } from '../lib/supabase'
+import {
+  supabase,
+  errorMessage,
+  isRemembered,
+  rememberSession,
+} from '../lib/supabase'
 import { evaluatePassword } from '../lib/password'
 import { AuthShell } from './AuthShell'
 import { ForgotPassword } from './ForgotPassword'
 import { OtpStep } from './OtpStep'
-import { Alert, Button, Field, PasswordInput, PasswordMeter, TextInput } from './ui'
+import {
+  Alert,
+  Button,
+  Checkbox,
+  Field,
+  PasswordInput,
+  PasswordMeter,
+  TextInput,
+} from './ui'
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
 
@@ -22,6 +35,9 @@ export function AuthScreen() {
   // Set once signUp has mailed a code; swaps this screen for the OTP step.
   const [awaitingCode, setAwaitingCode] = useState(null)
   const [resetting, setResetting] = useState(false)
+  // Seeded from the last choice made on this device, and ticked by default:
+  // staying signed in is what the app did before this checkbox existed.
+  const [remember, setRemember] = useState(isRemembered)
 
   const isSignUp = mode === 'signup'
   const strength = evaluatePassword(password, email)
@@ -99,6 +115,13 @@ export function AuthScreen() {
     setBusy(true)
     setError(null)
     setNotice(null)
+
+    // Where the token will be filed has to be settled before it is issued —
+    // the storage adapter reads this at write time. A brand new account is
+    // always remembered: signup carries on into a mailed code and an
+    // onboarding form, and closing the browser midway through that should not
+    // quietly discard the half-finished account.
+    rememberSession(isSignUp ? true : remember)
 
     const credentials = { email: address, password }
     const { data, error: err } = isSignUp
@@ -315,13 +338,25 @@ export function AuthScreen() {
         ) : null}
 
         {!isSignUp ? (
-          <button
-            type="button"
-            onClick={() => setResetting(true)}
-            className="-mt-2 cursor-pointer self-end text-[13px] font-semibold text-brand hover:underline hover:underline-offset-2"
-          >
-            Forgot password?
-          </button>
+          <div className="-mt-1 flex items-start justify-between gap-3">
+            {/* The hint only appears once the box is cleared. "Remember me" is
+                understood well enough on its own, but being signed out by
+                closing a tab is surprising enough to be worth spelling out at
+                the moment someone opts into it. */}
+            <Checkbox
+              checked={remember}
+              onChange={(e) => setRemember(e.target.checked)}
+              label="Remember me"
+              hint={remember ? undefined : 'Signs you out when you close the browser.'}
+            />
+            <button
+              type="button"
+              onClick={() => setResetting(true)}
+              className="mt-px shrink-0 cursor-pointer text-[13px] font-semibold text-brand hover:underline hover:underline-offset-2"
+            >
+              Forgot password?
+            </button>
+          </div>
         ) : null}
 
         <Alert>{error}</Alert>
