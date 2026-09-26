@@ -19,8 +19,8 @@ backend from there.
 
 - **Date and tool:** September 20, 2026, Claude (Claude Code); committed September 22
 - **What I asked:** where to put the screenshots my documentation needed, so they would show up in the repo.
-- **What it gave back:** a `docs/screenshots/` folder with a `README.md` listing the exact filename for each screen (`01-signin.png` to `06-installed-pwa.png`), what to capture in each, and how to take mobile-sized screenshots with the browser's device toolbar.
-- **What I kept, what I changed, and why:** I kept the folder and the capture steps, because the device-toolbar tip gave me consistent phone-sized shots. I did not keep its plan of linking the images from the README; I pasted the screenshots straight into my Word documentation instead (see 2.2).
+- **What it gave back:** a `docs/screenshots/` folder with a `README.md` listing the exact filename for each screen (`01-signin.png` onwards), what to capture in each, and how to take mobile-sized screenshots with the browser's device toolbar.
+- **What I kept, what I changed, and why:** I kept the folder and the capture steps, because the device-toolbar tip gave me consistent phone-sized shots. At first I only pasted the screenshots into my Word documentation. In Week 2 I added the files to this folder and linked them from the README, so the repo shows them too (see 2.2).
 - **Commit:** [0e1baba](https://github.com/JustinNeri/WorkBud/commit/0e1baba)
 
 ### 1.2 Security checklist
@@ -96,8 +96,8 @@ backend from there.
 ### 2.2 The screenshots guide promised links that do not exist
 
 - **What it gave me:** the guide in `docs/screenshots/README.md` says to use its exact filenames "so the links in the project README resolve without editing".
-- **What was wrong with it:** there are no such links. The README was never updated to show those images, so the file tells a reader something that is not true.
-- **What I did instead:** I put my screenshots directly into my Word documentation, which is where they are graded, rather than relying on links that were never written.
+- **What was wrong with it:** there were no such links. The guide was committed without the README being updated to show those images, so for about a week it told readers something that was not true.
+- **What I did instead:** I pasted my screenshots into my Word documentation first. Then, in Week 2, I added the image files to `docs/screenshots/` and wrote the links into the README myself, which made the guide true.
 - **Commit:** [0e1baba](https://github.com/JustinNeri/WorkBud/commit/0e1baba)
 
 ### 2.3 Its first security checklist draft claimed things it could not back up
