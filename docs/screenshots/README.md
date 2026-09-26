@@ -10,7 +10,7 @@ the project README resolve without editing:
 | `03-dashboard.png` | The dashboard: job tabs, hours ring, pace card, budget meter, feed |
 | `04-log-sheet.png` | The log sheet: date shortcuts, time in and out, break, expenses |
 | `05-export.png` | The export sheet: date range, Time log vs Full record |
-| `06-installed-pwa.png` | The app open from a phone home screen (optional) |
+
 
 How to capture them so they look mobile-first: open
 https://workbud-ph.vercel.app/ in Chrome or Edge, press F12, then
