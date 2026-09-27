@@ -60,7 +60,7 @@ The project has no workflows: there is no `.github/` folder and `git ls-files` l
 
 | # | Check | Yes / No / N/A | Evidence |
 |---|---|---|---|
-| 27 | No student number, personal email, phone number or home address in the repository or in commit messages | No | No tracked file and no commit message contains any of these. However, the author email on every commit is my personal Gmail address, and it is visible in the public history. |
+| 27 | No student number, personal email, phone number or home address in the repository or in commit messages | No | No tracked file and no commit message contains any of these. However, the author email on every commit is my personal Gmail address, and it is visible in the public history. A settings screenshot showing that email was also committed in `3375400`; I replaced it with a blurred copy, but the original stays in the git history. |
 | 28 | No classmate's personal data in the repository | Yes | The repo holds only code, the schema and docs. No names, screenshots or records of anyone else. |
 | 29 | Dependencies come from official registries, and node_modules is gitignored | Yes | All 458 `resolved` entries in `package-lock.json` point to `https://registry.npmjs.org`, and `node_modules` is line 1 of `.gitignore`. |
 | 30 | Images, fonts and other assets are mine, licensed, or credited | Yes | The logo and icons in `design/logo/` and `public/` are my own. UI icons come from `lucide-react` (ISC licence). The font is the device's system font stack in `src/index.css`, so no font files are bundled. |
