@@ -105,7 +105,10 @@ function recordMeta({ profile, logs, email }) {
   return {
     name: fullName || email || '—',
     range,
-    totalHours: logs.reduce((s, l) => s + Number(l.hours_worked), 0),
+    // Each day is stored to two decimals, but summing them in floating point
+    // drifts (209.32999999999998), so the total is rounded back to match.
+    totalHours:
+      Math.round(logs.reduce((s, l) => s + Number(l.hours_worked), 0) * 100) / 100,
     daysAbsent: logs.filter((l) => l.absent).length,
   }
 }
