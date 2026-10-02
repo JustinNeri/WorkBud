@@ -3,11 +3,12 @@
 How I used AI to build WorkBud, where it got things wrong, and which parts
 are mine.
 
-**How I work with AI:** I write the code myself first. When something does
-not work, or I want it done in a cleaner or more efficient way, I ask the AI
-to help me fix or optimise it. For the Supabase backend, the AI gave me an
-initial draft and the overall workflow of the system, and I built the
-backend from there.
+**How I work with AI:** I ask the AI first what the structure of a feature
+should be. Then I write the code myself, with that structure as my guide.
+When something does not work, or I want it done in a cleaner or more
+efficient way, I ask the AI again and we resolve the issue. For the Supabase
+backend, the AI gave me an initial draft and the overall workflow of the
+system, and I built the backend from there.
 
 **Tools:** Claude (Anthropic) for most of the work. On a couple of earlier bug fixes I also used ChatGPT (OpenAI) and Gemini (Google) alongside Claude.
 
