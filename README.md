@@ -6,7 +6,7 @@ OJT hours and expense tracker.
 
 **Live:** [workbud-ph.vercel.app](https://workbud-ph.vercel.app/)
 
-> Built with help from Claude (Anthropic), with ChatGPT and Gemini used on a couple of earlier bug fixes. I write the code first, then use AI to review, fix and optimise it; Claude also gave me the first draft of the Supabase backend and helped write the documentation. Full details in [AI-USAGE.md](AI-USAGE.md).
+> Built with help from Claude (Anthropic), with ChatGPT and Gemini used on a couple of earlier bug fixes. I write the code first, then use AI to review, fix and optimise it; Claude also gave me the first draft of the Supabase backend, wrote the Express API server in `server/`, and helped write the documentation. Full details in [AI-USAGE.md](AI-USAGE.md).
 
 ---
 
@@ -26,13 +26,25 @@ It solves a problem OJT students actually have. Hours are usually tracked on pap
 |---|---|
 | Frontend | React 19, Vite 8, Tailwind CSS 4 |
 | Routing | react-router 8 |
-| Backend | Supabase (Postgres, Auth, Storage, Row Level Security) |
+| API server | Node.js, Express 5 (`server/`) |
+| Database and auth | Supabase (Postgres, Auth, Storage, Row Level Security) |
 | Icons | lucide-react |
 | PWA | vite-plugin-pwa (Workbox) |
 | Lint | oxlint |
 | Hosting | Vercel |
 
-There is no separate server to run. The React app talks to Supabase directly, and Row Level Security is what keeps one user's rows out of another user's hands.
+### How the pieces fit
+
+```
+Browser (React)  --/api/*-->  Express server  --user's token-->  Supabase Postgres
+       |                                                              ^
+       \---- sign-in, signup codes, avatar files (Supabase Auth and Storage) ----/
+```
+
+- **All app data goes through the WorkBud API.** Jobs, daily logs, expenses, milestones and the profile are read and written through the Express server in [`server/`](server/). The server checks who is calling, validates the input, and runs the query.
+- **Sign-in stays with Supabase Auth.** The browser signs in with Supabase and gets an access token. It sends that token to the API as `Authorization: Bearer <token>` on every request.
+- **Row Level Security is still on.** The server queries the database as the signed-in user, not with an admin key. So even if a route had a bug, the database would still refuse to show or change another user's rows.
+- **Profile picture files go straight to Supabase Storage.** Only the stored path is saved through the API.
 
 ---
 
@@ -81,9 +93,11 @@ Both values come from your Supabase dashboard under **Settings → API**. Fill t
 | `VITE_SUPABASE_URL` | Yes | `https://abcdefghijklmnop.supabase.co` | Settings → API → Project URL |
 | `VITE_SUPABASE_ANON_KEY` | Yes | `sb_publishable_xxxxxxxxxxxxxxxxxx` | Settings → API → anon / publishable key |
 
+The API server reads the same two values from the same file, so there is nothing else to set. (It also accepts `SUPABASE_URL` and `SUPABASE_ANON_KEY` without the `VITE_` prefix, and `PORT` to change its port from 3001.)
+
 The anon key is designed to be public. It is Row Level Security, not secrecy, that protects the data. Even so, `.env.local` is listed in `.gitignore` and must never be committed. The values above are placeholders, not real credentials.
 
-If these are missing or still hold the placeholder text, the app deliberately shows a "Supabase isn't configured" card instead of a blank screen, so a misconfigured setup is obvious rather than silent.
+If these are missing or still hold the placeholder text, the app deliberately shows a "Supabase isn't configured" card instead of a blank screen, and the API server stops at startup with "Supabase is not configured", so a misconfigured setup is obvious rather than silent.
 
 ### 2.5 Set up the database
 
@@ -96,6 +110,7 @@ That one script creates everything the app needs:
 - a trigger that creates a `profiles` row automatically whenever a user signs up;
 - `updated_at` triggers on every table that has that column;
 - an `email_registered()` function, so signup can tell the user an email is already registered;
+- a `delete_own_account()` function, used by the Delete account button;
 - a public `avatars` storage bucket for profile pictures (2 MB limit, JPEG, PNG and WebP only), with per-user upload policies.
 
 The script is idempotent, so re-running it is safe. Re-running it is also how an existing database picks up columns added in a later week.
@@ -146,7 +161,12 @@ select id, user_id, 'Jeepney fare', 'transport', 180 from new_log;
 npm run dev
 ```
 
-Vite prints the local address. Open:
+That one command starts two things side by side:
+
+- the **API server** (Express) on `http://localhost:3001`;
+- the **web app** (Vite) on `http://localhost:5173`, which forwards every `/api` request to the server.
+
+Open:
 
 ```
 http://localhost:5173
@@ -154,6 +174,8 @@ http://localhost:5173
 
 ### What you should see when it works
 
+- **In the terminal:** a line reading `[api] WorkBud API listening on http://localhost:3001`, and Vite's `Local: http://localhost:5173/`.
+- **At `http://localhost:5173/api/health`:** `{"status":"ok","database":"connected"}`. This proves the server is running and can reach the database. If it says `"database":"unreachable"`, the values in `.env.local` are wrong.
 - **If `.env.local` is filled in correctly:** the sign-in screen at `http://localhost:5173/login`. It has the WorkBud logo, email and password fields, a "Remember me" checkbox, and links to create an account or reset a password.
 - **After signing up and entering the emailed 6-digit code:** the onboarding flow (name, age, occupation, currency, first job).
 - **After onboarding, or on any later sign-in:** the dashboard at `/dashboard`, showing the hours progress ring.
@@ -163,24 +185,37 @@ http://localhost:5173
 
 | Command | What it does |
 |---|---|
-| `npm run dev` | Starts the Vite dev server at localhost:5173 |
-| `npm run build` | Production build into `dist/` |
-| `npm run preview` | Serves the built output locally |
+| `npm run dev` | Starts the API server (port 3001) and the Vite dev server (port 5173) together |
+| `npm run dev:api` | Starts only the API server, restarting when a file in `server/` changes |
+| `npm run dev:web` | Starts only the Vite dev server |
+| `npm run build` | Production build of the web app into `dist/` |
+| `npm start` | Starts the API server. If `dist/` exists, it serves the built web app too, so the whole app runs at localhost:3001 |
+| `npm run preview` | Serves the built output locally (needs the API server running as well) |
 | `npm run lint` | Runs oxlint |
+
+To run the production build locally in one process:
+
+```bash
+npm run build
+npm start
+```
+
+Then open `http://localhost:3001`.
 
 ### If it does not start
 
-Run `node -v` first; anything below 20.19 is the most common cause. If the page loads but signing in fails, check that the two variables in `.env.local` have no quotes or trailing spaces, then restart the dev server. Vite only reads environment files at startup.
+Run `node -v` first; anything below 20.19 is the most common cause. If the terminal shows "Supabase is not configured", `.env.local` is missing or still has the placeholder values. If the page loads but the dashboard says it can't reach the server, the API server is not running: use `npm run dev`, not `npm run dev:web` on its own. If signing in fails, check that the two variables in `.env.local` have no quotes or trailing spaces, then restart. Both the server and Vite only read environment files at startup.
 
 ### Deploying
 
 Vercel reads [`vercel.json`](vercel.json) as it is:
 
-- every path is rewritten to `index.html`, so the app's routes work on refresh;
+- every `/api/*` request is sent to [`api/index.js`](api/index.js), which runs the same Express app as a Vercel function;
+- every other path is rewritten to `index.html`, so the app's routes work on refresh;
 - hashed assets are cached for a year;
 - the service worker is set to revalidate every time, so a cached worker can never pin a user to a stale build.
 
-Add the same two environment variables in the Vercel project settings, then deploy.
+Add the same two environment variables in the Vercel project settings, then deploy. The API function reads them too.
 
 ---
 
@@ -232,11 +267,10 @@ When you do go over, a catch-up figure spreads the overspend across the days lef
 
 Profile pictures upload to the Supabase `avatars` bucket. Each upload is saved as a new timestamped file, so a changed picture is never served from an old cached copy.
 
-**PWA.** You can install it to a phone home screen, where it opens like a native app, and its app shell loads offline. Supabase requests deliberately bypass the service worker (network-only), so nobody is ever served stale login or stale data.
+**PWA.** You can install it to a phone home screen, where it opens like a native app, and its app shell loads offline. API and Supabase requests deliberately bypass the service worker (network-only), so nobody is ever served stale login or stale data.
 
-### Routes
+### Pages
 
-WorkBud has no HTTP API of its own. The app talks to Supabase directly through `@supabase/supabase-js`, and access control lives in the database's Row Level Security policies rather than in route handlers. The app's own routes are:
 
 | Route | Guard | What it shows |
 |---|---|---|
@@ -247,6 +281,75 @@ WorkBud has no HTTP API of its own. The app talks to Supabase directly through `
 | `/` and any unknown path | none | Redirects to `/dashboard` |
 
 If you open a protected route while signed out, you're redirected to `/login`, and the app remembers where you were going. After signing in, you land back there instead of always on the dashboard.
+
+### API
+
+The server exposes a small REST API under `/api`. Every route except the health check needs `Authorization: Bearer <access token>`, and only ever touches the caller's own rows. Bodies and responses are JSON.
+
+| Method | Path | What it does | Success |
+|---|---|---|---|
+| GET | `/api/health` | Is the server up and can it reach the database? Public. | 200 |
+| GET | `/api/profile` | The signed-in user's profile | 200 |
+| PATCH | `/api/profile` | Update name, age, occupation, currency, avatar path | 200 |
+| GET | `/api/jobs` | List jobs | 200 |
+| POST | `/api/jobs` | Create a job | 201 |
+| GET | `/api/jobs/:id` | One job | 200 |
+| PATCH | `/api/jobs/:id` | Update a job | 200 |
+| DELETE | `/api/jobs/:id` | Delete a job, with its logs, expenses and milestones | 204 |
+| GET | `/api/logs` | List daily logs, newest first, each with its `expenses`. Optional filters: `?job_id=`, `?from=`, `?to=` | 200 |
+| POST | `/api/logs` | Create a log. The body may include an `expenses` list | 201 |
+| GET | `/api/logs/:id` | One log with its expenses | 200 |
+| PATCH | `/api/logs/:id` | Update a log. If `expenses` is sent, it replaces the day's list | 200 |
+| DELETE | `/api/logs/:id` | Delete a log and its expenses | 204 |
+| GET | `/api/milestones` | List milestones. Optional filter: `?job_id=` | 200 |
+| POST | `/api/milestones` | Create a milestone | 201 |
+| GET | `/api/milestones/:id` | One milestone | 200 |
+| PATCH | `/api/milestones/:id` | Update a milestone, or tick it by sending `done_at` | 200 |
+| DELETE | `/api/milestones/:id` | Delete a milestone | 204 |
+| DELETE | `/api/account` | Delete the caller's account and everything in it | 204 |
+
+Expenses have no routes of their own on purpose. A day's expenses are edited as one list on the log sheet, so they travel inside the log.
+
+**Example.** Creating a day with one expense:
+
+```http
+POST /api/logs
+Authorization: Bearer <access token>
+Content-Type: application/json
+
+{
+  "job_id": "5d1f0c1e-8a55-4c0e-9f0b-2f6a3e1b7c44",
+  "entry_date": "2026-10-02",
+  "time_in": "08:00",
+  "time_out": "17:00",
+  "break_minutes": 60,
+  "hours_worked": 8,
+  "description": "Encoded inventory sheets",
+  "expenses": [{ "label": "Jeepney fare", "category": "transport", "amount": 30 }]
+}
+```
+
+The server answers `201 Created` with the saved log, its `expenses`, and `amount_spent` set to their total.
+
+**Errors.** Every error is JSON with an `error` message. Validation errors also list the fields that failed:
+
+```json
+{
+  "error": "Invalid input: hours_worked must be between 0 and 24.",
+  "details": { "hours_worked": "must be between 0 and 24" }
+}
+```
+
+| Status | When |
+|---|---|
+| 400 | The body is not valid JSON, a field fails validation, an id is malformed, or a `job_id` is not one of your jobs |
+| 401 | No token, or the token is invalid or expired |
+| 404 | The row does not exist, or belongs to someone else |
+| 413 | The body is larger than 100 KB |
+| 500 | Something failed on the server. The details are logged on the server, not sent to the browser |
+| 503 | The server could not reach Supabase to check your session, or the health check could not reach the database |
+
+Fields the API does not know are ignored, so a request cannot set `user_id`, `id` or `created_at`.
 
 ### What the app reads and writes
 
@@ -261,7 +364,7 @@ If you open a protected route while signed out, you're redirected to `/login`, a
 One design note worth knowing:
 
 - `daily_logs.hours_worked` stores the day's planned total, and the figure the dashboard counts is worked out when the page draws. That's how a shift can tick upward without anything being written back to the database.
-- A day's `expenses` rows are the real record of spending, and `amount_spent` on the log is their total, written by the app.
+- A day's `expenses` rows are the real record of spending, and `amount_spent` on the log is their total. The server works that total out from the expense list it was sent, and ignores any total the browser sends.
 
 ---
 
@@ -270,13 +373,29 @@ One design note worth knowing:
 ```
 WorkBud/
 |-- index.html                 Vite entry HTML
-|-- vite.config.js             Vite, Tailwind and PWA / Workbox config
-|-- vercel.json                SPA rewrite and cache headers for deployment
+|-- vite.config.js             Vite, Tailwind, PWA / Workbox config and the /api proxy
+|-- vercel.json                API and SPA rewrites, cache headers for deployment
 |-- .env.example               Template for .env.local (placeholders only)
 |-- public/                    Favicons and PWA icons
 |-- docs/screenshots/          Screenshots used in this README
 |-- supabase/
 |   \-- schema.sql             Tables, RLS policies, triggers, storage bucket
+|-- api/
+|   \-- index.js               Vercel entry point: exports the Express app
+|-- server/                    The API server
+|   |-- index.js               Starts the server; also serves dist/ after a build
+|   |-- app.js                 Builds the Express app and mounts the routes
+|   |-- config.js              Reads the environment, refuses to start if unset
+|   |-- db.js                  Supabase clients: signed-out, and one per request
+|   |-- auth.js                Checks the access token on every data route
+|   |-- validate.js            Field checks and the request-body parser
+|   |-- errors.js              HttpError, database error mapping, error handler
+|   \-- routes/
+|       |-- profile.js             GET and PATCH /api/profile
+|       |-- jobs.js                CRUD for /api/jobs
+|       |-- logs.js                CRUD for /api/logs, with nested expenses
+|       |-- milestones.js          CRUD for /api/milestones
+|       \-- account.js             DELETE /api/account
 \-- src/
     |-- main.jsx               Mounts React inside BrowserRouter
     |-- App.jsx                Routes and the signed-in / signed-out guards
@@ -307,7 +426,8 @@ WorkBud/
     |   |-- useSession.js          The persisted Supabase session
     |   \-- useWorkbud.js          Profile, jobs, logs and everything derived
     \-- lib/
-        |-- supabase.js            Client, "remember me" storage, error text
+        |-- api.js                 fetch wrapper for the WorkBud API
+        |-- supabase.js            Auth client, "remember me" storage, error text
         |-- format.js              Money, hours, dates, shift maths, currencies
         |-- export.js              Time log and CSV builders
         |-- password.js            Strength rules shared by every password screen
@@ -334,11 +454,14 @@ WorkBud/
 
 ### Known issues
 
-- **No automated tests.** There is still not a single test in the repository. The two bugs that cost the most time in Week 1 both lived in `src/lib/format.js`: overnight shifts coming out as negative hours, and dates showing one day off because of a timezone conversion. That's exactly the file that should have had unit tests first.
+- **No automated tests.** There is still not a single test in the repository, and that now includes the API routes. The two bugs that cost the most time in Week 1 both lived in `src/lib/format.js`: overnight shifts coming out as negative hours, and dates showing one day off because of a timezone conversion. That's exactly the file that should have had unit tests first.
 - **Export totals show floating-point noise.** The "Hours completed" figure and the total row on the exported time log can read `209.32999999999998` instead of `209.33`. The total in `src/lib/export.js` adds up `hours_worked` without rounding, so decimal hours like 15.83 leave a long tail. It shows on any export that mixes fractional hours.
 - **The avatars bucket can be listed while signed out.** The `avatars_read_all` storage policy gives signed-out users SELECT on the bucket, so anyone can list it and see each user's folder name, which is their user ID. The app never needs this, because pictures load through public URLs. I found it while filling in [SECURITY-CHECKLIST.md](SECURITY-CHECKLIST.md).
 - **Offline is read-only.** The app shell opens without a connection, but every save still needs the network. Logging a day at a placement site with no signal fails rather than waiting to sync.
-- **Several Supabase calls fail silently.** Some error paths show nothing at all, so a failed save can look like one that worked. A full error-handling pass is needed.
+- **Some failures are still silent in the UI.** The API now answers every failure with a status code and a message, but a few places don't show it. Onboarding, for one, ignores a failed job lookup and carries on.
+- **Saving a day is two writes, not one transaction.** The server saves the log, then its expenses. If the second write fails on a new log, the server deletes the log again. On an edit there is no such undo, so a failure at that moment could leave a day with its old expense list removed.
+- **Every API request checks the token with Supabase.** That is one extra round trip per request. It is simple and always correct, but verifying the token's signature on the server would be faster.
+- **The API has no rate limiting.** Nothing stops a signed-in user from sending requests in a loop.
 - **Expense rows can be added but not fully managed.** Editing and deleting individual expense lines isn't finished. The reliable workaround today is deleting the day's log and entering it again.
 - **`hours_worked` is an unproven design.** It stores the planned total while the dashboard works out the live figure when it draws. It works, but I'm not confident it holds up once entries are edited after the fact, and it hasn't been stress-tested.
 - **The export hasn't been checked against a real form.** The time log looks right, but it hasn't been compared with the DTR my coordinator actually requires, and printing from a phone is untested.
@@ -349,7 +472,7 @@ WorkBud/
 1. Unit tests on `src/lib/format.js` covering shift maths, overnight shifts and timezone handling, before any new feature.
 2. Round the export totals to two decimal places.
 3. Limit the avatars bucket's SELECT policy to each user's own folder, so the bucket can no longer be listed.
-4. An error-handling pass, so every failed Supabase call shows the user a message.
+4. An error-handling pass in the UI, so every failed request shows the user a message. Then a database function that saves a log and its expenses in one transaction, and rate limiting on the API.
 5. Finish editing and deleting individual expense rows.
 6. A save queue, so a day logged offline syncs when the connection returns.
 7. Compare the exported time log with the real coordinator form, and test printing from a phone.

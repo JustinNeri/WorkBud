@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { ArrowRight, Briefcase, Check, UserRound } from 'lucide-react'
-import { supabase, errorMessage } from '../lib/supabase'
+import { api } from '../lib/api'
+import { errorMessage } from '../lib/supabase'
 import { CURRENCIES, OCCUPATIONS, currencySymbol } from '../lib/format'
 import { AuthShell } from './AuthShell'
 import { Alert, Button, Field, NumberInput, Select, TextInput } from './ui'
@@ -9,7 +10,7 @@ import { Alert, Button, Field, NumberInput, Select, TextInput } from './ui'
  * Runs once, after email verification, before the dashboard exists.
  * Creates the profile details and the user's first job in one step.
  */
-export function Onboarding({ userId, onDone }) {
+export function Onboarding({ onDone }) {
   const [step, setStep] = useState(1)
   const [firstName, setFirstName] = useState('')
   const [lastName, setLastName] = useState('')
@@ -50,18 +51,15 @@ export function Onboarding({ userId, onDone }) {
     setBusy(true)
     setError(null)
 
-    const { error: profileErr } = await supabase
-      .from('profiles')
-      .update({
-        first_name: firstName.trim(),
-        last_name: lastName.trim(),
-        middle_initial: middleInitial.trim() || null,
-        age: age === '' ? null : Number(age),
-        occupation,
-        currency,
-        onboarded_at: new Date().toISOString(),
-      })
-      .eq('id', userId)
+    const { error: profileErr } = await api.patch('/profile', {
+      first_name: firstName.trim(),
+      last_name: lastName.trim(),
+      middle_initial: middleInitial.trim() || null,
+      age: age === '' ? null : Number(age),
+      occupation,
+      currency,
+      onboarded_at: new Date().toISOString(),
+    })
 
     if (profileErr) {
       setError(errorMessage(profileErr))
@@ -71,12 +69,7 @@ export function Onboarding({ userId, onDone }) {
 
     // Every account already has a "My OJT" job from the migration; rename that
     // one rather than leaving an empty stray alongside the real first job.
-    const { data: existing } = await supabase
-      .from('jobs')
-      .select('id')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: true })
-      .limit(1)
+    const { data: existing } = await api.get('/jobs')
 
     const values = {
       name: jobName.trim(),
@@ -85,8 +78,8 @@ export function Onboarding({ userId, onDone }) {
     }
 
     const { error: jobErr } = existing?.length
-      ? await supabase.from('jobs').update(values).eq('id', existing[0].id)
-      : await supabase.from('jobs').insert({ ...values, user_id: userId })
+      ? await api.patch(`/jobs/${existing[0].id}`, values)
+      : await api.post('/jobs', values)
 
     if (jobErr) {
       setError(errorMessage(jobErr))

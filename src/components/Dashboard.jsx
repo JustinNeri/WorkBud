@@ -50,7 +50,7 @@ export function Dashboard({ user }) {
     updateMilestone,
     deleteMilestone,
     toggleMilestone,
-  } = useWorkbud(user.id)
+  } = useWorkbud()
 
   // Each sheet is mounted only while open so its form state starts fresh.
   // null | { log } to edit, or { log: null, date } to add — date seeds the
@@ -91,7 +91,7 @@ export function Dashboard({ user }) {
 
   // First run: collect name, age, occupation, currency and the first job.
   if (profile && !profile.onboarded_at) {
-    return <Onboarding userId={user.id} onDone={reload} />
+    return <Onboarding onDone={reload} />
   }
 
   const firstName = profile?.first_name?.trim()

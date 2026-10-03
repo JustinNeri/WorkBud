@@ -181,7 +181,6 @@ export function LogSheet({
         entry_date: date,
         absent,
         hours_worked: hoursValue,
-        amount_spent: kept.reduce((sum, i) => sum + i.amount, 0),
         time_in: absent ? null : timeIn || null,
         time_out: absent ? null : timeOut || null,
         break_minutes: absent ? 0 : Number(breakMins) || 0,

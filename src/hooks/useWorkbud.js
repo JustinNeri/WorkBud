@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { supabase, errorMessage } from '../lib/supabase'
+import { api } from '../lib/api'
+import { errorMessage } from '../lib/supabase'
 import {
   addWeekdays,
   daysLeftInMonth,
@@ -20,16 +21,10 @@ function byNewest(a, b) {
   return a.created_at < b.created_at ? 1 : -1
 }
 
-const JOB_COLS =
-  'id, name, target_hours, monthly_budget, daily_budget, deadline, hourly_rate, daily_hours, start_date, sort_order, created_at'
-
-const LOG_COLS =
-  'id, job_id, entry_date, hours_worked, amount_spent, description, time_in, time_out, break_minutes, absent, created_at'
-
-const EXPENSE_COLS = 'id, log_id, label, amount, category, created_at'
-
-const MILESTONE_COLS =
-  'id, job_id, title, due_date, target_hours, done_at, created_at'
+/** The API nests a log's expenses inside it; here the two are held apart. */
+function splitLog({ expenses = [], ...log }) {
+  return { log, expenses }
+}
 
 /** Open milestones first, soonest due (undated last); finished ones after,
  *  most recently finished first. */
@@ -46,13 +41,13 @@ function byMilestone(a, b) {
 
 /**
  * Profile + jobs + logs for the signed-in user, with everything derived for
- * whichever job tab is active. RLS scopes all reads server-side, so no
- * user_id filter is needed here.
+ * whichever job tab is active. The API only ever returns the caller's own
+ * rows, so nothing here filters by user.
  *
  * All of a user's logs are held in memory and filtered per job — a personal
  * tracker's volume is small, and it makes tab switching instant.
  */
-export function useWorkbud(userId) {
+export function useWorkbud() {
   const [profile, setProfile] = useState(null)
   const [jobs, setJobs] = useState([])
   const [allLogs, setAllLogs] = useState([])
@@ -71,37 +66,19 @@ export function useWorkbud(userId) {
   }, [])
 
   const load = useCallback(async () => {
-    const [profileRes, jobsRes, logsRes, expensesRes, milestonesRes] = await Promise.all([
-      supabase
-        .from('profiles')
-        .select(
-          'id, first_name, last_name, middle_initial, age, occupation, currency, avatar_path, onboarded_at',
-        )
-        .eq('id', userId)
-        .maybeSingle(),
-      supabase
-        .from('jobs')
-        .select(JOB_COLS)
-        .order('sort_order', { ascending: true })
-        .order('created_at', { ascending: true }),
-      supabase
-        .from('daily_logs')
-        .select(LOG_COLS)
-        .order('entry_date', { ascending: false })
-        .order('created_at', { ascending: false }),
-      supabase
-        .from('expenses')
-        .select(EXPENSE_COLS)
-        .order('created_at', { ascending: true }),
-      supabase.from('milestones').select(MILESTONE_COLS),
+    const [profileRes, jobsRes, logsRes, milestonesRes] = await Promise.all([
+      api.get('/profile'),
+      api.get('/jobs'),
+      api.get('/logs'),
+      api.get('/milestones'),
     ])
 
-    if (!profileRes.error && profileRes.data) {
+    if (!profileRes.error) {
       setProfile(profileRes.data)
       setCurrency(profileRes.data.currency)
     }
     if (!jobsRes.error) {
-      const list = jobsRes.data ?? []
+      const list = jobsRes.data
       setJobs(list)
       // Keep the current tab if it still exists, else fall back to the first.
       setActiveJobId((current) =>
@@ -110,22 +87,21 @@ export function useWorkbud(userId) {
           : (list[0]?.id ?? null),
       )
     }
-    if (!logsRes.error) setAllLogs(logsRes.data ?? [])
-    if (!expensesRes.error) setAllExpenses(expensesRes.data ?? [])
-    if (!milestonesRes.error) setAllMilestones(milestonesRes.data ?? [])
+    if (!logsRes.error) {
+      const rows = logsRes.data.map(splitLog)
+      setAllLogs(rows.map((r) => r.log))
+      setAllExpenses(rows.flatMap((r) => r.expenses))
+    }
+    if (!milestonesRes.error) setAllMilestones(milestonesRes.data)
 
     const failure =
-      profileRes.error ||
-      jobsRes.error ||
-      logsRes.error ||
-      expensesRes.error ||
-      milestonesRes.error
+      profileRes.error || jobsRes.error || logsRes.error || milestonesRes.error
     setError(failure ? errorMessage(failure) : null)
     setLoading(false)
-  }, [userId])
+  }, [])
 
   useEffect(() => {
-    // load() fetches from Supabase — syncing with an external system is what
+    // load() fetches from the API — syncing with an external system is what
     // effects are for, and its setStates all happen after an await.
     // oxlint-disable-next-line react/set-state-in-effect
     load()
@@ -146,93 +122,56 @@ export function useWorkbud(userId) {
     [allMilestones, activeJobId],
   )
 
-  /**
-   * A day's expense list is small and edited as a whole, so replace it wholesale
-   * rather than diffing. The parent's amount_spent is written by the caller from
-   * the same numbers, keeping one source of truth for the total.
-   */
-  const replaceExpenses = useCallback(
-    async (logId, items) => {
-      const { error: delErr } = await supabase
-        .from('expenses')
-        .delete()
-        .eq('log_id', logId)
-      if (delErr) return { error: errorMessage(delErr) }
+  /** Put a log the API just returned, and its expenses, into local state. */
+  const storeLog = useCallback((saved) => {
+    const { log, expenses } = splitLog(saved)
+    setAllLogs((prev) =>
+      [log, ...prev.filter((l) => l.id !== log.id)].sort(byNewest),
+    )
+    setAllExpenses((prev) => [
+      ...prev.filter((e) => e.log_id !== log.id),
+      ...expenses,
+    ])
+  }, [])
 
-      if (items.length === 0) {
-        setAllExpenses((prev) => prev.filter((e) => e.log_id !== logId))
-        return {}
-      }
-
-      const { data, error: insErr } = await supabase
-        .from('expenses')
-        .insert(
-          items.map((i) => ({
-            log_id: logId,
-            user_id: userId,
-            label: i.label,
-            amount: i.amount,
-            category: i.category ?? 'other',
-          })),
-        )
-        .select(EXPENSE_COLS)
-
-      if (insErr) return { error: errorMessage(insErr) }
-      setAllExpenses((prev) => [
-        ...prev.filter((e) => e.log_id !== logId),
-        ...(data ?? []),
-      ])
-      return {}
-    },
-    [userId],
-  )
-
-  // --- log mutations, always scoped to the active job
+  // --- log mutations, always scoped to the active job. A day's expense list
+  // is small and edited as a whole, so it travels with the log and the server
+  // replaces it wholesale, working out the day's total from the same items.
   const addLog = useCallback(
     async (values, items = []) => {
       if (!activeJobId) return { error: 'Create a job first.' }
-      const { data, error: err } = await supabase
-        .from('daily_logs')
-        .insert({ ...values, user_id: userId, job_id: activeJobId })
-        .select(LOG_COLS)
-        .single()
+      const { data, error: err } = await api.post('/logs', {
+        ...values,
+        job_id: activeJobId,
+        expenses: items,
+      })
 
       if (err) return { error: errorMessage(err) }
-      setAllLogs((prev) => [data, ...prev].sort(byNewest))
-
-      if (items.length) {
-        const { error: expErr } = await replaceExpenses(data.id, items)
-        if (expErr) return { error: expErr }
-      }
+      storeLog(data)
       return {}
     },
-    [userId, activeJobId, replaceExpenses],
+    [activeJobId, storeLog],
   )
 
   const updateLog = useCallback(
     async (id, values, items = []) => {
-      const { data, error: err } = await supabase
-        .from('daily_logs')
-        .update(values)
-        .eq('id', id)
-        .select(LOG_COLS)
-        .single()
+      const { data, error: err } = await api.patch(`/logs/${id}`, {
+        ...values,
+        expenses: items,
+      })
 
       if (err) return { error: errorMessage(err) }
-      setAllLogs((prev) => prev.map((l) => (l.id === id ? data : l)).sort(byNewest))
-
-      const { error: expErr } = await replaceExpenses(id, items)
-      if (expErr) return { error: expErr }
+      storeLog(data)
       return {}
     },
-    [replaceExpenses],
+    [storeLog],
   )
 
   const deleteLog = useCallback(
     async (id) => {
       const previous = allLogs
       setAllLogs((prev) => prev.filter((l) => l.id !== id)) // optimistic
-      const { error: err } = await supabase.from('daily_logs').delete().eq('id', id)
+      const { error: err } = await api.delete(`/logs/${id}`)
       if (err) {
         setAllLogs(previous)
         return { error: errorMessage(err) }
@@ -247,27 +186,21 @@ export function useWorkbud(userId) {
   // --- job mutations
   const addJob = useCallback(
     async (values) => {
-      const { data, error: err } = await supabase
-        .from('jobs')
-        .insert({ ...values, user_id: userId, sort_order: jobs.length })
-        .select(JOB_COLS)
-        .single()
+      const { data, error: err } = await api.post('/jobs', {
+        ...values,
+        sort_order: jobs.length,
+      })
 
       if (err) return { error: errorMessage(err) }
       setJobs((prev) => [...prev, data])
       setActiveJobId(data.id) // land the user on what they just made
       return {}
     },
-    [userId, jobs.length],
+    [jobs.length],
   )
 
   const updateJob = useCallback(async (id, values) => {
-    const { data, error: err } = await supabase
-      .from('jobs')
-      .update(values)
-      .eq('id', id)
-      .select(JOB_COLS)
-      .single()
+    const { data, error: err } = await api.patch(`/jobs/${id}`, values)
 
     if (err) return { error: errorMessage(err) }
     setJobs((prev) => prev.map((j) => (j.id === id ? data : j)))
@@ -276,7 +209,7 @@ export function useWorkbud(userId) {
 
   const deleteJob = useCallback(
     async (id) => {
-      const { error: err } = await supabase.from('jobs').delete().eq('id', id)
+      const { error: err } = await api.delete(`/jobs/${id}`)
       if (err) return { error: errorMessage(err) }
 
       const remaining = jobs.filter((j) => j.id !== id)
@@ -305,26 +238,20 @@ export function useWorkbud(userId) {
   const addMilestone = useCallback(
     async (values) => {
       if (!activeJobId) return { error: 'Create a job first.' }
-      const { data, error: err } = await supabase
-        .from('milestones')
-        .insert({ ...values, user_id: userId, job_id: activeJobId })
-        .select(MILESTONE_COLS)
-        .single()
+      const { data, error: err } = await api.post('/milestones', {
+        ...values,
+        job_id: activeJobId,
+      })
 
       if (err) return { error: errorMessage(err) }
       setAllMilestones((prev) => [...prev, data])
       return {}
     },
-    [userId, activeJobId],
+    [activeJobId],
   )
 
   const updateMilestone = useCallback(async (id, values) => {
-    const { data, error: err } = await supabase
-      .from('milestones')
-      .update(values)
-      .eq('id', id)
-      .select(MILESTONE_COLS)
-      .single()
+    const { data, error: err } = await api.patch(`/milestones/${id}`, values)
 
     if (err) return { error: errorMessage(err) }
     setAllMilestones((prev) => prev.map((m) => (m.id === id ? data : m)))
@@ -332,7 +259,7 @@ export function useWorkbud(userId) {
   }, [])
 
   const deleteMilestone = useCallback(async (id) => {
-    const { error: err } = await supabase.from('milestones').delete().eq('id', id)
+    const { error: err } = await api.delete(`/milestones/${id}`)
     if (err) return { error: errorMessage(err) }
     setAllMilestones((prev) => prev.filter((m) => m.id !== id))
     return {}
@@ -348,34 +275,23 @@ export function useWorkbud(userId) {
       )
 
     set(doneAt)
-    const { error: err } = await supabase
-      .from('milestones')
-      .update({ done_at: doneAt })
-      .eq('id', milestone.id)
+    const { error: err } = await api.patch(`/milestones/${milestone.id}`, {
+      done_at: doneAt,
+    })
     if (err) {
       set(milestone.done_at)
       setError(errorMessage(err))
     }
   }, [])
 
-  const saveProfile = useCallback(
-    async (values) => {
-      const { data, error: err } = await supabase
-        .from('profiles')
-        .update(values)
-        .eq('id', userId)
-        .select(
-          'id, first_name, last_name, middle_initial, age, occupation, currency, avatar_path, onboarded_at',
-        )
-        .single()
+  const saveProfile = useCallback(async (values) => {
+    const { data, error: err } = await api.patch('/profile', values)
 
-      if (err) return { error: errorMessage(err) }
-      setProfile(data)
-      setCurrency(data.currency)
-      return {}
-    },
-    [userId],
-  )
+    if (err) return { error: errorMessage(err) }
+    setProfile(data)
+    setCurrency(data.currency)
+    return {}
+  }, [])
 
   // --- derived, for the active job only
   const stats = useMemo(() => {

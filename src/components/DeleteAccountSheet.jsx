@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { AlertTriangle, Trash2 } from 'lucide-react'
+import { api } from '../lib/api'
 import { supabase, errorMessage } from '../lib/supabase'
 import { removeAllAvatars } from '../lib/avatar'
 import { Sheet } from './Sheet'
@@ -26,7 +27,7 @@ function clearLocalLeftovers() {
  *
  * Order matters. The avatar files go first, because once the auth user is gone
  * the storage policies no longer recognise anyone as their owner and they would
- * be stranded on a public URL. Then delete_own_account() removes the auth user,
+ * be stranded on a public URL. Then DELETE /api/account removes the auth user,
  * and the database cascades everything else.
  */
 export function DeleteAccountSheet({ open, userId, email, onClose }) {
@@ -60,7 +61,7 @@ export function DeleteAccountSheet({ open, userId, email, onClose }) {
       return
     }
 
-    const { error: delErr } = await supabase.rpc('delete_own_account')
+    const { error: delErr } = await api.delete('/account')
     if (delErr) {
       setError(errorMessage(delErr))
       setBusy(false)

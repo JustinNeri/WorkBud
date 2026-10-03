@@ -3,7 +3,13 @@ import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
+// The API runs as its own process (server/index.js). Proxying /api to it keeps
+// the browser on one origin, so there is no CORS to configure.
+const proxy = { '/api': 'http://localhost:3001' }
+
 export default defineConfig({
+  server: { proxy },
+  preview: { proxy },
   plugins: [
     react(),
     tailwindcss(),
@@ -34,7 +40,13 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,png,svg,woff2}'],
         navigateFallback: 'index.html',
+        navigateFallbackDenylist: [/^\/api\//],
         runtimeCaching: [
+          {
+            // Same rule for our own API as for Supabase below.
+            urlPattern: /\/api\//,
+            handler: 'NetworkOnly',
+          },
           {
             // Never serve stale auth/data from the SW — always hit the network.
             urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
