@@ -4,6 +4,7 @@ Weekly increment reports for WorkBud, one section per week.
 
 - [Week 1: September 14 to 20, 2026](#week-1-september-14-to-20-2026)
 - [Week 2: September 21 to 27, 2026](#week-2-september-21-to-27-2026)
+- [Week 3: September 28 to October 4, 2026](#week-3-september-28-to-october-4-2026)
 
 ---
 
@@ -206,3 +207,64 @@ The colour tokens were debt repayment. Hardcoded colours in thirteen components 
 - A reminder notification to log the day's hours. The in-app "Nothing logged today" nudge already exists; this would reach you when the app is closed.
 - A tidier git workflow: feature branches, and commit messages that say what changed.
 - Empty states and loading skeletons.
+
+---
+
+# Week 3: September 28 to October 4, 2026
+
+## What changed this week
+
+**1. Express API server** (`server/`, `api/index.js`, `src/lib/api.js`)
+
+Until this week the React app talked to Supabase directly and the project had no server of its own. It now has one. Jobs, daily logs, expenses, milestones and the profile are read and written through a REST API built with Express 5.
+
+- Routes: `/api/profile`, `/api/jobs`, `/api/logs`, `/api/milestones` and `/api/account`, plus a public `/api/health` that checks the database connection. Creates return 201, deletes return 204, bad input returns 400, a missing or invalid token returns 401, and a row that does not exist or is not yours returns 404.
+- Every request body is validated on the server (`server/validate.js`) before it reaches the database, and the error names the field that failed.
+- Sign-in still goes through Supabase Auth. The browser sends its access token to the API, and the server queries the database as that user, so the Row Level Security policies from Week 1 still apply behind every route.
+- `useWorkbud.js`, `Onboarding.jsx` and `DeleteAccountSheet.jsx` now call the API instead of Supabase. `npm run dev` starts the server and Vite together.
+- Nothing in the database changed: same tables, same policies, same data.
+
+This was written by Claude (Claude Code). It is recorded in `AI-USAGE.md`, entry 1.7.
+
+Commit: [750a87c](https://github.com/JustinNeri/WorkBud/commit/750a87c)
+
+**2. Past months on the budget card** (`BudgetCard.jsx`, `useWorkbud.js`)
+
+The budget card can now page back through earlier months, from the first month logged up to last month. A month with nothing logged shows as nothing spent instead of being skipped.
+
+Commit: [6195d5c](https://github.com/JustinNeri/WorkBud/commit/6195d5c)
+
+**3. Delete account** (`DeleteAccountSheet.jsx`, `schema.sql`)
+
+A user can now close their own account from settings. It asks for the current password first, removes the profile pictures, then deletes the account, and the database cascades through the jobs, logs, expenses and milestones.
+
+Commit: [5382e29](https://github.com/JustinNeri/WorkBud/commit/5382e29)
+
+**4. Documentation** (`README.md`, `SECURITY-CHECKLIST.md`, `AI-USAGE.md`)
+
+The README now describes the server: how the pieces fit, how to run it, every API route, and the error format. It also removes the old line that said there was no server to run. Eleven rows of the security checklist were checked again against the server, and the CORS row changed from N/A to Yes.
+
+Commit: [750a87c](https://github.com/JustinNeri/WorkBud/commit/750a87c)
+
+## Why
+
+The final project rubric grades a server that starts, connects to its database and answers on its endpoints, with sensible routes and correct status codes. WorkBud had none of that to show, because Supabase was doing the job of the server. I could not get an answer in time on whether that would be accepted, so I added a server instead of risking those rows.
+
+Keeping Supabase Auth and Row Level Security in place, and putting the server in front of them, was the smallest change that gave the project a real API without rewriting sign-in in the last week.
+
+## What broke or what I got stuck on
+
+- **I found the gap late.** My proposal and both earlier reports describe an app with no server, and I only checked that against the final rubric in the last week. The server was added on October 3.
+- **The server is AI-written and I have to catch up on it.** I did not write this code. I need to read it well enough to explain it in the presentation.
+- **It could not be fully tested when it was written.** Claude had no account to sign in with, so only the signed-out paths, the bad-input paths and the health check were tested. The signed-in flows and the Vercel deployment still needed checking by me.
+- **Saving a day is two writes, not one transaction.** The server saves the log, then its expenses. A failure between the two on an edit could leave a day without its expense list.
+
+## What is left
+
+- **Test every signed-in flow through the API:** add, edit and delete a log with expenses, a job and a milestone, change the profile, and finish onboarding on a new account.
+- **Check the Vercel deployment,** starting with `/api/health`.
+- **Automated tests.** Still none, and that now includes the API routes.
+- **One transaction for a log and its expenses,** as a database function.
+- **Rate limiting on the API.**
+- **Avatars bucket.** The listing problem found in Week 2 is still not fixed.
+- **Export totals.** Still not rounded.

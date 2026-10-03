@@ -83,6 +83,25 @@ system, and I built the backend from there.
 - **What I kept, what I changed, and why:** I kept the guards, because they replaced the old "if signed in, show this, otherwise show that" logic with something clearer. I also kept the redirect that remembers where you were headed: if a signed-out user opens `/dashboard`, they go to `/login`, and after signing in they land back on the page they wanted instead of always the dashboard.
 - **Commit:** [05176af](https://github.com/JustinNeri/WorkBud/commit/05176af)
 
+### 1.7 The Express API server
+
+- **Date and tool:** October 3, 2026, Claude (Claude Code)
+- **What I asked:** the finals rubric grades a server with endpoints, and WorkBud had none, because the browser talked to Supabase directly. I asked Claude whether the project needed a server, and then to implement one.
+- **What it gave back:**
+  - an Express 5 server in `server/`, with REST routes for the profile, jobs, daily logs (with their expenses nested inside), milestones and account deletion, plus a public `/api/health` check;
+  - `server/auth.js`, which checks the Supabase access token on every data route and then queries the database as that user, so Row Level Security still applies;
+  - `server/validate.js`, which checks every request body and answers 400 naming the field that failed;
+  - `server/errors.js`, which turns database errors into status codes without leaking their details;
+  - `src/lib/api.js`, and `useWorkbud.js`, `Onboarding.jsx` and `DeleteAccountSheet.jsx` changed to call the API instead of Supabase;
+  - `api/index.js` and a `vercel.json` rewrite so the same server runs on Vercel, and updates to the README and security checklist.
+- **What I kept, what I changed, and why:** I kept it as Claude wrote it. This is the largest piece of AI-written code in the project, and the design choices in it were Claude's, not mine. The ones I agreed to keep, and why:
+  - the server forwards the signed-in user's token instead of using a service-role key, so the Row Level Security policies I wrote still check every query and there is no new secret to protect;
+  - sign-in stays with Supabase Auth, so the signup codes, password reset and "Remember me" that already worked were not rewritten in the last week;
+  - the server works out a day's `amount_spent` from the expense list itself, so the total can never disagree with the items.
+
+  Claude could not sign in, so it only tested the signed-out and bad-input paths. The signed-in flows were left for me to test in the browser.
+- **Commit:** [750a87c](https://github.com/JustinNeri/WorkBud/commit/750a87c)
+
 ---
 
 ## 2. Where the AI got it wrong
@@ -115,7 +134,7 @@ system, and I built the backend from there.
 ### Parts I wrote myself
 
 **Row Level Security policies** (`supabase/schema.sql`, from [510ccde](https://github.com/JustinNeri/WorkBud/commit/510ccde))
-Every table has RLS switched on, with a separate policy for select, insert, update and delete, and each one checks `auth.uid() = user_id`. That means the database itself refuses to show or change anyone else's rows, whatever the browser sends. This matters because WorkBud has no server of its own: the browser talks to Supabase directly with a key that is public. So the rule cannot live in app code a user could bypass; it has to live in the database. `profiles` deliberately has no insert or delete policy, because those rows should only ever come from the signup trigger. I tested it signed out: every table returned nothing, and an insert was refused.
+Every table has RLS switched on, with a separate policy for select, insert, update and delete, and each one checks `auth.uid() = user_id`. That means the database itself refuses to show or change anyone else's rows, whatever the browser sends. This mattered most when I wrote them, because WorkBud had no server of its own then: the browser talked to Supabase directly with a key that is public. So the rule could not live in app code a user could bypass; it had to live in the database. It still matters now that the Express API sits in front (see 1.7), because the server queries as the signed-in user, so these policies are a second check behind every route. `profiles` deliberately has no insert or delete policy, because those rows should only ever come from the signup trigger. I tested it signed out: every table returned nothing, and an insert was refused.
 
 **The signup trigger** (`supabase/schema.sql`, `handle_new_user`, from [510ccde](https://github.com/JustinNeri/WorkBud/commit/510ccde))
 When someone signs up, Supabase adds them to `auth.users`, and this trigger immediately creates their `profiles` row. It is done in the database rather than the app so there is never a moment where a user is signed in but has no profile. If the app created it instead, a dropped connection between the two steps would leave a broken account.
