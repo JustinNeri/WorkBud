@@ -188,7 +188,7 @@ create policy "profiles_update_own" on public.profiles
 
 -- jobs: full CRUD, scoped to the owner.
 drop policy if exists "jobs_select_own" on public.jobs;
-create policy "jobs_select_own" on public.jobs
+  create policy "jobs_select_own" on public.jobs
   for select to authenticated using ((select auth.uid()) = user_id);
 
 drop policy if exists "jobs_insert_own" on public.jobs;

@@ -113,6 +113,7 @@ export function Dashboard({ user }) {
           activeJobId={activeJobId}
           onSelect={setActiveJobId}
           onAdd={() => setJobSheet({ job: null })}
+          onRename={(id, name) => updateJob(id, { name })}
         />
       </div>
 
