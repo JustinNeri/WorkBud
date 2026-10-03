@@ -16,7 +16,7 @@ system, and I built the backend from there.
 
 ## 1. How I used AI
 
-Entries are in date order, oldest first. Most of the app was written in the first week of building, September 3 to 7 (entries 1.1 to 1.11).
+Entries are in date order, oldest first. Most of the app was written in the first week of building, September 3 to 7 (entries 1.1 to 1.10).
 
 ### 1.1 Project foundation and the first backend draft
 
@@ -26,21 +26,10 @@ Entries are in date order, oldest first. Most of the app was written in the firs
   - the React, Vite and Tailwind project setup, with the PWA config;
   - a first draft of the database layout (`profiles` and `daily_logs`) and of the flow: sign up, get a profile row, log days against it;
   - the first screens: `AuthScreen.jsx` for sign-in and sign-up, a dashboard, a log sheet, and a settings sheet with the sign-out button, plus the `useSession.js` and `useWorkbud.js` hooks.
-- **What I kept, what I changed, and why:** I built the backend from that draft myself. The Row Level Security policies and the signup trigger are the parts I wrote (section 3). The next day I replaced the one-target-per-user model with a `jobs` table, so a student can track more than one placement. Most of these first screens were reworked within days (see 1.5 and 1.10).
+- **What I kept, what I changed, and why:** I built the backend from that draft myself. The Row Level Security policies and the signup trigger are the parts I wrote (section 3). The next day I replaced the one-target-per-user model with a `jobs` table, so a student can track more than one placement. Most of these first screens were reworked within days (see 1.4 and 1.9).
 - **Commits:** [32e697a](https://github.com/JustinNeri/WorkBud/commit/32e697a), [fa45b49](https://github.com/JustinNeri/WorkBud/commit/fa45b49)
 
-### 1.2 Vercel deploy config
-
-- **Date and tool:** September 4, 2026, Claude (Claude Code) (reported in my Week 1 report)
-- **What I asked:** how to deploy to Vercel so that refreshing a page does not give a 404, and an installed copy of the app does not get stuck on an old version.
-- **What it gave back:** a `vercel.json` that:
-  - rewrites every path to `index.html`;
-  - lets the hashed files in `/assets` be cached for a long time;
-  - makes the service worker, its registration script and the manifest revalidate on every visit, so a cached service worker can never pin a user to a stale build.
-- **What I kept, what I changed, and why:** I kept it as written. It was only changed on October 3, to send `/api` requests to the new server (see 1.18).
-- **Commit:** [74ad58c](https://github.com/JustinNeri/WorkBud/commit/74ad58c)
-
-### 1.3 Emailed signup code instead of a confirmation link
+### 1.2 Emailed signup code instead of a confirmation link
 
 - **Date and tool:** September 4, 2026, Claude (Claude Code) and Gemini (reported in my Week 1 report)
 - **What I asked:** how to keep email verification inside the app. The default confirmation link opened a browser tab and often did not bring people back signed in.
@@ -53,15 +42,15 @@ Entries are in date order, oldest first. Most of the app was written in the firs
 - **What I kept, what I changed, and why:** I kept the in-app code step. The code box had to change the same day. It was fixed at exactly 6 digits and submitted automatically on the sixth, but my project sends 8-digit codes, so verification could never succeed. I found that when testing a real signup, and it was fixed with Claude: the box now accepts 6 to 10 digits and waits for the user to press the button.
 - **Commits:** [adc5631](https://github.com/JustinNeri/WorkBud/commit/adc5631), fixed in [0194caa](https://github.com/JustinNeri/WorkBud/commit/0194caa)
 
-### 1.4 Telling people their email is already registered
+### 1.3 Telling people their email is already registered
 
 - **Date and tool:** September 4, 2026, Claude (Claude Code) (reported in my Week 1 report)
 - **What I asked:** why signing up with an email that already had an account still moved on to the code screen, to wait for a code that never arrived.
 - **What it gave back:** the reason and a fix. Supabase answers "success" with a decoy user when the address already exists, so the app could not tell the difference. A real new signup comes back with one identity and a decoy comes back with none, so `AuthScreen.jsx` now checks for that and says the email is already registered.
-- **What I kept, what I changed, and why:** I kept it, then built on it. The next day a database function, `email_registered()`, was added so the forgot-password screen could give the same straight answer (see 1.8). On September 6 the check moved earlier: it now runs as soon as you leave the email field, before you have picked a password (see 1.9).
+- **What I kept, what I changed, and why:** I kept it, then built on it. The next day a database function, `email_registered()`, was added so the forgot-password screen could give the same straight answer (see 1.7). On September 6 the check moved earlier: it now runs as soon as you leave the email field, before you have picked a password (see 1.8).
 - **Commit:** [2aba89c](https://github.com/JustinNeri/WorkBud/commit/2aba89c)
 
-### 1.5 Dashboard cards, onboarding and the screens for several jobs
+### 1.4 Dashboard cards, onboarding and the screens for several jobs
 
 - **Date and tool:** September 4, 2026, Claude (reported in my Week 1 report)
 - **What I asked:** help turning the plain first dashboard into separate cards, and building onboarding and the screens to add and switch jobs, on top of the `jobs` table I had designed.
@@ -69,10 +58,10 @@ Entries are in date order, oldest first. Most of the app was written in the firs
   - dashboard pieces: `HeroHours.jsx` (the progress ring), `StatTiles.jsx`, `BudgetCard.jsx` and a reusable `Meter.jsx`;
   - `Onboarding.jsx`, a two-step first run: about you, then your first job;
   - `JobSheet.jsx` to create or edit a job, and `JobTabs.jsx` to switch between them.
-- **What I kept, what I changed, and why:** I kept the split into small cards, because each one can change without touching the others. Their look was redone twice afterwards: on September 6 for phones (1.10), and on September 19 when the colours moved to shared tokens.
+- **What I kept, what I changed, and why:** I kept the split into small cards, because each one can change without touching the others. Their look was redone twice afterwards: on September 6 for phones (1.9), and on September 19 when the colours moved to shared tokens.
 - **Commits:** [e7201a4](https://github.com/JustinNeri/WorkBud/commit/e7201a4), [409f1da](https://github.com/JustinNeri/WorkBud/commit/409f1da)
 
-### 1.6 Time in and time out, itemised expenses, and hours that count up
+### 1.5 Time in and time out, itemised expenses, and hours that count up
 
 - **Date and tool:** September 4, 2026, ChatGPT and Claude (reported in my Week 1 report)
 - **What I asked:** how to log a day as time in, time out and break instead of typing a number of hours, how to record each expense separately, and how to make a shift that is still running show the hours worked so far.
@@ -83,17 +72,17 @@ Entries are in date order, oldest first. Most of the app was written in the firs
 - **What I kept, what I changed, and why:** I kept all of it. Keeping the stored `hours_worked` as the planned total, and working out the live figure only for display, means nothing has to be written back to the database as the day goes on.
 - **Commits:** [ee96f6b](https://github.com/JustinNeri/WorkBud/commit/ee96f6b), [4181ba3](https://github.com/JustinNeri/WorkBud/commit/4181ba3)
 
-### 1.7 Pace card, spending by category, the "nothing logged today" nudge, and export
+### 1.6 Pace card, spending by category, the "nothing logged today" nudge, and export
 
 - **Date and tool:** September 4, 2026, Claude (reported in my Week 1 report)
 - **What I asked:** help adding the parts that make the numbers useful: whether I am on pace for my deadline, where the money goes, a reminder inside the app when today is not logged, and a time record I can hand to my coordinator.
 - **What it gave back:**
   - `PaceCard.jsx`, `CategoryBreakdown.jsx` and `TodayNudge.jsx`;
   - `ExportSheet.jsx` and `src/lib/export.js`, which build a printable time log and a CSV for any date range, and escape everything the user typed before it goes into the printed page.
-- **What I kept, what I changed, and why:** I kept them. The export was reworked on September 15 to carry milestones (1.12). One thing in it was wrong, and I found it in my own screenshot: the total hours were added up without rounding, so an export could read 209.32999999999998. I fixed that on September 27 by rounding the total to two decimals.
+- **What I kept, what I changed, and why:** I kept them. The export was reworked on September 15 to carry milestones (1.11). One thing in it was wrong, and I found it in my own screenshot: the total hours were added up without rounding, so an export could read 209.32999999999998. I fixed that on September 27 by rounding the total to two decimals.
 - **Commits:** [f3b7ebe](https://github.com/JustinNeri/WorkBud/commit/f3b7ebe), total fixed in [6341689](https://github.com/JustinNeri/WorkBud/commit/6341689)
 
-### 1.8 Forgot password and change password
+### 1.7 Forgot password and change password
 
 - **Date and tool:** September 4 to 5, 2026, Claude (reported in my Week 1 report)
 - **What I asked:** a way to reset a forgotten password without leaving the app, and a way to change the password from settings. The next day: why a mistyped email on the reset screen still moved on to the code step.
@@ -104,7 +93,7 @@ Entries are in date order, oldest first. Most of the app was written in the firs
 - **What I kept, what I changed, and why:** I kept it, knowingly giving up Supabase's "never reveal which emails exist" behaviour for a straight answer, which suits an app this size. The same lookup then went onto sign-in, so "wrong password" and "no account with that email" show different messages, and it ignores signups that were never confirmed.
 - **Commits:** [7e19ae6](https://github.com/JustinNeri/WorkBud/commit/7e19ae6), [682eeda](https://github.com/JustinNeri/WorkBud/commit/682eeda), fixes in [788b0c4](https://github.com/JustinNeri/WorkBud/commit/788b0c4) and [55e23e4](https://github.com/JustinNeri/WorkBud/commit/55e23e4)
 
-### 1.9 Signup steps, password strength and the show-password button
+### 1.8 Signup steps, password strength and the show-password button
 
 - **Date and tool:** September 4 and 6, 2026, Claude (reported in my Week 1 report)
 - **What I asked:** how to cut down failed sign-ins and signups on a phone, where passwords are typed blind and errors only showed after the form was submitted.
@@ -116,7 +105,7 @@ Entries are in date order, oldest first. Most of the app was written in the firs
 - **What I kept, what I changed, and why:** I kept them. Checking the password rules in the app before sending matters here, because every failed signup attempt costs a real email.
 - **Commits:** [7e7d8e4](https://github.com/JustinNeri/WorkBud/commit/7e7d8e4), [66ddc96](https://github.com/JustinNeri/WorkBud/commit/66ddc96)
 
-### 1.10 One look for the sign-in screens, and forms that work on a phone
+### 1.9 One look for the sign-in screens, and forms that work on a phone
 
 - **Date and tool:** September 6, 2026, Claude (reported in my Week 1 report)
 - **What I asked:** sign-in, signup, the code step, password reset and onboarding had each ended up with a different layout, and the long forms were hard to use on a phone. I asked how to fix both.
@@ -127,7 +116,7 @@ Entries are in date order, oldest first. Most of the app was written in the firs
 - **What I kept, what I changed, and why:** I kept the shared shell and the pinned button. This was the work my Week 1 report calls the mobile passes: I had built the first screens at desktop width, and they needed redoing once I opened them on a phone.
 - **Commits:** [b81cf4b](https://github.com/JustinNeri/WorkBud/commit/b81cf4b), [67f7cf8](https://github.com/JustinNeri/WorkBud/commit/67f7cf8), [56e447c](https://github.com/JustinNeri/WorkBud/commit/56e447c)
 
-### 1.11 Delete job fix, the deadline date, and the daily budget
+### 1.10 Delete job fix, the deadline date, and the daily budget
 
 - **Date and tool:** September 7, 2026, Claude (reported in my Week 1 report)
 - **What I asked:** why deleting a job misbehaved, how to show my deadline where I would see it at a glance, and how to add a spending limit per day.
@@ -138,7 +127,7 @@ Entries are in date order, oldest first. Most of the app was written in the firs
 - **What I kept, what I changed, and why:** I kept all three. Later, an AI-written report described the delete bug wrongly, which is entry 2.1.
 - **Commits:** [0aa55ea](https://github.com/JustinNeri/WorkBud/commit/0aa55ea), [7467bc4](https://github.com/JustinNeri/WorkBud/commit/7467bc4), [1334e5e](https://github.com/JustinNeri/WorkBud/commit/1334e5e)
 
-### 1.12 Milestones and hour badges
+### 1.11 Milestones and hour badges
 
 - **Date and tool:** September 15, 2026, Claude
 - **What I asked:** help adding checkpoints to each job (orientation, midterm evaluation, narrative report) with optional due dates and hour goals, plus some kind of progress marker as the hours add up, and to include them in the export.
@@ -150,7 +139,7 @@ Entries are in date order, oldest first. Most of the app was written in the firs
 - **What I kept, what I changed, and why:** I kept the badges being worked out in the app instead of stored in the database. That way they can never disagree with the hours actually logged, because they are recalculated from the logs every time. I restyled the card a few days later to fit the new colour tokens.
 - **Commits:** [552a712](https://github.com/JustinNeri/WorkBud/commit/552a712), restyled in [4820302](https://github.com/JustinNeri/WorkBud/commit/4820302)
 
-### 1.13 "Remember me" on sign-in
+### 1.12 "Remember me" on sign-in
 
 - **Date and tool:** September 19, 2026, Claude (committed at the end of Week 1, after my Week 1 report was written, so it is reported in my Week 2 report)
 - **What I asked:** how to add a "Remember me" checkbox that actually controls whether a user stays signed in after closing the browser.
@@ -166,7 +155,7 @@ Entries are in date order, oldest first. Most of the app was written in the firs
   This is also the AI-written piece I explain in section 3.
 - **Commit:** [dfa3599](https://github.com/JustinNeri/WorkBud/commit/dfa3599)
 
-### 1.14 Profile pictures
+### 1.13 Profile pictures
 
 - **Date and tool:** September 19, 2026, Claude (committed at the end of Week 1, after my Week 1 report was written, so it is reported in my Week 2 report)
 - **What I asked:** how to let users upload a profile picture from settings.
@@ -175,10 +164,10 @@ Entries are in date order, oldest first. Most of the app was written in the firs
   - `Avatar.jsx`, which shows the user's initial when there is no picture;
   - the upload flow in `SettingsSheet.jsx`;
   - an `avatars` storage bucket with per-user upload policies and an `avatar_path` column.
-- **What I kept, what I changed, and why:** I kept the resize-before-upload step. A phone photo is 3 to 8 MB, and this app is used on mobile data, so shrinking it to usually under 60 KB before sending saves users real money for a picture shown at 44 pixels. One part was not right, and I only found it later: the bucket's read policy lets signed-out users list every file. My security checklist caught it on September 27 (see 1.17), and it is not fixed yet.
+- **What I kept, what I changed, and why:** I kept the resize-before-upload step. A phone photo is 3 to 8 MB, and this app is used on mobile data, so shrinking it to usually under 60 KB before sending saves users real money for a picture shown at 44 pixels. One part was not right, and I only found it later: the bucket's read policy lets signed-out users list every file. My security checklist caught it on September 27 (see 1.16), and it is not fixed yet.
 - **Commit:** [5779d1d](https://github.com/JustinNeri/WorkBud/commit/5779d1d)
 
-### 1.15 React Router
+### 1.14 React Router
 
 - **Date and tool:** September 20, 2026, Claude (committed at the end of Week 1, after my Week 1 report was written, so it is reported in my Week 2 report)
 - **What I asked:** how to move the app from one screen with sheets on top to real URLs, so the phone back button would stop closing the whole app. This was the first item on my Week 1 "What is left" list.
@@ -189,7 +178,7 @@ Entries are in date order, oldest first. Most of the app was written in the firs
 - **What I kept, what I changed, and why:** I kept the guards, because they replaced the old "if signed in, show this, otherwise show that" logic with something clearer. I also kept the redirect that remembers where you were headed: if a signed-out user opens `/dashboard`, they go to `/login`, and after signing in they land back on the page they wanted instead of always the dashboard.
 - **Commit:** [6b44022](https://github.com/JustinNeri/WorkBud/commit/6b44022)
 
-### 1.16 Screenshots guide for the documentation
+### 1.15 Screenshots guide for the documentation
 
 - **Date and tool:** September 20, 2026, Claude (Claude Code); committed September 22
 - **What I asked:** where to put the screenshots my documentation needed, so they would show up in the repo.
@@ -197,7 +186,7 @@ Entries are in date order, oldest first. Most of the app was written in the firs
 - **What I kept, what I changed, and why:** I kept the folder and the capture steps, because the device-toolbar tip gave me consistent phone-sized shots. At first I only pasted the screenshots into my Word documentation. In Week 2 I added the files to this folder and linked them from the README, so the repo shows them too (see 2.2).
 - **Commit:** [5a5825f](https://github.com/JustinNeri/WorkBud/commit/5a5825f)
 
-### 1.17 Security checklist
+### 1.16 Security checklist
 
 - **Date and tool:** September 27, 2026, Claude (Claude Code)
 - **What I asked:** to fill in the unit's security checklist for my project, with evidence for every row.
@@ -205,7 +194,7 @@ Entries are in date order, oldest first. Most of the app was written in the firs
 - **What I kept, what I changed, and why:** I kept the evidence it could prove from the repo. I checked the rows only I could confirm myself: row 6 (my Vercel environment settings), row 30 (the logo is my own) and row 31 (the repo is public on purpose). I kept two honest "No" answers instead of turning them into Yes: the database API is reachable from the internet by design, and my personal email is the author address on every commit. (I fixed both later, on October 3. I turned on Supabase network restrictions so the direct database port is closed and only the HTTPS API the app uses is reachable, which made row 14 a Yes. I also rewrote the history so commits use my GitHub no-reply address, which made row 27 a Yes.)
 - **Commit:** [7ce34bb](https://github.com/JustinNeri/WorkBud/commit/7ce34bb)
 
-### 1.18 The Express API server
+### 1.17 The Express API server
 
 - **Date and tool:** October 3, 2026, Claude (Claude Code)
 - **What I asked:** the finals rubric grades a server with endpoints, and WorkBud had none, because the browser talked to Supabase directly. I asked Claude whether the project needed a server, and then to implement one.
@@ -256,7 +245,7 @@ Entries are in date order, oldest first. Most of the app was written in the firs
 ### Parts I wrote myself
 
 **Row Level Security policies** (`supabase/schema.sql`, from [32e697a](https://github.com/JustinNeri/WorkBud/commit/32e697a))
-Every table has RLS switched on, with a separate policy for select, insert, update and delete, and each one checks `auth.uid() = user_id`. That means the database itself refuses to show or change anyone else's rows, whatever the browser sends. This mattered most when I wrote them, because WorkBud had no server of its own then: the browser talked to Supabase directly with a key that is public. So the rule could not live in app code a user could bypass; it had to live in the database. It still matters now that the Express API sits in front (see 1.18), because the server queries as the signed-in user, so these policies are a second check behind every route. `profiles` deliberately has no insert or delete policy, because those rows should only ever come from the signup trigger. I tested it signed out: every table returned nothing, and an insert was refused.
+Every table has RLS switched on, with a separate policy for select, insert, update and delete, and each one checks `auth.uid() = user_id`. That means the database itself refuses to show or change anyone else's rows, whatever the browser sends. This mattered most when I wrote them, because WorkBud had no server of its own then: the browser talked to Supabase directly with a key that is public. So the rule could not live in app code a user could bypass; it had to live in the database. It still matters now that the Express API sits in front (see 1.17), because the server queries as the signed-in user, so these policies are a second check behind every route. `profiles` deliberately has no insert or delete policy, because those rows should only ever come from the signup trigger. I tested it signed out: every table returned nothing, and an insert was refused.
 
 **The signup trigger** (`supabase/schema.sql`, `handle_new_user`, from [32e697a](https://github.com/JustinNeri/WorkBud/commit/32e697a))
 When someone signs up, Supabase adds them to `auth.users`, and this trigger immediately creates their `profiles` row. It is done in the database rather than the app so there is never a moment where a user is signed in but has no profile. If the app created it instead, a dropped connection between the two steps would leave a broken account.
