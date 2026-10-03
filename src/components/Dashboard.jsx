@@ -19,6 +19,7 @@ import { MilestonesCard } from './MilestonesCard'
 import { Onboarding } from './Onboarding'
 import { PaceCard } from './PaceCard'
 import { PasswordSheet } from './PasswordSheet'
+import { PullToRefresh } from './PullToRefresh'
 import { SettingsSheet } from './SettingsSheet'
 import { Sheet } from './Sheet'
 import { StatTiles } from './StatTiles'
@@ -99,6 +100,8 @@ export function Dashboard({ user }) {
 
   return (
     <div className="relative isolate min-h-dvh pb-32">
+      <PullToRefresh onRefresh={reload} />
+
       <DashboardHeader
         name={firstName || 'WorkBud'}
         initial={initial}
