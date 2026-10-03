@@ -21,6 +21,7 @@ export function Onboarding({ onDone }) {
   const [jobName, setJobName] = useState('')
   const [targetHours, setTargetHours] = useState('480')
   const [budget, setBudget] = useState('3000')
+  const [dailyBudget, setDailyBudget] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
 
@@ -47,6 +48,9 @@ export function Onboarding({ onDone }) {
       return setError('Target hours must be zero or more.')
     if (!Number.isFinite(budgetValue) || budgetValue < 0)
       return setError('Budget must be zero or more.')
+    const dailyValue = dailyBudget === '' ? 0 : Number(dailyBudget)
+    if (!Number.isFinite(dailyValue) || dailyValue < 0)
+      return setError('Daily budget must be zero or more.')
 
     setBusy(true)
     setError(null)
@@ -75,6 +79,7 @@ export function Onboarding({ onDone }) {
       name: jobName.trim(),
       target_hours: hoursValue,
       monthly_budget: budgetValue,
+      daily_budget: dailyValue,
     }
 
     const { error: jobErr } = existing?.length
@@ -219,6 +224,20 @@ export function Onboarding({ onDone }) {
                 />
               </Field>
             </div>
+
+            <Field
+              label="Daily budget"
+              hint="Optional. A cap for a single day; leave blank for no daily limit."
+            >
+              <NumberInput
+                adornment={currencySymbol(currency)}
+                value={dailyBudget}
+                onChange={(e) => setDailyBudget(e.target.value)}
+                placeholder="300"
+                min="0"
+                step="1"
+              />
+            </Field>
 
             <Alert>{error}</Alert>
 
