@@ -106,7 +106,7 @@ Entries 1.1 to 1.7 cover September 15 onwards. Entries 1.8 to 1.18 go back to th
 
 ### 1.8 Project foundation and the first backend draft
 
-- **Date and tool:** September 3 to 4, 2026, Claude
+- **Date and tool:** September 3 to 4, 2026, Claude (reported in my Week 1 report)
 - **What I asked:** a starting structure for the project, and a workflow for the backend: which tables I needed, how sign-up, sign-in and sign-out should work with Supabase, and how to keep each user's data private.
 - **What it gave back:**
   - the React, Vite and Tailwind project setup, with the PWA config;
@@ -117,7 +117,7 @@ Entries 1.1 to 1.7 cover September 15 onwards. Entries 1.8 to 1.18 go back to th
 
 ### 1.9 Vercel deploy config
 
-- **Date and tool:** September 4, 2026, Claude (Claude Code)
+- **Date and tool:** September 4, 2026, Claude (Claude Code) (reported in my Week 1 report)
 - **What I asked:** how to deploy to Vercel so that refreshing a page does not give a 404, and an installed copy of the app does not get stuck on an old version.
 - **What it gave back:** a `vercel.json` that:
   - rewrites every path to `index.html`;
@@ -128,7 +128,7 @@ Entries 1.1 to 1.7 cover September 15 onwards. Entries 1.8 to 1.18 go back to th
 
 ### 1.10 Emailed signup code instead of a confirmation link
 
-- **Date and tool:** September 4, 2026, Claude (Claude Code) and Gemini
+- **Date and tool:** September 4, 2026, Claude (Claude Code) and Gemini (reported in my Week 1 report)
 - **What I asked:** how to keep email verification inside the app. The default confirmation link opened a browser tab and often did not bring people back signed in.
 - **What it gave back:** a new `OtpStep.jsx`:
   - after signup, the user types the emailed code, checked with `supabase.auth.verifyOtp`;
@@ -141,7 +141,7 @@ Entries 1.1 to 1.7 cover September 15 onwards. Entries 1.8 to 1.18 go back to th
 
 ### 1.11 Telling people their email is already registered
 
-- **Date and tool:** September 4, 2026, Claude (Claude Code)
+- **Date and tool:** September 4, 2026, Claude (Claude Code) (reported in my Week 1 report)
 - **What I asked:** why signing up with an email that already had an account still moved on to the code screen, to wait for a code that never arrived.
 - **What it gave back:** the reason and a fix. Supabase answers "success" with a decoy user when the address already exists, so the app could not tell the difference. A real new signup comes back with one identity and a decoy comes back with none, so `AuthScreen.jsx` now checks for that and says the email is already registered.
 - **What I kept, what I changed, and why:** I kept it, then built on it. The next day a database function, `email_registered()`, was added so the forgot-password screen could give the same straight answer (see 1.15). On September 6 the check moved earlier: it now runs as soon as you leave the email field, before you have picked a password (see 1.16).
@@ -149,7 +149,7 @@ Entries 1.1 to 1.7 cover September 15 onwards. Entries 1.8 to 1.18 go back to th
 
 ### 1.12 Dashboard cards, onboarding and the screens for several jobs
 
-- **Date and tool:** September 4, 2026, Claude
+- **Date and tool:** September 4, 2026, Claude (reported in my Week 1 report)
 - **What I asked:** help turning the plain first dashboard into separate cards, and building onboarding and the screens to add and switch jobs, on top of the `jobs` table I had designed.
 - **What it gave back:**
   - dashboard pieces: `HeroHours.jsx` (the progress ring), `StatTiles.jsx`, `BudgetCard.jsx` and a reusable `Meter.jsx`;
@@ -160,7 +160,7 @@ Entries 1.1 to 1.7 cover September 15 onwards. Entries 1.8 to 1.18 go back to th
 
 ### 1.13 Time in and time out, itemised expenses, and hours that count up
 
-- **Date and tool:** September 4, 2026, ChatGPT and Claude
+- **Date and tool:** September 4, 2026, ChatGPT and Claude (reported in my Week 1 report)
 - **What I asked:** how to log a day as time in, time out and break instead of typing a number of hours, how to record each expense separately, and how to make a shift that is still running show the hours worked so far.
 - **What it gave back:**
   - `time_in`, `time_out` and `break_minutes` columns, and an `expenses` table with one row per item bought;
@@ -171,7 +171,7 @@ Entries 1.1 to 1.7 cover September 15 onwards. Entries 1.8 to 1.18 go back to th
 
 ### 1.14 Pace card, spending by category, the "nothing logged today" nudge, and export
 
-- **Date and tool:** September 4, 2026, Claude
+- **Date and tool:** September 4, 2026, Claude (reported in my Week 1 report)
 - **What I asked:** help adding the parts that make the numbers useful: whether I am on pace for my deadline, where the money goes, a reminder inside the app when today is not logged, and a time record I can hand to my coordinator.
 - **What it gave back:**
   - `PaceCard.jsx`, `CategoryBreakdown.jsx` and `TodayNudge.jsx`;
@@ -181,7 +181,7 @@ Entries 1.1 to 1.7 cover September 15 onwards. Entries 1.8 to 1.18 go back to th
 
 ### 1.15 Forgot password and change password
 
-- **Date and tool:** September 4 to 5, 2026, Claude
+- **Date and tool:** September 4 to 5, 2026, Claude (reported in my Week 1 report)
 - **What I asked:** a way to reset a forgotten password without leaving the app, and a way to change the password from settings. The next day: why a mistyped email on the reset screen still moved on to the code step.
 - **What it gave back:**
   - `ForgotPassword.jsx`, which resets by emailed code. The code and the new password are entered on the same step, so a reset link never opens outside the installed app;
@@ -192,7 +192,7 @@ Entries 1.1 to 1.7 cover September 15 onwards. Entries 1.8 to 1.18 go back to th
 
 ### 1.16 Signup steps, password strength and the show-password button
 
-- **Date and tool:** September 4 and 6, 2026, Claude
+- **Date and tool:** September 4 and 6, 2026, Claude (reported in my Week 1 report)
 - **What I asked:** how to cut down failed sign-ins and signups on a phone, where passwords are typed blind and errors only showed after the form was submitted.
 - **What it gave back:**
   - a password field with a show and hide button (`ui.jsx`), marked `type="button"` so pressing it does not submit the form;
@@ -204,7 +204,7 @@ Entries 1.1 to 1.7 cover September 15 onwards. Entries 1.8 to 1.18 go back to th
 
 ### 1.17 One look for the sign-in screens, and forms that work on a phone
 
-- **Date and tool:** September 6, 2026, Claude
+- **Date and tool:** September 6, 2026, Claude (reported in my Week 1 report)
 - **What I asked:** sign-in, signup, the code step, password reset and onboarding had each ended up with a different layout, and the long forms were hard to use on a phone. I asked how to fix both.
 - **What it gave back:**
   - `AuthShell.jsx`, one shared frame for every screen before the dashboard;
@@ -215,7 +215,7 @@ Entries 1.1 to 1.7 cover September 15 onwards. Entries 1.8 to 1.18 go back to th
 
 ### 1.18 Delete job fix, the deadline date, and the daily budget
 
-- **Date and tool:** September 7, 2026, Claude
+- **Date and tool:** September 7, 2026, Claude (reported in my Week 1 report)
 - **What I asked:** why deleting a job misbehaved, how to show my deadline where I would see it at a glance, and how to add a spending limit per day.
 - **What it gave back:**
   - the delete fix. The delete button sat inside the form without `type="button"`, so confirming a delete also saved the job being deleted. It also now lets you delete your last job, and moves you to another job afterwards instead of showing "No job yet";
