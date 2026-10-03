@@ -31,6 +31,7 @@ export function SettingsSheet({
   onClose,
   onSave,
   onChangePassword,
+  onDeleteAccount,
 }) {
   const [firstName, setFirstName] = useState(profile?.first_name ?? '')
   const [lastName, setLastName] = useState(profile?.last_name ?? '')
@@ -295,6 +296,15 @@ export function SettingsSheet({
             >
               <LogOut size={17} />
               Sign out
+            </Button>
+          </div>
+
+          {/* Last, and quiet until asked for: the sheet it opens is where the
+              weight and the password check live. */}
+          <div className="mt-4 border-t border-ink/10 pt-4">
+            <Button type="button" variant="dangerGhost" onClick={onDeleteAccount}>
+              <Trash2 size={16} />
+              Delete account
             </Button>
           </div>
         </FormSection>

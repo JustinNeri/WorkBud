@@ -136,3 +136,23 @@ export async function removeAvatar(path) {
   if (!path || !supabase) return
   await supabase.storage.from(BUCKET).remove([path])
 }
+
+/**
+ * Empty a user's whole avatar folder, for when the account itself is going.
+ *
+ * Lists the folder rather than trusting the profile's one path, because a
+ * best-effort removeAvatar() that failed earlier can leave older files behind,
+ * and a deleted account should not leave a photo of its owner on a public URL.
+ */
+export async function removeAllAvatars(userId) {
+  if (!userId || !supabase) return {}
+  const { data, error } = await supabase.storage.from(BUCKET).list(userId)
+  if (error) return { error: error.message || 'Could not remove your photo.' }
+  if (!data?.length) return {}
+
+  const { error: delErr } = await supabase.storage
+    .from(BUCKET)
+    .remove(data.map((f) => `${userId}/${f.name}`))
+  if (delErr) return { error: delErr.message || 'Could not remove your photo.' }
+  return {}
+}

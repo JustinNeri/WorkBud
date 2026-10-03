@@ -449,3 +449,37 @@ create policy "avatars_delete_own" on storage.objects
     bucket_id = 'avatars'
     and (storage.foldername(name))[1] = (select auth.uid())::text
   );
+
+-- ---------------------------------------------------------------------------
+-- 12. delete_own_account: lets a user close their own account.
+--
+--     auth.users can only be deleted with the service role, which must never
+--     reach the browser. This function runs as its owner instead, and only
+--     ever deletes the row for auth.uid(), so the caller can remove themselves
+--     and nobody else. It takes no arguments on purpose: there is no id to
+--     tamper with.
+--
+--     Every table above references auth.users with ON DELETE CASCADE, so this
+--     one delete takes the profile, jobs, logs, expenses and milestones with it.
+--     Avatar files are not rows in those tables; the app removes them through
+--     the Storage API before calling this, since Supabase blocks deleting
+--     storage objects with plain SQL.
+-- ---------------------------------------------------------------------------
+create or replace function public.delete_own_account()
+returns void
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  uid uuid := auth.uid();
+begin
+  if uid is null then
+    raise exception 'Not signed in.';
+  end if;
+  delete from auth.users where id = uid;
+end;
+$$;
+
+revoke execute on function public.delete_own_account() from public, anon;
+grant  execute on function public.delete_own_account() to authenticated;

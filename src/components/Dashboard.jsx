@@ -8,6 +8,7 @@ import { BudgetCard } from './BudgetCard'
 import { CatchUpCard } from './CatchUpCard'
 import { CategoryBreakdown } from './CategoryBreakdown'
 import { DashboardHeader } from './DashboardHeader'
+import { DeleteAccountSheet } from './DeleteAccountSheet'
 import { ExportSheet } from './ExportSheet'
 import { HeroHours } from './HeroHours'
 import { JobSheet } from './JobSheet'
@@ -60,6 +61,7 @@ export function Dashboard({ user }) {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [exportOpen, setExportOpen] = useState(false)
   const [passwordOpen, setPasswordOpen] = useState(false)
+  const [deleteAccountOpen, setDeleteAccountOpen] = useState(false)
   const [pendingDelete, setPendingDelete] = useState(null)
   const [deletingId, setDeletingId] = useState(null)
   const [deleteError, setDeleteError] = useState(null)
@@ -413,6 +415,19 @@ export function Dashboard({ user }) {
             setSettingsOpen(false)
             setPasswordOpen(true)
           }}
+          onDeleteAccount={() => {
+            setSettingsOpen(false)
+            setDeleteAccountOpen(true)
+          }}
+        />
+      ) : null}
+
+      {deleteAccountOpen ? (
+        <DeleteAccountSheet
+          open
+          userId={user.id}
+          email={user.email}
+          onClose={() => setDeleteAccountOpen(false)}
         />
       ) : null}
 
