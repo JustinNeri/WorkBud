@@ -16,55 +16,55 @@ Weekly increment reports for WorkBud, one section per week.
 
 Set up the React 19 + Vite 8 + Tailwind CSS 4 project, connected it to a Supabase backend (Postgres + Auth), and added `vercel.json` so every push deploys automatically. The app has been publicly reachable since day one rather than sitting only on my machine.
 
-Commit: [510ccde](https://github.com/JustinNeri/WorkBud/commit/510ccde)
+Commit: [32e697a](https://github.com/JustinNeri/WorkBud/commit/32e697a)
 
 **2. Database schema with Row Level Security** (`supabase/schema.sql`)
 
 Built five tables: `profiles`, `jobs`, `daily_logs`, `expenses`, `milestones`. Every table has RLS policies scoped to `auth.uid()`, plus a trigger that creates a profile row automatically when a user signs up. The script is idempotent so I can re-run it safely when I add columns.
 
-Commit: [1f06ec8](https://github.com/JustinNeri/WorkBud/commit/1f06ec8)
+Commit: [fa45b49](https://github.com/JustinNeri/WorkBud/commit/fa45b49)
 
 **3. Full authentication flow**
 
 Sign up, log in, email verification, and password reset. I deliberately used a 6-digit emailed **code** instead of a confirmation link, added a show/hide password toggle, a password strength meter, and a clear message when an email is already registered.
 
-Commit: [bfbb2e0](https://github.com/JustinNeri/WorkBud/commit/bfbb2e0)
+Commit: [adc5631](https://github.com/JustinNeri/WorkBud/commit/adc5631)
 
 **4. Onboarding and multi-job support** (`Onboarding.jsx`, `JobSheet.jsx`, `JobTabs.jsx`)
 
 First-run onboarding collects name, occupation, and currency (10 supported). Users can create multiple jobs/placements, each with its own target hours, deadline, and settings, switchable via tabs.
 
-Commit: [70e53f8](https://github.com/JustinNeri/WorkBud/commit/70e53f8)
+Commit: [409f1da](https://github.com/JustinNeri/WorkBud/commit/409f1da)
 
 **5. Daily log entry with computed hours** (`LogSheet.jsx`)
 
 One entry per day: date, time in, time out, unpaid break, and a note. Hours are computed automatically, overnight shifts (10pm → 6am) calculate correctly, an in-progress shift ticks upward live, and any past date can be backfilled with Today/Yesterday shortcuts.
 
-Commit: [cfcc083](https://github.com/JustinNeri/WorkBud/commit/cfcc083)
+Commit: [ee96f6b](https://github.com/JustinNeri/WorkBud/commit/ee96f6b)
 
 **6. Dashboard, pace tracking, and activity feed** (`PaceCard.jsx`, `TodayNudge.jsx`, `ActivityFeed.jsx`)
 
 A progress ring against target hours, hours this week, average per day, days worked, deadline countdown, and the hours-per-day needed to finish on time with a warning when that required pace exceeds the pace actually being kept.
 
-Commit: [d95a8f4](https://github.com/JustinNeri/WorkBud/commit/d95a8f4)
+Commit: [637ddd8](https://github.com/JustinNeri/WorkBud/commit/637ddd8)
 
 **7. Expense tracking and budgets** (`BudgetCard.jsx`, `CatchUpCard.jsx`, `CategoryBreakdown.jsx`)
 
 Itemised expenses per day (label, category, amount) instead of one lump sum, an optional daily budget per job checked live while typing, a monthly budget meter, a spend-by-category breakdown, and a "catch-up" figure that spreads any overspend across the remaining days of the month.
 
-Commit: [d2515d1](https://github.com/JustinNeri/WorkBud/commit/d2515d1)
+Commit: [f3b7ebe](https://github.com/JustinNeri/WorkBud/commit/f3b7ebe)
 
 **8. Export (DTR + CSV)** (`src/lib/export.js`)
 
 Any date range exports as printable or CSV, in two versions: a **time log** (date, time in/out, hours, note) clean enough to hand a coordinator, and a **full record** including break and expenses.
 
-Commit: [d2515d1](https://github.com/JustinNeri/WorkBud/commit/d2515d1)
+Commit: [f3b7ebe](https://github.com/JustinNeri/WorkBud/commit/f3b7ebe)
 
 **9. Milestones** (`MilestoneSheet.jsx`, `MilestonesCard.jsx`)
 
 User-defined checkpoints per job (orientation, midterm evaluation, narrative report) with optional due dates and hour goals, flagged when overdue or due this week, plus automatic badges at 25/50/75/100% of target hours showing the date each was reached or a projected date at the current pace.
 
-Commit: [d2515d1](https://github.com/JustinNeri/WorkBud/commit/d2515d1)
+Commit: [f3b7ebe](https://github.com/JustinNeri/WorkBud/commit/f3b7ebe)
 
 **10. Mobile-first UI rebuild and PWA**
 
@@ -115,13 +115,13 @@ The goal of Week 1 was to get a *usable* end-to-end product rather than scaffold
 
 The app was one authenticated screen with sheets layered over it and no URLs. It now uses React Router with real routes at `/login`, `/signup`, `/forgot-password` and `/dashboard`, guarded by `RequireSession` and `GuestOnly`. Opening a protected page while signed out sends you to `/login` and remembers where you were headed, so signing in takes you back there instead of always to the dashboard. This closes the first item on my Week 1 "What is left" list.
 
-Commit: [05176af](https://github.com/JustinNeri/WorkBud/commit/05176af)
+Commit: [6b44022](https://github.com/JustinNeri/WorkBud/commit/6b44022)
 
 **2. Session persistence, "Remember me"** (`src/lib/supabase.js`, `AuthScreen.jsx`)
 
 There is now a checkbox on the sign-in screen that controls how long a session lasts. When it is ticked, the token goes to `localStorage` and you stay signed in. When it is unticked, the token goes to `sessionStorage` and the session ends when the browser closes. This closes the second item on the Week 1 list.
 
-Commit: [285118d](https://github.com/JustinNeri/WorkBud/commit/285118d)
+Commit: [dfa3599](https://github.com/JustinNeri/WorkBud/commit/dfa3599)
 
 **3. Profile pictures** (`Avatar.jsx`, `src/lib/avatar.js`, `SettingsSheet.jsx`)
 
@@ -132,7 +132,7 @@ Users can now upload a profile picture from settings.
 
 This closes the third item on the Week 1 list.
 
-Commit: [98c739f](https://github.com/JustinNeri/WorkBud/commit/98c739f)
+Commit: [5779d1d](https://github.com/JustinNeri/WorkBud/commit/5779d1d)
 
 **4. Planned pace, start dates and days off** (`JobSheet.jsx`, `LogSheet.jsx`, `schema.sql`)
 
@@ -140,25 +140,25 @@ Commit: [98c739f](https://github.com/JustinNeri/WorkBud/commit/98c739f)
 - The first two drive an expected finish date. That answers "when do I actually finish at the pace I keep," which is a different question from "how many hours a day do I need."
 - Days you did not go in are now recorded with an "I didn't work this day" tick instead of being left blank.
 
-Commit: [619e72e](https://github.com/JustinNeri/WorkBud/commit/619e72e)
+Commit: [f979747](https://github.com/JustinNeri/WorkBud/commit/f979747)
 
 **5. Visual overhaul and colour tokens** (`AuthShell.jsx`, `Dashboard.jsx`, `index.css`)
 
 I rebuilt the sign-in shell, restructured the dashboard, and reworked the header, job tabs and shared `ui.jsx` primitives. Colours now come from tokens in `index.css` instead of hex values repeated in each component. That was three commits, about 660 lines across 13 files.
 
-Commits: [21f6810](https://github.com/JustinNeri/WorkBud/commit/21f6810), [6cab803](https://github.com/JustinNeri/WorkBud/commit/6cab803), [442fda8](https://github.com/JustinNeri/WorkBud/commit/442fda8)
+Commits: [7465711](https://github.com/JustinNeri/WorkBud/commit/7465711), [9656071](https://github.com/JustinNeri/WorkBud/commit/9656071), [4820302](https://github.com/JustinNeri/WorkBud/commit/4820302)
 
 **6. Activity feed filtering** (`ActivityFeed.jsx`)
 
 The feed now shows a five-entry preview with a "show all" option. It also has month chips, built only from months that actually have entries.
 
-Commit: [a2ae5e1](https://github.com/JustinNeri/WorkBud/commit/a2ae5e1)
+Commit: [9300ef0](https://github.com/JustinNeri/WorkBud/commit/9300ef0)
 
 **7. Sheet overflow indicator** (`Sheet.jsx`)
 
 A chevron now appears when a form continues below the fold. Before this, there was no sign there was more to fill in.
 
-Commit: [41f8010](https://github.com/JustinNeri/WorkBud/commit/41f8010)
+Commit: [3226aad](https://github.com/JustinNeri/WorkBud/commit/3226aad)
 
 **8. Documentation, security checklist and AI usage record** (`README.md`, `SECURITY-CHECKLIST.md`, `AI-USAGE.md`, `docs/screenshots/`)
 
@@ -166,7 +166,7 @@ Commit: [41f8010](https://github.com/JustinNeri/WorkBud/commit/41f8010)
 - Filled in the 31-row security checklist with evidence. I searched the whole git history for secrets and found none, then tested Row Level Security live while signed out: every table returned nothing, and an insert was refused. That test found a real problem, below.
 - Wrote `AI-USAGE.md`: six uses of AI with their commits, three times it got something wrong, and which parts are mine.
 
-Commits: [20c5618](https://github.com/JustinNeri/WorkBud/commit/20c5618), [5071949](https://github.com/JustinNeri/WorkBud/commit/5071949), [334b5a7](https://github.com/JustinNeri/WorkBud/commit/334b5a7), [b1836b0](https://github.com/JustinNeri/WorkBud/commit/b1836b0)
+Commits: [7ce34bb](https://github.com/JustinNeri/WorkBud/commit/7ce34bb), [fede7c9](https://github.com/JustinNeri/WorkBud/commit/fede7c9), [8397bcc](https://github.com/JustinNeri/WorkBud/commit/8397bcc), [a86aaf9](https://github.com/JustinNeri/WorkBud/commit/a86aaf9)
 
 ## Why
 
@@ -226,25 +226,25 @@ Until this week the React app talked to Supabase directly and the project had no
 
 This was written by Claude (Claude Code). It is recorded in `AI-USAGE.md`, entry 1.7.
 
-Commit: [750a87c](https://github.com/JustinNeri/WorkBud/commit/750a87c)
+Commit: [fb4eb62](https://github.com/JustinNeri/WorkBud/commit/fb4eb62)
 
 **2. Past months on the budget card** (`BudgetCard.jsx`, `useWorkbud.js`)
 
 The budget card can now page back through earlier months, from the first month logged up to last month. A month with nothing logged shows as nothing spent instead of being skipped.
 
-Commit: [6195d5c](https://github.com/JustinNeri/WorkBud/commit/6195d5c)
+Commit: [4c271ec](https://github.com/JustinNeri/WorkBud/commit/4c271ec)
 
 **3. Delete account** (`DeleteAccountSheet.jsx`, `schema.sql`)
 
 A user can now close their own account from settings. It asks for the current password first, removes the profile pictures, then deletes the account, and the database cascades through the jobs, logs, expenses and milestones.
 
-Commit: [5382e29](https://github.com/JustinNeri/WorkBud/commit/5382e29)
+Commit: [03a52d9](https://github.com/JustinNeri/WorkBud/commit/03a52d9)
 
 **4. Documentation** (`README.md`, `SECURITY-CHECKLIST.md`, `AI-USAGE.md`)
 
 The README now describes the server: how the pieces fit, how to run it, every API route, and the error format. It also removes the old line that said there was no server to run. Eleven rows of the security checklist were checked again against the server, and the CORS row changed from N/A to Yes.
 
-Commit: [750a87c](https://github.com/JustinNeri/WorkBud/commit/750a87c)
+Commit: [fb4eb62](https://github.com/JustinNeri/WorkBud/commit/fb4eb62)
 
 ## Why
 

@@ -22,15 +22,15 @@ system, and I built the backend from there.
 - **What I asked:** where to put the screenshots my documentation needed, so they would show up in the repo.
 - **What it gave back:** a `docs/screenshots/` folder with a `README.md` listing the exact filename for each screen (`01-signin.png` onwards), what to capture in each, and how to take mobile-sized screenshots with the browser's device toolbar.
 - **What I kept, what I changed, and why:** I kept the folder and the capture steps, because the device-toolbar tip gave me consistent phone-sized shots. At first I only pasted the screenshots into my Word documentation. In Week 2 I added the files to this folder and linked them from the README, so the repo shows them too (see 2.2).
-- **Commit:** [0e1baba](https://github.com/JustinNeri/WorkBud/commit/0e1baba)
+- **Commit:** [5a5825f](https://github.com/JustinNeri/WorkBud/commit/5a5825f)
 
 ### 1.2 Security checklist
 
 - **Date and tool:** September 27, 2026, Claude (Claude Code)
 - **What I asked:** to fill in the unit's security checklist for my project, with evidence for every row.
 - **What it gave back:** a completed `SECURITY-CHECKLIST.md`. It did not just fill in the rows: it searched my whole git history for passwords, keys and connection strings, and it tested Row Level Security live while signed out (all five tables returned nothing, and an insert was refused). That test found a real problem: anyone signed out can list my `avatars` storage bucket and see every user's ID.
-- **What I kept, what I changed, and why:** I kept the evidence it could prove from the repo. I checked the rows only I could confirm myself: row 6 (my Vercel environment settings), row 30 (the logo is my own) and row 31 (the repo is public on purpose). I kept two honest "No" answers instead of turning them into Yes: the database API is reachable from the internet by design, and my personal email is the author address on every commit.
-- **Commit:** [20c5618](https://github.com/JustinNeri/WorkBud/commit/20c5618)
+- **What I kept, what I changed, and why:** I kept the evidence it could prove from the repo. I checked the rows only I could confirm myself: row 6 (my Vercel environment settings), row 30 (the logo is my own) and row 31 (the repo is public on purpose). I kept two honest "No" answers instead of turning them into Yes: the database API is reachable from the internet by design, and my personal email is the author address on every commit. (I fixed the second one later: on October 3 I rewrote the history so commits use my GitHub no-reply address, and row 27 is now a Yes.)
+- **Commit:** [7ce34bb](https://github.com/JustinNeri/WorkBud/commit/7ce34bb)
 
 ### 1.3 Milestones and hour badges
 
@@ -42,7 +42,7 @@ system, and I built the backend from there.
   - `MilestonesCard.jsx`, which flags overdue and due-this-week items and shows automatic badges at 25, 50, 75 and 100 percent of the target, each with the date it was reached or a projected date at the current pace;
   - a reworked `src/lib/export.js`.
 - **What I kept, what I changed, and why:** I kept the badges being worked out in the app instead of stored in the database. That way they can never disagree with the hours actually logged, because they are recalculated from the logs every time. I restyled the card a few days later to fit the new colour tokens.
-- **Commits:** [7b9ca83](https://github.com/JustinNeri/WorkBud/commit/7b9ca83), restyled in [442fda8](https://github.com/JustinNeri/WorkBud/commit/442fda8)
+- **Commits:** [552a712](https://github.com/JustinNeri/WorkBud/commit/552a712), restyled in [4820302](https://github.com/JustinNeri/WorkBud/commit/4820302)
 
 ### 1.4 "Remember me" on sign-in
 
@@ -58,7 +58,7 @@ system, and I built the backend from there.
   - a missing flag counts as "remembered", so existing users were not all signed out when it went live.
 
   This is also the AI-written piece I explain in section 3.
-- **Commit:** [285118d](https://github.com/JustinNeri/WorkBud/commit/285118d)
+- **Commit:** [dfa3599](https://github.com/JustinNeri/WorkBud/commit/dfa3599)
 
 ### 1.5 Profile pictures
 
@@ -70,7 +70,7 @@ system, and I built the backend from there.
   - the upload flow in `SettingsSheet.jsx`;
   - an `avatars` storage bucket with per-user upload policies and an `avatar_path` column.
 - **What I kept, what I changed, and why:** I kept the resize-before-upload step. A phone photo is 3 to 8 MB, and this app is used on mobile data, so shrinking it to usually under 60 KB before sending saves users real money for a picture shown at 44 pixels. One part was not right, and I only found it later: the bucket's read policy lets signed-out users list every file. My security checklist caught it on September 27 (see 1.2), and it is not fixed yet.
-- **Commit:** [98c739f](https://github.com/JustinNeri/WorkBud/commit/98c739f)
+- **Commit:** [5779d1d](https://github.com/JustinNeri/WorkBud/commit/5779d1d)
 
 ### 1.6 React Router
 
@@ -81,7 +81,7 @@ system, and I built the backend from there.
   - routes at `/login`, `/signup`, `/forgot-password` and `/dashboard` in `App.jsx`, guarded by `RequireSession` and `GuestOnly`;
   - a sign-in screen that switches between sign-in and sign-up by changing the URL.
 - **What I kept, what I changed, and why:** I kept the guards, because they replaced the old "if signed in, show this, otherwise show that" logic with something clearer. I also kept the redirect that remembers where you were headed: if a signed-out user opens `/dashboard`, they go to `/login`, and after signing in they land back on the page they wanted instead of always the dashboard.
-- **Commit:** [05176af](https://github.com/JustinNeri/WorkBud/commit/05176af)
+- **Commit:** [6b44022](https://github.com/JustinNeri/WorkBud/commit/6b44022)
 
 ### 1.7 The Express API server
 
@@ -100,7 +100,7 @@ system, and I built the backend from there.
   - the server works out a day's `amount_spent` from the expense list itself, so the total can never disagree with the items.
 
   Claude could not sign in, so it only tested the signed-out and bad-input paths. I tested the signed-in flows myself in the browser, on localhost and on the Vercel preview: adding, editing and deleting a log with expenses, a job and a milestone, changing the profile, and onboarding and deleting a test account.
-- **Commit:** [750a87c](https://github.com/JustinNeri/WorkBud/commit/750a87c)
+- **Commit:** [fb4eb62](https://github.com/JustinNeri/WorkBud/commit/fb4eb62)
 
 ---
 
@@ -111,21 +111,21 @@ system, and I built the backend from there.
 - **What it gave me:** while helping me write my Week 1 report and journal, Claude described the delete-job bug as foreign keys between `jobs`, `daily_logs` and `expenses` blocking the delete.
 - **What was wrong with it:** it wrote that from the commit message "fix delete job" without reading the diff. The actual fix shows the foreign keys were fine: they cascade, so deleting a job removes its logs and expenses automatically. The real bugs were different. The delete button sat inside the form without `type="button"`, so confirming a delete also submitted a save of the job being deleted. You could not delete your last job. And after a delete, the dashboard showed "No job yet" even when other jobs were still listed.
 - **What I did instead:** it was caught when Claude went back to read the real diff while preparing this file. My Week 1 report and journal were already submitted with the wrong description, so this entry is the correction: the commit is the record of what was actually wrong, and I now describe bugs from the code, not the commit message.
-- **Commit:** [0651c60](https://github.com/JustinNeri/WorkBud/commit/0651c60)
+- **Commit:** [0aa55ea](https://github.com/JustinNeri/WorkBud/commit/0aa55ea)
 
 ### 2.2 The screenshots guide promised links that do not exist
 
 - **What it gave me:** the guide in `docs/screenshots/README.md` says to use its exact filenames "so the links in the project README resolve without editing".
 - **What was wrong with it:** there were no such links. The guide was committed without the README being updated to show those images, so for about a week it told readers something that was not true.
 - **What I did instead:** I pasted my screenshots into my Word documentation first. Then, in Week 2, I added the image files to `docs/screenshots/` and wrote the links into the README myself, which made the guide true.
-- **Commit:** [0e1baba](https://github.com/JustinNeri/WorkBud/commit/0e1baba)
+- **Commit:** [5a5825f](https://github.com/JustinNeri/WorkBud/commit/5a5825f)
 
 ### 2.3 Its first security checklist draft claimed things it could not back up
 
 - **What it gave me:** a first draft of the checklist whose row 27 said my email was on "all 82 commits", and whose "Anything I found and fixed" section did not say whether the avatars problem had actually been fixed.
 - **What was wrong with it:** 82 was only the number of commits on my computer; GitHub had more, so the number was wrong. And the checklist rules say any answer the repository contradicts scores nothing. Leaving the fix status unsaid also made it read as though the problem was handled when it was not.
 - **What I did instead:** when I asked it to re-check the checklist, the count was replaced with "every commit", which cannot go out of date, and the section now says plainly that the avatars policy is not fixed yet and what the fix is.
-- **Commit:** [20c5618](https://github.com/JustinNeri/WorkBud/commit/20c5618)
+- **Commit:** [7ce34bb](https://github.com/JustinNeri/WorkBud/commit/7ce34bb)
 
 ---
 
@@ -133,18 +133,18 @@ system, and I built the backend from there.
 
 ### Parts I wrote myself
 
-**Row Level Security policies** (`supabase/schema.sql`, from [510ccde](https://github.com/JustinNeri/WorkBud/commit/510ccde))
+**Row Level Security policies** (`supabase/schema.sql`, from [32e697a](https://github.com/JustinNeri/WorkBud/commit/32e697a))
 Every table has RLS switched on, with a separate policy for select, insert, update and delete, and each one checks `auth.uid() = user_id`. That means the database itself refuses to show or change anyone else's rows, whatever the browser sends. This mattered most when I wrote them, because WorkBud had no server of its own then: the browser talked to Supabase directly with a key that is public. So the rule could not live in app code a user could bypass; it had to live in the database. It still matters now that the Express API sits in front (see 1.7), because the server queries as the signed-in user, so these policies are a second check behind every route. `profiles` deliberately has no insert or delete policy, because those rows should only ever come from the signup trigger. I tested it signed out: every table returned nothing, and an insert was refused.
 
-**The signup trigger** (`supabase/schema.sql`, `handle_new_user`, from [510ccde](https://github.com/JustinNeri/WorkBud/commit/510ccde))
+**The signup trigger** (`supabase/schema.sql`, `handle_new_user`, from [32e697a](https://github.com/JustinNeri/WorkBud/commit/32e697a))
 When someone signs up, Supabase adds them to `auth.users`, and this trigger immediately creates their `profiles` row. It is done in the database rather than the app so there is never a moment where a user is signed in but has no profile. If the app created it instead, a dropped connection between the two steps would leave a broken account.
 
-**The `jobs` table and multi-job design** (`supabase/schema.sql`, from [736c94f](https://github.com/JustinNeri/WorkBud/commit/736c94f))
+**The `jobs` table and multi-job design** (`supabase/schema.sql`, from [99f39b3](https://github.com/JustinNeri/WorkBud/commit/99f39b3))
 Each placement is a row in `jobs` with its own target hours, budgets and deadline, and every daily log belongs to one job through `job_id ... on delete cascade`. The cascade means deleting a job cleanly removes its logs and their expenses, with no orphaned rows. Targets live on the job instead of the profile so one person can track two placements at once.
 
 ### The AI-written piece I understand best
 
-**The "Remember me" storage adapter** (`src/lib/supabase.js`, [285118d](https://github.com/JustinNeri/WorkBud/commit/285118d))
+**The "Remember me" storage adapter** (`src/lib/supabase.js`, [dfa3599](https://github.com/JustinNeri/WorkBud/commit/dfa3599))
 supabase-js decides where to save the login session once, when the client is created, so a checkbox cannot just be passed to the sign-in call. The adapter works around that. It gives Supabase a custom storage object that, on every read and write, checks a `wb-remember` flag and uses `localStorage` (you stay signed in) or `sessionStorage` (the session ends when the browser closes). We kept it because of three details it gets right:
 - the flag is saved *before* signing in, because the adapter reads it at write time;
 - sign-out clears both stores, so no copy of the token is left behind;

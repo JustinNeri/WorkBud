@@ -464,7 +464,7 @@ WorkBud/
 - **Expense rows can be added but not fully managed.** Editing and deleting individual expense lines isn't finished. The reliable workaround today is deleting the day's log and entering it again.
 - **`hours_worked` is an unproven design.** It stores the planned total while the dashboard works out the live figure when it draws. It works, but I'm not confident it holds up once entries are edited after the fact, and it hasn't been stress-tested.
 - **The export hasn't been checked against a real form.** The time log looks right, but it hasn't been compared with the DTR my coordinator actually requires, and printing from a phone is untested.
-- **The git history is messy.** A `git pull` that turned into a merge (`66abb9e`) duplicated a large run of commits in the log. Many commit messages don't say what changed, and every commit has my personal email as its author address. I'd rather leave the history honest than rewrite it.
+- **The git history is messy.** A `git pull` that turned into a merge (`4b604cb`) duplicated a large run of commits in the log. Many commit messages don't say what changed. I left the messages and the order as they were, but I did rewrite the history once, on October 3, for privacy: every commit had my personal email as its author address, so I replaced it with my GitHub no-reply address. That changed the commit IDs and nothing in the code.
 
 ### Next steps
 
