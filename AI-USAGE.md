@@ -99,7 +99,7 @@ system, and I built the backend from there.
   - sign-in stays with Supabase Auth, so the signup codes, password reset and "Remember me" that already worked were not rewritten in the last week;
   - the server works out a day's `amount_spent` from the expense list itself, so the total can never disagree with the items.
 
-  Claude could not sign in, so it only tested the signed-out and bad-input paths. The signed-in flows were left for me to test in the browser.
+  Claude could not sign in, so it only tested the signed-out and bad-input paths. I tested the signed-in flows myself in the browser, on localhost and on the Vercel preview: adding, editing and deleting a log with expenses, a job and a milestone, changing the profile, and onboarding and deleting a test account.
 - **Commit:** [750a87c](https://github.com/JustinNeri/WorkBud/commit/750a87c)
 
 ---

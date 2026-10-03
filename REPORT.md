@@ -256,13 +256,11 @@ Keeping Supabase Auth and Row Level Security in place, and putting the server in
 
 - **I found the gap late.** My proposal and both earlier reports describe an app with no server, and I only checked that against the final rubric in the last week. The server was added on October 3.
 - **The server is AI-written and I have to catch up on it.** I did not write this code. I need to read it well enough to explain it in the presentation.
-- **It could not be fully tested when it was written.** Claude had no account to sign in with, so only the signed-out paths, the bad-input paths and the health check were tested. The signed-in flows and the Vercel deployment still needed checking by me.
+- **It could not be fully tested when it was written.** Claude had no account to sign in with, so only the signed-out paths, the bad-input paths and the health check were tested. I tested the signed-in flows myself afterwards, on localhost and on the Vercel preview, before merging.
 - **Saving a day is two writes, not one transaction.** The server saves the log, then its expenses. A failure between the two on an edit could leave a day without its expense list.
 
 ## What is left
 
-- **Test every signed-in flow through the API:** add, edit and delete a log with expenses, a job and a milestone, change the profile, and finish onboarding on a new account.
-- **Check the Vercel deployment,** starting with `/api/health`.
 - **Automated tests.** Still none, and that now includes the API routes.
 - **One transaction for a log and its expenses,** as a database function.
 - **Rate limiting on the API.**
