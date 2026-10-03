@@ -224,7 +224,7 @@ Until this week the React app talked to Supabase directly and the project had no
 - `useWorkbud.js`, `Onboarding.jsx` and `DeleteAccountSheet.jsx` now call the API instead of Supabase. `npm run dev` starts the server and Vite together.
 - Nothing in the database changed: same tables, same policies, same data.
 
-This was written by Claude (Claude Code). It is recorded in `AI-USAGE.md`, entry 1.7.
+This was written by Claude (Claude Code). It is recorded in `AI-USAGE.md`, entry 1.18.
 
 Commit: [fb4eb62](https://github.com/JustinNeri/WorkBud/commit/fb4eb62)
 
