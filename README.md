@@ -6,7 +6,7 @@ OJT hours and expense tracker.
 
 **Live:** [workbud-ph.vercel.app](https://workbud-ph.vercel.app/)
 
-> Built with help from Claude (Anthropic), with ChatGPT and Gemini used on a couple of earlier bug fixes. I write the code first, then use AI to review, fix and optimise it; Claude also gave me the first draft of the Supabase backend, wrote the Express API server in `server/`, and helped write the documentation. Full details in [AI-USAGE.md](AI-USAGE.md).
+> Built with help from Claude (Anthropic), with ChatGPT and Gemini used on a couple of earlier bug fixes. I ask the AI first what the structure of a feature should be, write the code myself with that structure as my guide, then ask it again when something does not work or could be cleaner or more efficient; Claude also gave me the first draft of the Supabase backend, wrote the Express API server in `server/`, and helped write the documentation. Full details in [AI-USAGE.md](AI-USAGE.md).
 
 ---
 
@@ -455,7 +455,6 @@ WorkBud/
 ### Known issues
 
 - **No automated tests.** There is still not a single test in the repository, and that now includes the API routes. The two bugs that cost the most time in Week 1 both lived in `src/lib/format.js`: overnight shifts coming out as negative hours, and dates showing one day off because of a timezone conversion. That's exactly the file that should have had unit tests first.
-- **Export totals show floating-point noise.** The "Hours completed" figure and the total row on the exported time log can read `209.32999999999998` instead of `209.33`. The total in `src/lib/export.js` adds up `hours_worked` without rounding, so decimal hours like 15.83 leave a long tail. It shows on any export that mixes fractional hours.
 - **The avatars bucket can be listed while signed out.** The `avatars_read_all` storage policy gives signed-out users SELECT on the bucket, so anyone can list it and see each user's folder name, which is their user ID. The app never needs this, because pictures load through public URLs. I found it while filling in [SECURITY-CHECKLIST.md](SECURITY-CHECKLIST.md).
 - **Offline is read-only.** The app shell opens without a connection, but every save still needs the network. Logging a day at a placement site with no signal fails rather than waiting to sync.
 - **Some failures are still silent in the UI.** The API now answers every failure with a status code and a message, but a few places don't show it. Onboarding, for one, ignores a failed job lookup and carries on.
@@ -470,15 +469,14 @@ WorkBud/
 ### Next steps
 
 1. Unit tests on `src/lib/format.js` covering shift maths, overnight shifts and timezone handling, before any new feature.
-2. Round the export totals to two decimal places.
-3. Limit the avatars bucket's SELECT policy to each user's own folder, so the bucket can no longer be listed.
-4. An error-handling pass in the UI, so every failed request shows the user a message. Then a database function that saves a log and its expenses in one transaction, and rate limiting on the API.
-5. Finish editing and deleting individual expense rows.
-6. A save queue, so a day logged offline syncs when the connection returns.
-7. Compare the exported time log with the real coordinator form, and test printing from a phone.
-8. Empty states and loading skeletons. A new account currently looks broken rather than empty.
-9. An optional push notification reminding you to log the day's hours. The in-app "Nothing logged today" nudge already exists; this would reach you with the app closed.
-10. A tidier git workflow: feature branches, commit messages that say what changed, and GitHub's no-reply address as the commit email.
+2. Limit the avatars bucket's SELECT policy to each user's own folder, so the bucket can no longer be listed.
+3. An error-handling pass in the UI, so every failed request shows the user a message. Then a database function that saves a log and its expenses in one transaction, and rate limiting on the API.
+4. Finish editing and deleting individual expense rows.
+5. A save queue, so a day logged offline syncs when the connection returns.
+6. Compare the exported time log with the real coordinator form, and test printing from a phone.
+7. Empty states and loading skeletons. A new account currently looks broken rather than empty.
+8. An optional push notification reminding you to log the day's hours. The in-app "Nothing logged today" nudge already exists; this would reach you with the app closed.
+9. A tidier git workflow: feature branches, commit messages that say what changed, and GitHub's no-reply address as the commit email.
 
 ---
 
