@@ -16,6 +16,8 @@ system, and I built the backend from there.
 
 ## 1. How I used AI
 
+Entries 1.1 to 1.7 cover September 15 onwards. Entries 1.8 to 1.18 go back to the first week of building, September 3 to 7, when most of the app was written.
+
 ### 1.1 Screenshots guide for the documentation
 
 - **Date and tool:** September 20, 2026, Claude (Claude Code); committed September 22
@@ -101,6 +103,126 @@ system, and I built the backend from there.
 
   Claude could not sign in, so it only tested the signed-out and bad-input paths. I tested the signed-in flows myself in the browser, on localhost and on the Vercel preview: adding, editing and deleting a log with expenses, a job and a milestone, changing the profile, and onboarding and deleting a test account.
 - **Commit:** [fb4eb62](https://github.com/JustinNeri/WorkBud/commit/fb4eb62)
+
+### 1.8 Project foundation and the first backend draft
+
+- **Date and tool:** September 3 to 4, 2026, Claude
+- **What I asked:** a starting structure for the project, and a workflow for the backend: which tables I needed, how sign-up, sign-in and sign-out should work with Supabase, and how to keep each user's data private.
+- **What it gave back:**
+  - the React, Vite and Tailwind project setup, with the PWA config;
+  - a first draft of the database layout (`profiles` and `daily_logs`) and of the flow: sign up, get a profile row, log days against it;
+  - the first screens: `AuthScreen.jsx` for sign-in and sign-up, a dashboard, a log sheet, and a settings sheet with the sign-out button, plus the `useSession.js` and `useWorkbud.js` hooks.
+- **What I kept, what I changed, and why:** I built the backend from that draft myself. The Row Level Security policies and the signup trigger are the parts I wrote (section 3). The next day I replaced the one-target-per-user model with a `jobs` table, so a student can track more than one placement. Most of these first screens were reworked within days (see 1.12 and 1.17).
+- **Commits:** [32e697a](https://github.com/JustinNeri/WorkBud/commit/32e697a), [fa45b49](https://github.com/JustinNeri/WorkBud/commit/fa45b49)
+
+### 1.9 Vercel deploy config
+
+- **Date and tool:** September 4, 2026, Claude (Claude Code)
+- **What I asked:** how to deploy to Vercel so that refreshing a page does not give a 404, and an installed copy of the app does not get stuck on an old version.
+- **What it gave back:** a `vercel.json` that:
+  - rewrites every path to `index.html`;
+  - lets the hashed files in `/assets` be cached for a long time;
+  - makes the service worker, its registration script and the manifest revalidate on every visit, so a cached service worker can never pin a user to a stale build.
+- **What I kept, what I changed, and why:** I kept it as written. It was only changed on October 3, to send `/api` requests to the new server (see 1.7).
+- **Commit:** [74ad58c](https://github.com/JustinNeri/WorkBud/commit/74ad58c)
+
+### 1.10 Emailed signup code instead of a confirmation link
+
+- **Date and tool:** September 4, 2026, Claude (Claude Code) and Gemini
+- **What I asked:** how to keep email verification inside the app. The default confirmation link opened a browser tab and often did not bring people back signed in.
+- **What it gave back:** a new `OtpStep.jsx`:
+  - after signup, the user types the emailed code, checked with `supabase.auth.verifyOtp`;
+  - a resend button with a 60-second cooldown;
+  - a sign-in that fails because the email is unconfirmed sends a fresh code instead of leaving the user stuck.
+
+  It also pointed out that the Supabase "Confirm signup" email template must contain `{{ .Token }}`, or the email arrives with no code in it.
+- **What I kept, what I changed, and why:** I kept the in-app code step. The code box had to change the same day. It was fixed at exactly 6 digits and submitted automatically on the sixth, but my project sends 8-digit codes, so verification could never succeed. I found that when testing a real signup, and it was fixed with Claude: the box now accepts 6 to 10 digits and waits for the user to press the button.
+- **Commits:** [adc5631](https://github.com/JustinNeri/WorkBud/commit/adc5631), fixed in [0194caa](https://github.com/JustinNeri/WorkBud/commit/0194caa)
+
+### 1.11 Telling people their email is already registered
+
+- **Date and tool:** September 4, 2026, Claude (Claude Code)
+- **What I asked:** why signing up with an email that already had an account still moved on to the code screen, to wait for a code that never arrived.
+- **What it gave back:** the reason and a fix. Supabase answers "success" with a decoy user when the address already exists, so the app could not tell the difference. A real new signup comes back with one identity and a decoy comes back with none, so `AuthScreen.jsx` now checks for that and says the email is already registered.
+- **What I kept, what I changed, and why:** I kept it, then built on it. The next day a database function, `email_registered()`, was added so the forgot-password screen could give the same straight answer (see 1.15). On September 6 the check moved earlier: it now runs as soon as you leave the email field, before you have picked a password (see 1.16).
+- **Commit:** [2aba89c](https://github.com/JustinNeri/WorkBud/commit/2aba89c)
+
+### 1.12 Dashboard cards, onboarding and the screens for several jobs
+
+- **Date and tool:** September 4, 2026, Claude
+- **What I asked:** help turning the plain first dashboard into separate cards, and building onboarding and the screens to add and switch jobs, on top of the `jobs` table I had designed.
+- **What it gave back:**
+  - dashboard pieces: `HeroHours.jsx` (the progress ring), `StatTiles.jsx`, `BudgetCard.jsx` and a reusable `Meter.jsx`;
+  - `Onboarding.jsx`, a two-step first run: about you, then your first job;
+  - `JobSheet.jsx` to create or edit a job, and `JobTabs.jsx` to switch between them.
+- **What I kept, what I changed, and why:** I kept the split into small cards, because each one can change without touching the others. Their look was redone twice afterwards: on September 6 for phones (1.17), and on September 19 when the colours moved to shared tokens.
+- **Commits:** [e7201a4](https://github.com/JustinNeri/WorkBud/commit/e7201a4), [409f1da](https://github.com/JustinNeri/WorkBud/commit/409f1da)
+
+### 1.13 Time in and time out, itemised expenses, and hours that count up
+
+- **Date and tool:** September 4, 2026, ChatGPT and Claude
+- **What I asked:** how to log a day as time in, time out and break instead of typing a number of hours, how to record each expense separately, and how to make a shift that is still running show the hours worked so far.
+- **What it gave back:**
+  - `time_in`, `time_out` and `break_minutes` columns, and an `expenses` table with one row per item bought;
+  - `computeHours()` in `src/lib/format.js`, which treats a time out earlier than the time in as a shift that crossed midnight;
+  - `effectiveHours()` and `isInProgress()`, which show "so far" for a running shift, capped at the planned total, with the screen recalculating once a minute.
+- **What I kept, what I changed, and why:** I kept all of it. Keeping the stored `hours_worked` as the planned total, and working out the live figure only for display, means nothing has to be written back to the database as the day goes on.
+- **Commits:** [ee96f6b](https://github.com/JustinNeri/WorkBud/commit/ee96f6b), [4181ba3](https://github.com/JustinNeri/WorkBud/commit/4181ba3)
+
+### 1.14 Pace card, spending by category, the "nothing logged today" nudge, and export
+
+- **Date and tool:** September 4, 2026, Claude
+- **What I asked:** help adding the parts that make the numbers useful: whether I am on pace for my deadline, where the money goes, a reminder inside the app when today is not logged, and a time record I can hand to my coordinator.
+- **What it gave back:**
+  - `PaceCard.jsx`, `CategoryBreakdown.jsx` and `TodayNudge.jsx`;
+  - `ExportSheet.jsx` and `src/lib/export.js`, which build a printable time log and a CSV for any date range, and escape everything the user typed before it goes into the printed page.
+- **What I kept, what I changed, and why:** I kept them. The export was reworked on September 15 to carry milestones (1.3). One thing in it was wrong, and I found it in my own screenshot: the total hours were added up without rounding, so an export could read 209.32999999999998. I fixed that on September 27 by rounding the total to two decimals.
+- **Commits:** [f3b7ebe](https://github.com/JustinNeri/WorkBud/commit/f3b7ebe), total fixed in [6341689](https://github.com/JustinNeri/WorkBud/commit/6341689)
+
+### 1.15 Forgot password and change password
+
+- **Date and tool:** September 4 to 5, 2026, Claude
+- **What I asked:** a way to reset a forgotten password without leaving the app, and a way to change the password from settings. The next day: why a mistyped email on the reset screen still moved on to the code step.
+- **What it gave back:**
+  - `ForgotPassword.jsx`, which resets by emailed code. The code and the new password are entered on the same step, so a reset link never opens outside the installed app;
+  - `PasswordSheet.jsx` in settings, which asks for the current password first, because Supabase on its own would change a password on the strength of the open session;
+  - the next-day fix: Supabase reports success even for an address it has never seen, so the screen now asks the database through `email_registered()` before sending a code.
+- **What I kept, what I changed, and why:** I kept it, knowingly giving up Supabase's "never reveal which emails exist" behaviour for a straight answer, which suits an app this size. The same lookup then went onto sign-in, so "wrong password" and "no account with that email" show different messages, and it ignores signups that were never confirmed.
+- **Commits:** [7e19ae6](https://github.com/JustinNeri/WorkBud/commit/7e19ae6), [682eeda](https://github.com/JustinNeri/WorkBud/commit/682eeda), fixes in [788b0c4](https://github.com/JustinNeri/WorkBud/commit/788b0c4) and [55e23e4](https://github.com/JustinNeri/WorkBud/commit/55e23e4)
+
+### 1.16 Signup steps, password strength and the show-password button
+
+- **Date and tool:** September 4 and 6, 2026, Claude
+- **What I asked:** how to cut down failed sign-ins and signups on a phone, where passwords are typed blind and errors only showed after the form was submitted.
+- **What it gave back:**
+  - a password field with a show and hide button (`ui.jsx`), marked `type="button"` so pressing it does not submit the form;
+  - `SignupSteps.jsx`, which shows where you are in account, verify and set-up;
+  - `src/lib/password.js`, one set of strength rules shared by signup, reset and change password;
+  - the already-registered check moved to the moment you leave the email field.
+- **What I kept, what I changed, and why:** I kept them. Checking the password rules in the app before sending matters here, because every failed signup attempt costs a real email.
+- **Commits:** [7e7d8e4](https://github.com/JustinNeri/WorkBud/commit/7e7d8e4), [66ddc96](https://github.com/JustinNeri/WorkBud/commit/66ddc96)
+
+### 1.17 One look for the sign-in screens, and forms that work on a phone
+
+- **Date and tool:** September 6, 2026, Claude
+- **What I asked:** sign-in, signup, the code step, password reset and onboarding had each ended up with a different layout, and the long forms were hard to use on a phone. I asked how to fix both.
+- **What it gave back:**
+  - `AuthShell.jsx`, one shared frame for every screen before the dashboard;
+  - a bottom sheet whose main button stays pinned at the bottom while the form scrolls;
+  - long forms grouped under small headings instead of eight identical fields in a row.
+- **What I kept, what I changed, and why:** I kept the shared shell and the pinned button. This was the work my Week 1 report calls the mobile passes: I had built the first screens at desktop width, and they needed redoing once I opened them on a phone.
+- **Commits:** [b81cf4b](https://github.com/JustinNeri/WorkBud/commit/b81cf4b), [67f7cf8](https://github.com/JustinNeri/WorkBud/commit/67f7cf8), [56e447c](https://github.com/JustinNeri/WorkBud/commit/56e447c)
+
+### 1.18 Delete job fix, the deadline date, and the daily budget
+
+- **Date and tool:** September 7, 2026, Claude
+- **What I asked:** why deleting a job misbehaved, how to show my deadline where I would see it at a glance, and how to add a spending limit per day.
+- **What it gave back:**
+  - the delete fix. The delete button sat inside the form without `type="button"`, so confirming a delete also saved the job being deleted. It also now lets you delete your last job, and moves you to another job afterwards instead of showing "No job yet";
+  - the deadline date under the hours ring;
+  - a `daily_budget` column on `jobs`, checked while an expense is being typed, with over-budget days flagged in the activity feed.
+- **What I kept, what I changed, and why:** I kept all three. Later, an AI-written report described the delete bug wrongly, which is entry 2.1.
+- **Commits:** [0aa55ea](https://github.com/JustinNeri/WorkBud/commit/0aa55ea), [7467bc4](https://github.com/JustinNeri/WorkBud/commit/7467bc4), [1334e5e](https://github.com/JustinNeri/WorkBud/commit/1334e5e)
 
 ---
 
