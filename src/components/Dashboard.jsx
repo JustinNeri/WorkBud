@@ -245,6 +245,10 @@ export function Dashboard({ user }) {
                 <SectionHeading tone="money">Money</SectionHeading>
 
                 <BudgetCard
+                  // Remount per job so switching tabs lands on this month
+                  // instead of keeping the last job's page in its history.
+                  key={activeJob.id}
+                  history={stats.budgetHistory}
                   spent={stats.spentThisMonth}
                   budget={stats.monthlyBudget}
                   remaining={stats.budgetRemaining}

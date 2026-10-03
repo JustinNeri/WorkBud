@@ -5,6 +5,7 @@ import {
   daysLeftInMonth,
   daysUntil,
   effectiveHours,
+  fromISODate,
   monthEndISO,
   monthStartISO,
   setCurrency,
@@ -494,6 +495,41 @@ export function useWorkbud(userId) {
       (d) => d >= firstOfMonth,
     ).length
 
+    // --- past months, for paging back through the budget card. Every calendar
+    // month from the first one logged up to last month, oldest first, so a
+    // month with nothing logged still reads as nothing spent rather than
+    // silently dropping out of the run.
+    //
+    // Measured against the job's budget as it stands today: the cap isn't
+    // versioned, so a month from before it was changed has no other to use.
+    const budgetHistory = []
+    const firstLogged = logs.reduce(
+      (earliest, l) =>
+        earliest === null || l.entry_date < earliest ? l.entry_date : earliest,
+      null,
+    )
+    if (firstLogged && firstLogged < firstOfMonth) {
+      const spentByMonth = new Map()
+      for (const [date, amount] of spentByDate) {
+        const key = date.slice(0, 7)
+        spentByMonth.set(key, (spentByMonth.get(key) ?? 0) + amount)
+      }
+      const cursor = fromISODate(monthStartISO(fromISODate(firstLogged)))
+      while (toISODate(cursor) < firstOfMonth) {
+        const key = toISODate(cursor).slice(0, 7)
+        const spent = spentByMonth.get(key) ?? 0
+        budgetHistory.push({
+          month: new Date(cursor),
+          spent,
+          remaining: monthlyBudget - spent,
+          percent: pct(spent, monthlyBudget),
+          over: monthlyBudget > 0 && spent > monthlyBudget,
+          daysOver: [...overDates.keys()].filter((d) => d.startsWith(key)).length,
+        })
+        cursor.setMonth(cursor.getMonth() + 1)
+      }
+    }
+
     // --- catching up. The overspend spread across the days the month has left,
     // which is the number that turns "you went over" into something to do about
     // it. Counting today in: the day it's read is a day it can be acted on.
@@ -619,6 +655,7 @@ export function useWorkbud(userId) {
       overToday: dailyBudget > 0 && spentToday > dailyBudget,
       overDates,
       daysOverThisMonth,
+      budgetHistory,
       overspentThisMonth,
       daysLeftInMonth: daysLeft,
       catchUpPerDay,
