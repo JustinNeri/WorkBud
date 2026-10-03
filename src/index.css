@@ -160,6 +160,10 @@
 html {
   background: var(--wb-canvas);
   -webkit-text-size-adjust: 100%;
+  /* Repeated from body: only the root element's value reaches the viewport,
+     and iOS was still rubber-banding the whole page under the pull-to-refresh
+     badge. */
+  overscroll-behavior-y: none;
 }
 
 body {
