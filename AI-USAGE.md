@@ -164,7 +164,7 @@ Entries are in date order, oldest first. Most of the app was written in the firs
   - `Avatar.jsx`, which shows the user's initial when there is no picture;
   - the upload flow in `SettingsSheet.jsx`;
   - an `avatars` storage bucket with per-user upload policies and an `avatar_path` column.
-- **What I kept, what I changed, and why:** I kept the resize-before-upload step. A phone photo is 3 to 8 MB, and this app is used on mobile data, so shrinking it to usually under 60 KB before sending saves users real money for a picture shown at 44 pixels. One part was not right, and I only found it later: the bucket's read policy lets signed-out users list every file. My security checklist caught it on September 27 (see 1.16), and it is not fixed yet.
+- **What I kept, what I changed, and why:** I kept the resize-before-upload step. A phone photo is 3 to 8 MB, and this app is used on mobile data, so shrinking it to usually under 60 KB before sending saves users real money for a picture shown at 44 pixels. One part was not right, and I only found it later: the bucket's read policy lets signed-out users list every file. My security checklist caught it on September 27 (see 1.15), and it is not fixed yet.
 - **Commit:** [5779d1d](https://github.com/JustinNeri/WorkBud/commit/5779d1d)
 
 ### 1.14 React Router
@@ -178,15 +178,7 @@ Entries are in date order, oldest first. Most of the app was written in the firs
 - **What I kept, what I changed, and why:** I kept the guards, because they replaced the old "if signed in, show this, otherwise show that" logic with something clearer. I also kept the redirect that remembers where you were headed: if a signed-out user opens `/dashboard`, they go to `/login`, and after signing in they land back on the page they wanted instead of always the dashboard.
 - **Commit:** [6b44022](https://github.com/JustinNeri/WorkBud/commit/6b44022)
 
-### 1.15 Screenshots guide for the documentation
-
-- **Date and tool:** September 20, 2026, Claude (Claude Code); committed September 22
-- **What I asked:** where to put the screenshots my documentation needed, so they would show up in the repo.
-- **What it gave back:** a `docs/screenshots/` folder with a `README.md` listing the exact filename for each screen (`01-signin.png` onwards), what to capture in each, and how to take mobile-sized screenshots with the browser's device toolbar.
-- **What I kept, what I changed, and why:** I kept the folder and the capture steps, because the device-toolbar tip gave me consistent phone-sized shots. At first I only pasted the screenshots into my Word documentation. In Week 2 I added the files to this folder and linked them from the README, so the repo shows them too (see 2.2).
-- **Commit:** [5a5825f](https://github.com/JustinNeri/WorkBud/commit/5a5825f)
-
-### 1.16 Security checklist
+### 1.15 Security checklist
 
 - **Date and tool:** September 27, 2026, Claude (Claude Code)
 - **What I asked:** to fill in the unit's security checklist for my project, with evidence for every row.
@@ -194,7 +186,7 @@ Entries are in date order, oldest first. Most of the app was written in the firs
 - **What I kept, what I changed, and why:** I kept the evidence it could prove from the repo. I checked the rows only I could confirm myself: row 6 (my Vercel environment settings), row 30 (the logo is my own) and row 31 (the repo is public on purpose). I kept two honest "No" answers instead of turning them into Yes: the database API is reachable from the internet by design, and my personal email is the author address on every commit. (I fixed both later, on October 3. I turned on Supabase network restrictions so the direct database port is closed and only the HTTPS API the app uses is reachable, which made row 14 a Yes. I also rewrote the history so commits use my GitHub no-reply address, which made row 27 a Yes.)
 - **Commit:** [7ce34bb](https://github.com/JustinNeri/WorkBud/commit/7ce34bb)
 
-### 1.17 The Express API server
+### 1.16 The Express API server
 
 - **Date and tool:** October 3, 2026, Claude (Claude Code)
 - **What I asked:** the finals rubric grades a server with endpoints, and WorkBud had none, because the browser talked to Supabase directly. I asked Claude whether the project needed a server, and then to implement one.
@@ -266,13 +258,28 @@ Entries are in date order, oldest first. Most of the app was written in the firs
 ### Parts I wrote myself
 
 **Row Level Security policies** (`supabase/schema.sql`, from [32e697a](https://github.com/JustinNeri/WorkBud/commit/32e697a))
-Every table has RLS switched on, with a separate policy for select, insert, update and delete, and each one checks `auth.uid() = user_id`. That means the database itself refuses to show or change anyone else's rows, whatever the browser sends. This mattered most when I wrote them, because WorkBud had no server of its own then: the browser talked to Supabase directly with a key that is public. So the rule could not live in app code a user could bypass; it had to live in the database. It still matters now that the Express API sits in front (see 1.17), because the server queries as the signed-in user, so these policies are a second check behind every route. `profiles` deliberately has no insert or delete policy, because those rows should only ever come from the signup trigger. I tested it signed out: every table returned nothing, and an insert was refused.
+Every table has RLS switched on, with a separate policy for select, insert, update and delete, and each one checks `auth.uid() = user_id`. That means the database itself refuses to show or change anyone else's rows, whatever the browser sends. This mattered most when I wrote them, because WorkBud had no server of its own then: the browser talked to Supabase directly with a key that is public. So the rule could not live in app code a user could bypass; it had to live in the database. It still matters now that the Express API sits in front (see 1.16), because the server queries as the signed-in user, so these policies are a second check behind every route. `profiles` deliberately has no insert or delete policy, because those rows should only ever come from the signup trigger. I tested it signed out: every table returned nothing, and an insert was refused.
 
 **The signup trigger** (`supabase/schema.sql`, `handle_new_user`, from [32e697a](https://github.com/JustinNeri/WorkBud/commit/32e697a))
 When someone signs up, Supabase adds them to `auth.users`, and this trigger immediately creates their `profiles` row. It is done in the database rather than the app so there is never a moment where a user is signed in but has no profile. If the app created it instead, a dropped connection between the two steps would leave a broken account.
 
 **The `jobs` table and multi-job design** (`supabase/schema.sql`, from [99f39b3](https://github.com/JustinNeri/WorkBud/commit/99f39b3))
 Each placement is a row in `jobs` with its own target hours, budgets and deadline, and every daily log belongs to one job through `job_id ... on delete cascade`. The cascade means deleting a job cleanly removes its logs and their expenses, with no orphaned rows. Targets live on the job instead of the profile so one person can track two placements at once.
+
+**Database validation rules** (`supabase/schema.sql`, the `check` constraints, from [32e697a](https://github.com/JustinNeri/WorkBud/commit/32e697a))
+Every column that takes something a user typed has a rule the database enforces by itself. A job name must be 1 to 60 characters. Hours worked must be between 0 and 24, and a break must be shorter than a full day. Money amounts cannot be negative. Age must be between 10 and 120, and an expense label can be at most 120 characters. The checks in the forms are only there for convenience, because anyone can skip a form and send a request directly. So the rule that counts has to live in the database, where a bad row is refused whatever sent it: the app, the API server, or a request written by hand.
+
+**Table permissions and the `updated_at` trigger** (`supabase/schema.sql`, the `grant` lines and `set_updated_at`, from [32e697a](https://github.com/JustinNeri/WorkBud/commit/32e697a))
+The grants give a signed-in user only the actions each table needs. Jobs, daily logs, expenses and milestones allow select, insert, update and delete. `profiles` allows only select and update: there is no insert, because the signup trigger creates that row, and no delete. This is a second layer under Row Level Security. RLS decides which rows a user can touch, and the grants decide which actions exist at all. `set_updated_at` is one small function attached as a trigger to every table that has an `updated_at` column. It stamps the time on every update, so no part of the app can forget to. It is declared with an empty `search_path`, so it cannot be tricked into running against a different object with the same name.
+
+**The logo and app icons** (`design/logo/`, `public/`, drawn in `src/components/Logo.jsx`, from [88676b3](https://github.com/JustinNeri/WorkBud/commit/88676b3))
+The mark is my own design. It is one zigzag line that reads as the W in WorkBud and as a tracked line on a chart. It is drawn in two strokes, an hours stroke that hands off to a money stroke, because those are the two things the app tracks, and it finishes higher than it starts. The same mark is exported in four forms: the plain mark, an icon, a lockup with the name, and a maskable version with extra padding, so Android can crop it to any shape without cutting the line. The PNG sizes in `public/` are the home-screen icons the PWA needs.
+
+**What the app tracks: categories, occupations and currencies** (`src/lib/format.js`, from [99f39b3](https://github.com/JustinNeri/WorkBud/commit/99f39b3) and [f3b7ebe](https://github.com/JustinNeri/WorkBud/commit/f3b7ebe))
+Three lists in the code are my decisions about what the app is for.
+- **Five expense categories:** transport, food, supplies, fees and other. These are what an OJT student actually pays for. The list is fixed on purpose, so spending can be grouped and compared, and the free-text label carries the detail.
+- **Nine occupation options at onboarding.** The choice changes what the dashboard shows. A placement ends on a date known up front, so it gets a deadline countdown. Employment, freelance work and self-employment continue until someone ends them, so those get a month-to-date view and are never asked to set a deadline.
+- **Ten currencies:** PHP first and as the default, because the first users are students in the Philippines, then USD, EUR, GBP, JPY, AUD, CAD, SGD, AED and INR.
 
 ### The AI-written piece I understand best
 
