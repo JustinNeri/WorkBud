@@ -196,7 +196,7 @@ built the backend from there.
   - `server/errors.js`, which turns database errors into status codes without leaking their details;
   - `src/lib/api.js`, and `useWorkbud.js`, `Onboarding.jsx` and `DeleteAccountSheet.jsx` changed to call the API instead of Supabase;
   - `api/index.js` and a `vercel.json` rewrite so the same server runs on Vercel, and updates to the README and security checklist.
-- **What I kept, what I changed, and why:** I kept it as Claude wrote it. This is the largest piece of AI-written code in the project, and the design choices in it were Claude's, not mine. The ones I agreed to keep, and why:
+- **What I kept, what I changed, and why:** Claude proposed the design and consulted me on it, and I agreed to it before keeping the code. This is the largest piece of AI-written code in the project. The design choices I agreed to, and why:
   - the server forwards the signed-in user's token instead of using a service-role key, so the Row Level Security policies I wrote still check every query and there is no new secret to protect;
   - sign-in stays with Supabase Auth, so the signup codes, password reset and "Remember me" that already worked were not rewritten in the last week;
   - the server works out a day's `amount_spent` from the expense list itself, so the total can never disagree with the items.
