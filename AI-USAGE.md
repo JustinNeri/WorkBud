@@ -222,12 +222,12 @@ built the backend from there.
 - **What I did instead:** I caught it by testing a real signup, not by reading the code. It was fixed the same day: the box now accepts 6 to 10 digits, and it waits for the button instead of submitting by itself, because with a variable length there is no reliable moment to know the code is complete.
 - **Commits:** [adc5631](https://github.com/JustinNeri/WorkBud/commit/adc5631), fixed in [0194caa](https://github.com/JustinNeri/WorkBud/commit/0194caa)
 
-### 2.3 The profile picture bucket could be listed by anyone
+### 2.3 The export added up hours without rounding
 
-- **What it gave me:** with the profile picture feature, a storage policy called `avatars_read_all` that gives SELECT on the `avatars` bucket to everyone, signed in or not. The policies for uploading, replacing and deleting were limited to each user's own folder, as they should be.
-- **What was wrong with it:** it is unsafe, and it was not needed. Profile pictures load through public URLs, which work without any policy. So the only real effect of that policy is that anyone can list the bucket, and because each folder is named after a user's ID, the listing shows every account's ID.
-- **What I did instead:** I did not rely on the description "per-user policies". While filling in my security checklist I tested the bucket signed out, with only the public key, and the listing came back. I recorded it in the checklist and in the README's known issues. It is not fixed yet: the fix is to limit that policy to each user's own folder.
-- **Commit:** [5779d1d](https://github.com/JustinNeri/WorkBud/commit/5779d1d)
+- **What it gave me:** in `src/lib/export.js`, the total on the exported time record was a plain sum of each day's hours.
+- **What was wrong with it:** decimal hours like 15.83 cannot be stored exactly as floating-point numbers, so the sum drifts. My exported record showed "Hours completed: 209.32999999999998" instead of 209.33, on the one document that is meant to be handed to a coordinator.
+- **What I did instead:** I noticed it in my own screenshot while preparing the documentation, listed it as a known issue, and then fixed it by rounding the total to two decimals.
+- **Commits:** [f3b7ebe](https://github.com/JustinNeri/WorkBud/commit/f3b7ebe), fixed in [6341689](https://github.com/JustinNeri/WorkBud/commit/6341689)
 
 ---
 
