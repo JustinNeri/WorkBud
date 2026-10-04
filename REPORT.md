@@ -246,6 +246,12 @@ The README now describes the server: how the pieces fit, how to run it, every AP
 
 Commit: [fb4eb62](https://github.com/JustinNeri/WorkBud/commit/fb4eb62)
 
+**5. Export totals rounded** (`src/lib/export.js`)
+
+The exported time record could show a total like 209.32999999999998 hours, because adding up decimal hours in floating point drifts. The total is now rounded to two decimals, so it reads 209.33. This was committed on September 27, at the end of Week 2, after my Week 2 report was written, so it is reported here.
+
+Commit: [6341689](https://github.com/JustinNeri/WorkBud/commit/6341689)
+
 ## Why
 
 The final project rubric grades a server that starts, connects to its database and answers on its endpoints, with sensible routes and correct status codes. WorkBud had none of that to show, because Supabase was doing the job of the server. I could not get an answer in time on whether that would be accepted, so I added a server instead of risking those rows.
@@ -265,4 +271,3 @@ Keeping Supabase Auth and Row Level Security in place, and putting the server in
 - **One transaction for a log and its expenses,** as a database function.
 - **Rate limiting on the API.**
 - **Avatars bucket.** The listing problem found in Week 2 is still not fixed.
-- **Export totals.** Still not rounded.
