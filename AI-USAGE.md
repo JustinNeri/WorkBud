@@ -4,8 +4,8 @@ How I used AI to build WorkBud, where it got things wrong, and which parts
 are mine.
 
 **How I work with AI:** I ask the AI first what the structure of a feature
-should be. Then I write the code myself, with that structure as my guide.
-When something does not work, or I want it done in a cleaner or more
+should be. Then I build the feature with that structure as my guide, and I
+test it. When something does not work, or I want it done in a cleaner or more
 efficient way, I ask the AI again and we resolve the issue. For the Supabase
 backend, the AI gave me an initial draft and the overall workflow of the
 system, and I built the backend from there.
@@ -15,8 +15,6 @@ system, and I built the backend from there.
 ---
 
 ## 1. How I used AI
-
-Entries are in date order, oldest first. Most of the app was written in the first week of building, September 3 to 7 (entries 1.1 to 1.10).
 
 ### 1.1 Project foundation and the first backend draft
 
