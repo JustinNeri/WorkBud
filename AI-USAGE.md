@@ -123,7 +123,7 @@ built the backend from there.
   - the delete fix. The delete button sat inside the form without `type="button"`, so confirming a delete also saved the job being deleted. It also now lets you delete your last job, and moves you to another job afterwards instead of showing "No job yet";
   - the deadline date under the hours ring;
   - a `daily_budget` column on `jobs`, checked while an expense is being typed, with over-budget days flagged in the activity feed.
-- **What I kept, what I changed, and why:** I kept all three. Later, an AI-written report described the delete bug wrongly, which is entry 2.1.
+- **What I kept, what I changed, and why:** I kept all three. Later, the AI's summary of this fix for my report described the delete bug wrongly, which is entry 2.1.
 - **Commits:** [0aa55ea](https://github.com/JustinNeri/WorkBud/commit/0aa55ea), [7467bc4](https://github.com/JustinNeri/WorkBud/commit/7467bc4), [1334e5e](https://github.com/JustinNeri/WorkBud/commit/1334e5e)
 
 ### 1.11 Milestones and hour badges
@@ -210,8 +210,8 @@ built the backend from there.
 
 ### 2.1 It described my delete-job bug wrongly
 
-- **What it gave me:** while helping me write my Week 1 report and journal, Claude described the delete-job bug as foreign keys between `jobs`, `daily_logs` and `expenses` blocking the delete.
-- **What was wrong with it:** it wrote that from the commit message "fix delete job" without reading the diff. The actual fix shows the foreign keys were fine: they cascade, so deleting a job removes its logs and expenses automatically. The real bugs were different. The delete button sat inside the form without `type="button"`, so confirming a delete also submitted a save of the job being deleted. You could not delete your last job. And after a delete, the dashboard showed "No job yet" even when other jobs were still listed.
+- **What it gave me:** I used Claude to help with my Week 1 report and journal by giving me key points and a summarised form of my work to write from. In that summary, Claude described the delete-job bug as foreign keys between `jobs`, `daily_logs` and `expenses` blocking the delete.
+- **What was wrong with it:** it summarised that from the commit message "fix delete job" without reading the diff. The actual fix shows the foreign keys were fine: they cascade, so deleting a job removes its logs and expenses automatically. The real bugs were different. The delete button sat inside the form without `type="button"`, so confirming a delete also submitted a save of the job being deleted. You could not delete your last job. And after a delete, the dashboard showed "No job yet" even when other jobs were still listed.
 - **What I did instead:** it was caught when Claude went back to read the real diff while preparing this file. My Week 1 report and journal were already submitted with the wrong description, so this entry is the correction: the commit is the record of what was actually wrong, and I now describe bugs from the code, not the commit message.
 - **Commit:** [0aa55ea](https://github.com/JustinNeri/WorkBud/commit/0aa55ea)
 
