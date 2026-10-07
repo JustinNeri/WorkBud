@@ -171,11 +171,11 @@ built the backend from there.
 
 - **Date and tool:** September 20, 2026, Claude (committed at the end of Week 1, after my Week 1 report was written, so it is reported in my Week 2 report)
 - **What I asked:** how to move the app from one screen with sheets on top to real URLs, so the phone back button would stop closing the whole app. This was the first item on my Week 1 "What is left" list.
-- **What it gave back:**
-  - `react-router`, with `BrowserRouter` in `main.jsx`;
-  - routes at `/login`, `/signup`, `/forgot-password` and `/dashboard` in `App.jsx`, guarded by `RequireSession` and `GuestOnly`;
-  - a sign-in screen that switches between sign-in and sign-up by changing the URL.
-- **What I kept, what I changed, and why:** I kept the guards, because they replaced the old "if signed in, show this, otherwise show that" logic with something clearer. I also kept the redirect that remembers where you were headed: if a signed-out user opens `/dashboard`, they go to `/login`, and after signing in they land back on the page they wanted instead of always the dashboard.
+- **What it gave back:** an explanation and an example, not the finished code:
+  - that `react-router` needs `BrowserRouter` around the app in `main.jsx`;
+  - how to lay out routes in `App.jsx`, and the idea of a guard: a wrapper route that checks the session and either shows the page or redirects;
+  - that the sign-in screen could read sign-in or sign-up from the URL instead of from state.
+- **What I kept, what I changed, and why:** I wrote the routing myself from that explanation (section 3): the routes at `/login`, `/signup`, `/forgot-password` and `/dashboard`, and the two guards, `RequireSession` and `GuestOnly`. I kept the guard idea, because the guards replaced the old "if signed in, show this, otherwise show that" logic with something clearer. I also kept the redirect that remembers where you were headed: if a signed-out user opens `/dashboard`, they go to `/login`, and after signing in they land back on the page they wanted instead of always the dashboard.
 - **Commit:** [6b44022](https://github.com/JustinNeri/WorkBud/commit/6b44022)
 
 ### 1.15 Security checklist
@@ -286,6 +286,9 @@ The look of the app is my design, and I typed the styling for it myself in these
 
 **Deployment on Vercel** (`vercel.json`, from [464ff06](https://github.com/JustinNeri/WorkBud/commit/464ff06))
 I deployed the app myself: I created the Vercel project, connected it to the repository so every push to `main` deploys, and set the two Supabase values as environment variables there, so no key sits in the code. The rewrite that sends every page path to `index.html` is what makes a refresh on `/dashboard` work instead of returning a 404. The `/api` rewrite was added later by Claude with the Express server (entry 1.16).
+
+**Routing and the route guards** (`src/App.jsx`, `src/main.jsx`, `src/components/AuthScreen.jsx`, [6b44022](https://github.com/JustinNeri/WorkBud/commit/6b44022))
+I asked Claude how routing should be set up (entry 1.14) and then wrote it myself. `main.jsx` wraps the app in `BrowserRouter`. `App.jsx` has four routes behind two guards. `RequireSession` wraps `/dashboard`: with no session it redirects to `/login` and passes along the page the user was trying to open. `GuestOnly` wraps the three sign-in pages: once a session exists it redirects to that remembered page, or to `/dashboard` if there is none. That is why signing in takes you back to where you were headed, and also why the app moves on by itself after a signup code or a password reset: the session appears and the guard redirects. Any other address, including `/`, goes to `/dashboard`. I built it this way so the rule for who can see a page lives in one place, the guard, instead of an if-statement on every screen.
 
 ### My idea, written by AI
 
