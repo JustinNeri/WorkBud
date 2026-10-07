@@ -71,9 +71,19 @@ export function Onboarding({ onDone }) {
       return
     }
 
-    // Every account already has a "My OJT" job from the migration; rename that
-    // one rather than leaving an empty stray alongside the real first job.
-    const { data: existing } = await api.get('/jobs')
+    // An account can reach this step already holding a job: the earliest
+    // accounts were given a "My OJT" job when jobs were introduced, and a retry
+    // here can follow a save whose reply was lost. Update that one instead of
+    // leaving a stray alongside the real first job.
+    const { data: existing, error: lookupErr } = await api.get('/jobs')
+
+    // Without the answer there is no telling which of the two to do, and
+    // guessing "none" would add a duplicate. Stop and let the user retry.
+    if (lookupErr) {
+      setError(errorMessage(lookupErr))
+      setBusy(false)
+      return
+    }
 
     const values = {
       name: jobName.trim(),

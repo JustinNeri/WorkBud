@@ -44,6 +44,13 @@ export function unwrap({ data, error }) {
   throw new HttpError(500, 'Something went wrong on our side.')
 }
 
+// What to tell a caller whose request Express or body-parser refused before
+// any route ran. A 4xx status not listed here gets the 400 wording.
+const REFUSED = {
+  400: 'The request could not be understood.',
+  415: 'The request body uses a charset or encoding the server cannot read.',
+}
+
 /** Unmatched /api path. */
 export function notFound(req, res) {
   res.status(404).json({ error: `No route for ${req.method} ${req.originalUrl}` })
@@ -63,6 +70,12 @@ export function errorHandler(err, req, res, next) {
     return res.status(400).json({ error: 'The request body is not valid JSON.' })
   if (err.type === 'entity.too.large')
     return res.status(413).json({ error: 'The request body is too large.' })
+  // Express and body-parser put a 4xx status on the caller's other mistakes: a
+  // charset they can't read (415), a URL escape that won't decode (400). Those
+  // are the caller's to fix, so they keep their status instead of reading as a
+  // server fault. The wording is ours; the library's own message is not sent.
+  if (err.status >= 400 && err.status < 500)
+    return res.status(err.status).json({ error: REFUSED[err.status] ?? REFUSED[400] })
 
   console.error(err)
   res.status(500).json({ error: 'Something went wrong on our side.' })

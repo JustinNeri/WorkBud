@@ -18,7 +18,8 @@ create table if not exists public.profiles (
   occupation     text,
   currency       text           not null default 'PHP',
   onboarded_at   timestamptz,
-  -- Kept as the seed for a user's first job; live targets live on jobs.
+  -- From before jobs existed, when an account had a single target. Each early
+  -- account's first job was seeded from these once; targets live on jobs now.
   target_hours   numeric(8, 2)  not null default 480 check (target_hours   >= 0),
   monthly_budget numeric(12, 2) not null default 300 check (monthly_budget >= 0),
   created_at     timestamptz    not null default now(),
@@ -60,7 +61,9 @@ alter table public.jobs
 create index if not exists jobs_user_idx on public.jobs (user_id, sort_order, created_at);
 
 -- ---------------------------------------------------------------------------
--- 2. daily_logs — one row per logged day (hours worked + money spent)
+-- 2. daily_logs: one row per logged shift (hours worked + money spent).
+--    That is normally one row a day. A second row on the same date is allowed
+--    on purpose, for a day worked in two blocks, so the date is not unique.
 -- ---------------------------------------------------------------------------
 create table if not exists public.daily_logs (
   id           uuid           primary key default gen_random_uuid(),
@@ -71,7 +74,8 @@ create table if not exists public.daily_logs (
   time_out     time,
   break_minutes integer       not null default 0 check (break_minutes >= 0 and break_minutes < 1440),
   hours_worked numeric(6, 2)  not null default 0 check (hours_worked >= 0 and hours_worked <= 24),
-  -- Total of this day's expenses rows; written by the app alongside them.
+  -- Total of this row's expenses; save_log() below sets it in the same
+  -- transaction that stores them, so the two cannot disagree.
   amount_spent numeric(12, 2) not null default 0 check (amount_spent >= 0),
   description  text,
   created_at   timestamptz    not null default now(),
@@ -103,6 +107,8 @@ alter table public.expenses
     check (category in ('transport', 'food', 'supplies', 'fees', 'other'));
 
 create index if not exists expenses_log_idx on public.expenses (log_id, created_at);
+-- Every policy filters on user_id, and deleting an account cascades by it.
+create index if not exists expenses_user_idx on public.expenses (user_id);
 
 -- ---------------------------------------------------------------------------
 -- 3. updated_at maintenance
@@ -248,7 +254,14 @@ create policy "daily_logs_delete_own" on public.daily_logs
 
 -- ---------------------------------------------------------------------------
 -- 6. Grants (RLS still gates every row)
+--    Supabase hands anon and authenticated every privilege on a new table in
+--    public by default, so a grant on its own narrows nothing. Revoking first
+--    is what makes the list below the whole of what a signed-in user can do,
+--    and leaves a signed-out visitor with no access to any table at all.
 -- ---------------------------------------------------------------------------
+revoke all on public.profiles, public.jobs, public.expenses, public.daily_logs
+  from anon, authenticated;
+
 grant select, update                 on public.profiles   to authenticated;
 grant select, insert, update, delete on public.jobs       to authenticated;
 grant select, insert, update, delete on public.expenses   to authenticated;
@@ -322,6 +335,7 @@ comment on column public.milestones.done_at      is 'Null until the user marks i
 
 create index if not exists milestones_job_idx
   on public.milestones (job_id, due_date nulls last, created_at);
+create index if not exists milestones_user_idx on public.milestones (user_id);
 
 drop trigger if exists milestones_set_updated_at on public.milestones;
 create trigger milestones_set_updated_at
@@ -348,6 +362,8 @@ drop policy if exists "milestones_delete_own" on public.milestones;
 create policy "milestones_delete_own" on public.milestones
   for delete to authenticated using ((select auth.uid()) = user_id);
 
+-- Same rule as section 6: revoke the defaults, then grant only what is needed.
+revoke all on public.milestones from anon, authenticated;
 grant select, insert, update, delete on public.milestones to authenticated;
 
 -- ---------------------------------------------------------------------------
@@ -402,8 +418,8 @@ alter table public.profiles
 comment on column public.profiles.avatar_path is
   'Object path inside the avatars bucket, e.g. <user id>/1695100000.jpg. Null when unset.';
 
--- Public read: an avatar is shown on a screen the viewer is already looking
--- at, and a signed URL would expire part-way through a session.
+-- A public bucket: an avatar is shown on a screen the viewer is already
+-- looking at, and a signed URL would expire part-way through a session.
 insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values (
   'avatars', 'avatars', true, 2097152,
@@ -414,13 +430,25 @@ on conflict (id) do update
       file_size_limit    = excluded.file_size_limit,
       allowed_mime_types = excluded.allowed_mime_types;
 
--- Writes are confined to a folder named for the user's own id, so nobody can
--- overwrite anyone else's picture. The bucket being public governs reads only
--- — these three policies are what stop it being a free-for-all to write to.
+-- Everything is confined to a folder named for the user's own id, so nobody
+-- can list, overwrite or remove anyone else's picture.
+--
+-- The bucket being public is what serves the pictures: a public URL is read
+-- without consulting any policy. A SELECT policy governs only what the Storage
+-- API will list, and removing a file has to find it first, so each user needs
+-- to see their own folder and nothing more. The first version of this policy
+-- let anyone, signed in or not, list the whole bucket, which gave away every
+-- user id as a folder name. It is dropped here so re-running the script
+-- removes it from a database that still has it.
 drop policy if exists "avatars_read_all" on storage.objects;
-create policy "avatars_read_all" on storage.objects
-  for select to anon, authenticated
-  using (bucket_id = 'avatars');
+
+drop policy if exists "avatars_select_own" on storage.objects;
+create policy "avatars_select_own" on storage.objects
+  for select to authenticated
+  using (
+    bucket_id = 'avatars'
+    and (storage.foldername(name))[1] = (select auth.uid())::text
+  );
 
 drop policy if exists "avatars_insert_own" on storage.objects;
 create policy "avatars_insert_own" on storage.objects
@@ -483,3 +511,91 @@ $$;
 
 revoke execute on function public.delete_own_account() from public, anon;
 grant  execute on function public.delete_own_account() to authenticated;
+
+-- ---------------------------------------------------------------------------
+-- 13. save_log: save a day and its expenses in one transaction.
+--
+--     A logged day is a daily_logs row plus any number of expenses rows, and
+--     amount_spent on the log is their total. Written from the API as separate
+--     statements, a failure between them could leave a day whose total had no
+--     items behind it, or an edit that had removed the old list without
+--     storing the new one. A function body runs inside one transaction, so
+--     here either all of it is saved or none of it is.
+--
+--     It runs as the caller (security invoker, the default), so Row Level
+--     Security applies to every statement exactly as if the caller had run
+--     them one by one. An id that is not the caller's matches no row, and the
+--     function returns null.
+--
+--       p_log_id    null to create a log, or the id of the log to change
+--       p_job_id    the job a new log belongs to; ignored when changing one
+--       p_fields    the columns to set, as JSON; a key left out keeps its value
+--       p_expenses  the day's whole expense list, or null to leave it alone
+--
+--     Only the seven columns named below can be set through p_fields. user_id
+--     is always the caller, and amount_spent is always worked out here from
+--     the rows actually stored, never taken from the request.
+-- ---------------------------------------------------------------------------
+create or replace function public.save_log(
+  p_log_id   uuid,
+  p_job_id   uuid,
+  p_fields   jsonb,
+  p_expenses jsonb
+)
+returns uuid
+language plpgsql
+set search_path = ''
+as $$
+declare
+  v_id uuid := p_log_id;
+begin
+  if v_id is null then
+    -- jsonb_populate_record() reads the JSON into a row of the table's own
+    -- column types. A key that is absent comes back null, so the columns that
+    -- cannot be null fall back to the same defaults the table declares.
+    insert into public.daily_logs
+      (user_id, job_id, entry_date, absent, hours_worked,
+       time_in, time_out, break_minutes, description)
+    select
+      auth.uid(), p_job_id, coalesce(f.entry_date, current_date),
+      coalesce(f.absent, false), coalesce(f.hours_worked, 0),
+      f.time_in, f.time_out, coalesce(f.break_minutes, 0), f.description
+    from jsonb_populate_record(null::public.daily_logs, p_fields) as f
+    returning id into v_id;
+  else
+    -- Given the saved row as its base, the same function overlays only the
+    -- keys the JSON actually has, which is what makes a partial update work.
+    update public.daily_logs l
+    set (entry_date, absent, hours_worked,
+         time_in, time_out, break_minutes, description)
+      = (select f.entry_date, f.absent, f.hours_worked,
+                f.time_in, f.time_out, f.break_minutes, f.description
+         from jsonb_populate_record(l, p_fields) as f)
+    where l.id = v_id;
+
+    if not found then
+      return null;
+    end if;
+  end if;
+
+  if p_expenses is not null then
+    -- The list is small and edited as a whole, so it is replaced, not diffed.
+    delete from public.expenses where log_id = v_id;
+
+    insert into public.expenses (log_id, user_id, label, category, amount)
+    select v_id, auth.uid(), e.label, coalesce(e.category, 'other'), coalesce(e.amount, 0)
+    from jsonb_populate_recordset(null::public.expenses, p_expenses) as e;
+
+    update public.daily_logs
+    set amount_spent = (
+      select coalesce(sum(e.amount), 0) from public.expenses e where e.log_id = v_id
+    )
+    where id = v_id;
+  end if;
+
+  return v_id;
+end;
+$$;
+
+revoke execute on function public.save_log(uuid, uuid, jsonb, jsonb) from public, anon;
+grant  execute on function public.save_log(uuid, uuid, jsonb, jsonb) to authenticated;

@@ -12,7 +12,7 @@ OJT hours and expense tracker.
 
 ## 1. Overview
 
-WorkBud is a mobile-first web app (an installable PWA) for tracking on-the-job-training hours and the money a placement costs you. You log one entry per day (time in, time out, unpaid break, and what you spent getting there), and the app keeps three things for you:
+WorkBud is a mobile-first web app (an installable PWA) for tracking on-the-job-training hours and the money a placement costs you. You log each day you work (time in, time out, unpaid break, and what you spent getting there), and the app keeps three things for you:
 
 - the running hour total your school asks for;
 - an itemised picture of your spending;
@@ -107,17 +107,19 @@ That one script creates everything the app needs:
 
 - the five tables: `profiles`, `jobs`, `daily_logs`, `expenses`, `milestones`;
 - Row Level Security policies on every table, all scoped to `auth.uid()`;
+- table grants cut down to what a signed-in user needs, with none for signed-out visitors;
 - a trigger that creates a `profiles` row automatically whenever a user signs up;
 - `updated_at` triggers on every table that has that column;
 - an `email_registered()` function, so signup can tell the user an email is already registered;
+- a `save_log()` function, which saves a day and its expenses in one transaction;
 - a `delete_own_account()` function, used by the Delete account button;
-- a public `avatars` storage bucket for profile pictures (2 MB limit, JPEG, PNG and WebP only), with per-user upload policies.
+- a public `avatars` storage bucket for profile pictures (2 MB limit, JPEG, PNG and WebP only), with policies that keep each user to their own folder.
 
 The script is idempotent, so re-running it is safe. Re-running it is also how an existing database picks up columns added in a later week.
 
 ### 2.6 Configure the signup email template
 
-WorkBud verifies signups with a 6-digit emailed code, not a confirmation link. In Supabase, go to **Authentication → Email Templates → Confirm signup** and make sure the template body contains:
+WorkBud verifies signups with an emailed code, not a confirmation link. How many digits the code has is a Supabase project setting, and the app accepts any length from 6 to 10. In Supabase, go to **Authentication → Email Templates → Confirm signup** and make sure the template body contains:
 
 ```
 {{ .Token }}
@@ -177,7 +179,7 @@ http://localhost:5173
 - **In the terminal:** a line reading `[api] WorkBud API listening on http://localhost:3001`, and Vite's `Local: http://localhost:5173/`.
 - **At `http://localhost:5173/api/health`:** `{"status":"ok","database":"connected"}`. This proves the server is running and can reach the database. If it says `"database":"unreachable"`, the values in `.env.local` are wrong.
 - **If `.env.local` is filled in correctly:** the sign-in screen at `http://localhost:5173/login`. It has the WorkBud logo, email and password fields, a "Remember me" checkbox, and links to create an account or reset a password.
-- **After signing up and entering the emailed 6-digit code:** the onboarding flow (name, age, occupation, currency, first job).
+- **After signing up and entering the emailed code:** the onboarding flow (name, age, occupation, currency, first job).
 - **After onboarding, or on any later sign-in:** the dashboard at `/dashboard`, showing the hours progress ring.
 - **If `.env.local` is missing or unfilled:** a card reading "Supabase isn't configured". That is the expected screen for a bad setup, not a crash.
 
@@ -223,7 +225,7 @@ Add the same two environment variables in the Vercel project settings, then depl
 
 ### The primary flow
 
-1. **Sign up** with an email and password. A strength meter enforces more than Supabase's six-character minimum. A 6-digit code arrives by email and you enter it in the app, so you never leave for a browser tab.
+1. **Sign up** with an email and password. A strength meter enforces more than Supabase's six-character minimum. A code arrives by email and you enter it in the app, so you never leave for a browser tab.
 2. **Onboard.** Enter your name, age, occupation and currency (10 supported, defaults to PHP). Then create your first job: its name, target hours, deadline and monthly budget, plus an optional hourly rate and daily budget.
 3. **Log a day.** Tap the add button on the dashboard and enter:
    - the date (Today and Yesterday shortcuts, or a picker for any past day);
@@ -237,7 +239,7 @@ Add the same two environment variables in the Vercel project settings, then depl
 
 ### Main features
 
-**Hours.** One entry per day. Hours are worked out from your times, and you can still edit them for days that don't fit a normal shift. A shift in progress counts up live: a 7am to 5pm day reads "2h so far" at 9am and settles at 9h once 5pm passes. Overnight shifts work too, so 10pm to 6am is 8 hours, not minus 16. You can fill in any past date, because most people find an app like this partway through a placement.
+**Hours.** Normally one entry per day. Logging a date a second time is allowed, for a day worked in two blocks: the sheet tells you the day is already logged and offers to open that entry instead. Hours are worked out from your times, and you can still edit them for days that don't fit a normal shift. A shift in progress counts up live: a 7am to 5pm day reads "2h so far" at 9am and settles at 9h once 5pm passes. Overnight shifts work too, so 10pm to 6am is 8 hours, not minus 16. You can fill in any past date, because most people find an app like this partway through a placement.
 
 **Deadline and pace.** Set a deadline on a job and the dashboard shows the date, the countdown, and the hours per day you need to finish. It warns you when that number rises above the pace you've actually been keeping. Jobs with no end date (employed, freelance, self-employed) get a month-to-date view instead: hours logged, days logged, where the month is heading, and earnings if an hourly rate is set.
 
@@ -342,10 +344,11 @@ The server answers `201 Created` with the saved log, its `expenses`, and `amount
 
 | Status | When |
 |---|---|
-| 400 | The body is not valid JSON, a field fails validation, an id is malformed, or a `job_id` is not one of your jobs |
+| 400 | The body is not valid JSON, a field fails validation, an id is malformed, a `job_id` is not one of your jobs, or the URL contains an escape that cannot be decoded |
 | 401 | No token, or the token is invalid or expired |
 | 404 | The row does not exist, or belongs to someone else |
 | 413 | The body is larger than 100 KB |
+| 415 | The body is in a charset or content encoding the server cannot read |
 | 500 | Something failed on the server. The details are logged on the server, not sent to the browser |
 | 503 | The server could not reach Supabase to check your session, or the health check could not reach the database |
 
@@ -386,7 +389,7 @@ WorkBud/
 |   |-- index.js               Starts the server; also serves dist/ after a build
 |   |-- app.js                 Builds the Express app and mounts the routes
 |   |-- config.js              Reads the environment, refuses to start if unset
-|   |-- db.js                  Supabase clients: signed-out, and one per request
+|   |-- db.js                  Supabase clients, and the shared delete handler
 |   |-- auth.js                Checks the access token on every data route
 |   |-- validate.js            Field checks and the request-body parser
 |   |-- errors.js              HttpError, database error mapping, error handler
@@ -403,7 +406,7 @@ WorkBud/
     |-- components/            Screens, cards and the bottom-sheet forms
     |   |-- AuthScreen.jsx         Sign in and sign up
     |   |-- SignupSteps.jsx        Multi-step account creation
-    |   |-- OtpStep.jsx            6-digit emailed code entry
+    |   |-- OtpStep.jsx            Emailed code entry
     |   |-- ForgotPassword.jsx     Password reset by code
     |   |-- Onboarding.jsx         First-run profile and first job
     |   |-- Dashboard.jsx          The main signed-in screen
@@ -457,7 +460,6 @@ WorkBud/
 - **No automated tests.** There is still not a single test in the repository, and that now includes the API routes. The two bugs that cost the most time in Week 1 both lived in `src/lib/format.js`: overnight shifts coming out as negative hours, and dates showing one day off because of a timezone conversion. That's exactly the file that should have had unit tests first.
 - **The avatars bucket can be listed while signed out.** The `avatars_read_all` storage policy gives signed-out users SELECT on the bucket, so anyone can list it and see each user's folder name, which is their user ID. The app never needs this, because pictures load through public URLs. I found it while filling in [SECURITY-CHECKLIST.md](SECURITY-CHECKLIST.md).
 - **Offline is read-only.** The app shell opens without a connection, but every save still needs the network. Logging a day at a placement site with no signal fails rather than waiting to sync.
-- **Some failures are still silent in the UI.** The API now answers every failure with a status code and a message, but a few places don't show it. Onboarding, for one, ignores a failed job lookup and carries on.
 - **Saving a day is two writes, not one transaction.** The server saves the log, then its expenses. If the second write fails on a new log, the server deletes the log again. On an edit there is no such undo, so a failure at that moment could leave a day with its old expense list removed.
 - **Every API request checks the token with Supabase.** That is one extra round trip per request. It is simple and always correct, but verifying the token's signature on the server would be faster.
 - **The API has no rate limiting.** Nothing stops a signed-in user from sending requests in a loop.
@@ -470,7 +472,7 @@ WorkBud/
 
 1. Unit tests on `src/lib/format.js` covering shift maths, overnight shifts and timezone handling, before any new feature.
 2. Limit the avatars bucket's SELECT policy to each user's own folder, so the bucket can no longer be listed.
-3. An error-handling pass in the UI, so every failed request shows the user a message. Then a database function that saves a log and its expenses in one transaction, and rate limiting on the API.
+3. A database function that saves a log and its expenses in one transaction, and rate limiting on the API.
 4. Finish editing and deleting individual expense rows.
 5. A save queue, so a day logged offline syncs when the connection returns.
 6. Compare the exported time log with the real coordinator form, and test printing from a phone.

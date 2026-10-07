@@ -1,5 +1,6 @@
 import { Router } from 'express'
-import { HttpError, unwrap } from '../errors.js'
+import { removeById } from '../db.js'
+import { unwrap } from '../errors.js'
 import { checkId, date, invalid, number, parse, required, text } from '../validate.js'
 
 const COLS =
@@ -82,8 +83,4 @@ jobs.patch('/:id', async (req, res) => {
 })
 
 // Logs, expenses and milestones go with it: the foreign keys cascade.
-jobs.delete('/:id', async (req, res) => {
-  const gone = unwrap(await req.db.from('jobs').delete().eq('id', req.params.id).select('id'))
-  if (gone.length === 0) throw new HttpError(404, 'Not found.')
-  res.status(204).end()
-})
+jobs.delete('/:id', removeById('jobs'))

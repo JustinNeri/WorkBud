@@ -1,4 +1,5 @@
 import { Router } from 'express'
+import { removeById } from '../db.js'
 import { HttpError, unwrap } from '../errors.js'
 import {
   boolean,
@@ -58,28 +59,31 @@ function parseExpenses(body) {
   return list.map((item) => parse(expenseSchema, item))
 }
 
-/**
- * amount_spent is never taken from the client: it is always the sum of the
- * line items, so the two can't disagree. Rounded to cents to keep float drift
- * (0.1 + 0.2) out of a numeric(12, 2) column.
- */
-const total = (items) =>
-  Math.round(items.reduce((sum, item) => sum + item.amount, 0) * 100) / 100
-
 /** A day marked as not worked carries no shift. */
 function clearShiftIfAbsent(values) {
   if (!values.absent) return values
   return { ...values, hours_worked: 0, time_in: null, time_out: null, break_minutes: 0 }
 }
 
-async function insertExpenses(req, logId, items) {
-  if (items.length === 0) return
+/**
+ * Save a log and, when `items` is a list, replace the day's expenses with it.
+ * save_log() in schema.sql does all of it in one transaction, so a failure
+ * part-way leaves the day exactly as it was.
+ *
+ * amount_spent is never taken from the client: the function sets it to the sum
+ * of the expense rows it stored, so the total can't disagree with the items.
+ *
+ * Resolves to the log's id, or to null when `id` is not a log of the caller's.
+ */
+const saveLog = async (req, { id = null, jobId = null, values, items = null }) =>
   unwrap(
-    await req.db
-      .from('expenses')
-      .insert(items.map((item) => ({ ...item, log_id: logId, user_id: req.user.id }))),
+    await req.db.rpc('save_log', {
+      p_log_id: id,
+      p_job_id: jobId,
+      p_fields: values,
+      p_expenses: items,
+    }),
   )
-}
 
 const fetchLog = async (req, id) =>
   unwrap(
@@ -122,55 +126,25 @@ logs.post('/', async (req, res) => {
   const items = parseExpenses(req.body) ?? []
   await assertOwnJob(req.db, job_id)
 
-  const created = unwrap(
-    await req.db
-      .from('daily_logs')
-      .insert({ ...values, amount_spent: total(items), job_id, user_id: req.user.id })
-      .select('id')
-      .single(),
-  )
+  const id = await saveLog(req, { jobId: job_id, values, items })
 
-  try {
-    await insertExpenses(req, created.id, items)
-  } catch (err) {
-    // Two writes, no transaction across them: take the log back out so a
-    // failed save doesn't leave a day whose total has no items behind it.
-    await req.db.from('daily_logs').delete().eq('id', created.id)
-    throw err
-  }
-
-  res
-    .status(201)
-    .location(`/api/logs/${created.id}`)
-    .json(await fetchLog(req, created.id))
+  res.status(201).location(`/api/logs/${id}`).json(await fetchLog(req, id))
 })
 
 logs.patch('/:id', async (req, res) => {
   const { id } = req.params
+  // The list is small and edited as a whole, so it is replaced, not diffed.
   const items = parseExpenses(req.body)
   // A body holding only `expenses` is a valid update on its own.
   const values = clearShiftIfAbsent(
     parse(schema, req.body, { partial: true, allowEmpty: Boolean(items) }),
   )
-  if (items) values.amount_spent = total(items)
 
-  // .single() makes a missing or foreign id a 404 before any line item moves.
-  unwrap(await req.db.from('daily_logs').update(values).eq('id', id).select('id').single())
-
-  if (items) {
-    // The list is small and edited as a whole, so it is replaced, not diffed.
-    unwrap(await req.db.from('expenses').delete().eq('log_id', id))
-    await insertExpenses(req, id, items)
-  }
+  // A missing or foreign id is a 404, and nothing has moved, line items included.
+  if (!(await saveLog(req, { id, values, items }))) throw new HttpError(404, 'Not found.')
 
   res.json(await fetchLog(req, id))
 })
 
 // Its expenses go with it: the foreign key cascades.
-logs.delete('/:id', async (req, res) => {
-  const gone = unwrap(
-    await req.db.from('daily_logs').delete().eq('id', req.params.id).select('id'),
-  )
-  if (gone.length === 0) throw new HttpError(404, 'Not found.')
-  res.status(204).end()
-})
+logs.delete('/:id', removeById('daily_logs'))

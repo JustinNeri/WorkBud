@@ -104,15 +104,15 @@ export function LogSheet({
           ? String(Number(log.hours_worked))
           : ''
 
+  // Older than the two shortcut chips: the date is worth spelling out, since
+  // nothing else on the sheet says which day is being filled in.
+  const olderDay = !DATE_SHORTCUTS.some((sc) => sc.iso() === date)
+
   /**
    * A soft duplicate check, not a unique constraint: two shifts in one day is
    * legitimate (a morning and an afternoon block), so the second entry is
    * allowed — the user is just told, and offered the existing one instead.
    */
-  // Older than the two shortcut chips: the date is worth spelling out, since
-  // nothing else on the sheet says which day is being filled in.
-  const olderDay = !DATE_SHORTCUTS.some((sc) => sc.iso() === date)
-
   const duplicate = useMemo(
     () =>
       editing ? null : (jobLogs.find((l) => l.entry_date === date) ?? null),
