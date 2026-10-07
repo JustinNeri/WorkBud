@@ -274,6 +274,13 @@ Three lists in the code are my decisions about what the app is for.
 - **Nine occupation options at onboarding.** The choice changes what the dashboard shows. A placement ends on a date known up front, so it gets a deadline countdown. Employment, freelance work and self-employment continue until someone ends them, so those get a month-to-date view and are never asked to set a deadline.
 - **Ten currencies:** PHP first and as the default, because the first users are students in the Philippines, then USD, EUR, GBP, JPY, AUD, CAD, SGD, AED and INR.
 
+
+**Logging past dates** (`src/components/LogSheet.jsx`, from [e89aafa](https://github.com/JustinNeri/WorkBud/commit/e89aafa))
+I asked for any past date to be allowed, because most students find an app like this partway through a placement and need the weeks they already worked to count toward their total. Future dates stay blocked, since hours that have not been worked should not count. The Today and Yesterday shortcuts are there because those are the two days people fill in most. 
+
+**The catch-up budget** (`src/components/CatchUpCard.jsx`, `src/hooks/useWorkbud.js`, from [d5df02a](https://github.com/JustinNeri/WorkBud/commit/d5df02a), rule changed in [c66207f](https://github.com/JustinNeri/WorkBud/commit/c66207f))
+This was my idea. Telling someone they are 410 pesos over budget does not tell them what to do, so the card spreads the overspend across the days left in the month and shows the daily amount that gets them back to level. The first version added up only the days that went over and ignored the days that came in under, so a cheap day never reduced what was owed. That was changed to a net position: what the daily budget has allowed so far against what was actually spent, counted from the first day logged that month, so someone who starts mid-month does not get credit for days they were not tracking. 
+
 ### AI-drafted parts of the database, explained
 
 Claude drafted these, and the app depends on them, so I made sure I can explain what each one does and why it is there.
