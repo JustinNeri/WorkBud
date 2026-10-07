@@ -205,16 +205,7 @@ built the backend from there.
   Claude could not sign in, so it only tested the signed-out and bad-input paths. I tested the signed-in flows myself in the browser, on localhost and on the Vercel preview: adding, editing and deleting a log with expenses, a job and a milestone, changing the profile, and onboarding and deleting a test account.
 - **Commit:** [fb4eb62](https://github.com/JustinNeri/WorkBud/commit/fb4eb62)
 
-### 1.17 A review of the finished project against the rubric, and the fixes
 
-- **Date and tool:** October 8, 2026, Claude (Claude Code)
-- **What I asked:** to check the whole project against the finals rubric without changing anything, then to list what stood between it and full marks, and then to implement the fixes for the Final Project rows.
-- **What it gave back:**
-  - a review that ran the server, sent it bad requests, and compared `supabase/schema.sql` with the live database. It found two requests that answered 500 instead of a 4xx (2.4), that the avatars bucket could still be listed (2.5), and that the table grants in `schema.sql` narrowed nothing, because Supabase already gives `anon` and `authenticated` every privilege by default;
-  - the fixes: the error handler in `server/errors.js` and `server/index.js`, a `revoke` before the grants, a new own-folder avatars policy, and a `save_log()` database function so a day and its expenses are saved in one transaction instead of two separate writes;
-  - smaller clean-ups: two unused functions removed from `src/lib/format.js`, a failed job lookup in `Onboarding.jsx` now shown to the user, three identical delete handlers folded into one in `server/db.js`, and the README and security checklist brought up to date.
-- **What I kept, what I changed, and why:** I kept the fixes. This is AI-written code, like the server it corrects. Claude tested it on a local copy of the database and with a stand-in for the database behind the routes, but it could not sign in, so the signed-in flows were mine to test. The database changes did not go through Claude: its connector refused to run them, so I pasted the SQL into the Supabase SQL Editor and ran it myself, and Claude then checked the live grants, policies and function with read-only queries.
-- **Commit:** [9e2eca7](https://github.com/JustinNeri/WorkBud/commit/9e2eca7)
 
 ---
 
