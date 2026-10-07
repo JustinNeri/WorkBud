@@ -367,7 +367,7 @@ Fields the API does not know are ignored, so a request cannot set `user_id`, `id
 One design note worth knowing:
 
 - `daily_logs.hours_worked` stores the day's planned total, and the figure the dashboard counts is worked out when the page draws. That's how a shift can tick upward without anything being written back to the database.
-- A day's `expenses` rows are the real record of spending, and `amount_spent` on the log is their total. The server works that total out from the expense list it was sent, and ignores any total the browser sends.
+- A day's `expenses` rows are the real record of spending, and `amount_spent` on the log is their total. The database works that total out from the rows it stored, in the same transaction that saves them (`save_log()` in `schema.sql`), and any total the browser sends is ignored.
 
 ---
 
@@ -458,9 +458,7 @@ WorkBud/
 ### Known issues
 
 - **No automated tests.** There is still not a single test in the repository, and that now includes the API routes. The two bugs that cost the most time in Week 1 both lived in `src/lib/format.js`: overnight shifts coming out as negative hours, and dates showing one day off because of a timezone conversion. That's exactly the file that should have had unit tests first.
-- **The avatars bucket can be listed while signed out.** The `avatars_read_all` storage policy gives signed-out users SELECT on the bucket, so anyone can list it and see each user's folder name, which is their user ID. The app never needs this, because pictures load through public URLs. I found it while filling in [SECURITY-CHECKLIST.md](SECURITY-CHECKLIST.md).
 - **Offline is read-only.** The app shell opens without a connection, but every save still needs the network. Logging a day at a placement site with no signal fails rather than waiting to sync.
-- **Saving a day is two writes, not one transaction.** The server saves the log, then its expenses. If the second write fails on a new log, the server deletes the log again. On an edit there is no such undo, so a failure at that moment could leave a day with its old expense list removed.
 - **Every API request checks the token with Supabase.** That is one extra round trip per request. It is simple and always correct, but verifying the token's signature on the server would be faster.
 - **The API has no rate limiting.** Nothing stops a signed-in user from sending requests in a loop.
 - **Expense rows can be added but not fully managed.** Editing and deleting individual expense lines isn't finished. The reliable workaround today is deleting the day's log and entering it again.
@@ -471,14 +469,13 @@ WorkBud/
 ### Next steps
 
 1. Unit tests on `src/lib/format.js` covering shift maths, overnight shifts and timezone handling, before any new feature.
-2. Limit the avatars bucket's SELECT policy to each user's own folder, so the bucket can no longer be listed.
-3. A database function that saves a log and its expenses in one transaction, and rate limiting on the API.
-4. Finish editing and deleting individual expense rows.
-5. A save queue, so a day logged offline syncs when the connection returns.
-6. Compare the exported time log with the real coordinator form, and test printing from a phone.
-7. Empty states and loading skeletons. A new account currently looks broken rather than empty.
-8. An optional push notification reminding you to log the day's hours. The in-app "Nothing logged today" nudge already exists; this would reach you with the app closed.
-9. A tidier git workflow: feature branches, commit messages that say what changed, and GitHub's no-reply address as the commit email.
+2. Rate limiting on the API.
+3. Finish editing and deleting individual expense rows.
+4. A save queue, so a day logged offline syncs when the connection returns.
+5. Compare the exported time log with the real coordinator form, and test printing from a phone.
+6. Empty states and loading skeletons. A new account currently looks broken rather than empty.
+7. An optional push notification reminding you to log the day's hours. The in-app "Nothing logged today" nudge already exists; this would reach you with the app closed.
+8. A tidier git workflow: feature branches, commit messages that say what changed, and GitHub's no-reply address as the commit email.
 
 ---
 

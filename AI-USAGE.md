@@ -163,8 +163,8 @@ built the backend from there.
   - `Avatar.jsx`, which shows the user's initial when there is no picture;
   - the upload flow in `SettingsSheet.jsx`;
   - an `avatars` storage bucket with per-user upload policies and an `avatar_path` column.
-- **What I kept, what I changed, and why:** I kept the resize-before-upload step. A phone photo is 3 to 8 MB, and this app is used on mobile data, so shrinking it to usually under 60 KB before sending saves users real money for a picture shown at 44 pixels. One part was not right, and I only found it later: the bucket's read policy lets signed-out users list every file. My security checklist caught it on September 27 (see 1.15), and it is not fixed yet.
-- **Commit:** [5779d1d](https://github.com/JustinNeri/WorkBud/commit/5779d1d)
+- **What I kept, what I changed, and why:** I kept the resize-before-upload step. A phone photo is 3 to 8 MB, and this app is used on mobile data, so shrinking it to usually under 60 KB before sending saves users real money for a picture shown at 44 pixels. One part was not right, and I only found it later: the bucket's read policy lets signed-out users list every file. My security checklist caught it on September 27 (see 1.15). It stayed open until October 8, when the policy was replaced with one limited to each user's own folder (see 1.17 and 2.5).
+- **Commits:** [5779d1d](https://github.com/JustinNeri/WorkBud/commit/5779d1d), fixed in [9e2eca7](https://github.com/JustinNeri/WorkBud/commit/9e2eca7)
 
 ### 1.14 React Router
 
@@ -199,10 +199,21 @@ built the backend from there.
 - **What I kept, what I changed, and why:** Claude proposed the design and consulted me on it, and I agreed to it before keeping the code. This is the largest piece of AI-written code in the project. The design choices I agreed to, and why:
   - the server forwards the signed-in user's token instead of using a service-role key, so the Row Level Security policies I wrote still check every query and there is no new secret to protect;
   - sign-in stays with Supabase Auth, so the signup codes, password reset and "Remember me" that already worked were not rewritten in the last week;
-  - the server works out a day's `amount_spent` from the expense list itself, so the total can never disagree with the items.
+  - a day's `amount_spent` is never taken from the browser, so the total can never disagree with the items. In this first version the server added up the expense list it was sent. Since October 8 the database function `save_log()` works it out from the rows it stored (see 1.17).
 
   Claude could not sign in, so it only tested the signed-out and bad-input paths. I tested the signed-in flows myself in the browser, on localhost and on the Vercel preview: adding, editing and deleting a log with expenses, a job and a milestone, changing the profile, and onboarding and deleting a test account.
 - **Commit:** [fb4eb62](https://github.com/JustinNeri/WorkBud/commit/fb4eb62)
+
+### 1.17 A review of the finished project against the rubric, and the fixes
+
+- **Date and tool:** October 8, 2026, Claude (Claude Code)
+- **What I asked:** to check the whole project against the finals rubric without changing anything, then to list what stood between it and full marks, and then to implement the fixes for the Final Project rows.
+- **What it gave back:**
+  - a review that ran the server, sent it bad requests, and compared `supabase/schema.sql` with the live database. It found two requests that answered 500 instead of a 4xx (2.4), that the avatars bucket could still be listed (2.5), and that the table grants in `schema.sql` narrowed nothing, because Supabase already gives `anon` and `authenticated` every privilege by default;
+  - the fixes: the error handler in `server/errors.js` and `server/index.js`, a `revoke` before the grants, a new own-folder avatars policy, and a `save_log()` database function so a day and its expenses are saved in one transaction instead of two separate writes;
+  - smaller clean-ups: two unused functions removed from `src/lib/format.js`, a failed job lookup in `Onboarding.jsx` now shown to the user, three identical delete handlers folded into one in `server/db.js`, and the README and security checklist brought up to date.
+- **What I kept, what I changed, and why:** I kept the fixes. This is AI-written code, like the server it corrects. Claude tested it on a local copy of the database and with a stand-in for the database behind the routes, but it could not sign in, so the signed-in flows were mine to test. The database changes did not go through Claude: its connector refused to run them, so I pasted the SQL into the Supabase SQL Editor and ran it myself, and Claude then checked the live grants, policies and function with read-only queries.
+- **Commit:** [9e2eca7](https://github.com/JustinNeri/WorkBud/commit/9e2eca7)
 
 ---
 
@@ -229,6 +240,20 @@ built the backend from there.
 - **What I did instead:** I noticed it in my own screenshot while preparing the documentation, listed it as a known issue, and then fixed it by rounding the total to two decimals.
 - **Commits:** [f3b7ebe](https://github.com/JustinNeri/WorkBud/commit/f3b7ebe), fixed in [6341689](https://github.com/JustinNeri/WorkBud/commit/6341689)
 
+### 2.4 The API server answered 500 for mistakes that were the caller's
+
+- **What it gave me:** the error handler in the Express server Claude wrote (`server/errors.js`, see 1.16). It recognised its own `HttpError`, a body that was not valid JSON, and a body that was too large. Everything else became a 500 with "Something went wrong on our side."
+- **What was wrong with it:** Express and its body parser also raise errors for other bad requests, and those already carry a 4xx status. The handler ignored that status. A body sent with an unknown charset came back 500 instead of 415, and a URL with a broken escape such as `/api/jobs/%E0%A4%A` came back 500 instead of 400. A 500 tells the caller the server is broken when the request was. The same gap had a second effect: when `npm start` serves the built app, a broken page URL never reached the handler at all and got Express's default error page, which printed a stack trace with file paths.
+- **What I did instead:** it was found in the October 8 review (1.17), by sending the server those requests, not by reading the code. The handler now passes a 4xx status through with its own short message, and `server/index.js` registers the handler again after the page routes. Both cases now return one line of JSON with the right status.
+- **Commits:** [fb4eb62](https://github.com/JustinNeri/WorkBud/commit/fb4eb62), fixed in [9e2eca7](https://github.com/JustinNeri/WorkBud/commit/9e2eca7)
+
+### 2.5 The avatars policy let anyone list every user's folder
+
+- **What it gave me:** with the profile picture feature (1.13), a storage policy named `avatars_read_all` that gave both signed-in and signed-out users SELECT on the whole `avatars` bucket.
+- **What was wrong with it:** the policy was not needed for what it seemed to be for. The bucket is public, so pictures load through public URLs without any policy. What the policy actually allowed was listing the bucket, and each user's folder is named after their user ID, so anyone could read every account's ID without signing in.
+- **What I did instead:** my security checklist caught it on September 27, and I listed it as a known issue but left it open. On October 8 it was replaced with `avatars_select_own`, which lets a signed-in user see only their own folder (the app needs that to remove old pictures) and gives signed-out visitors nothing.
+- **Commits:** [5779d1d](https://github.com/JustinNeri/WorkBud/commit/5779d1d), fixed in [9e2eca7](https://github.com/JustinNeri/WorkBud/commit/9e2eca7)
+
 ---
 
 ## 3. Who wrote what
@@ -236,7 +261,7 @@ built the backend from there.
 ### Parts I wrote myself
 
 **Row Level Security policies** (`supabase/schema.sql`, from [32e697a](https://github.com/JustinNeri/WorkBud/commit/32e697a))
-Every table has RLS switched on, with a separate policy for select, insert, update and delete, and each one checks `auth.uid() = user_id`. That means the database itself refuses to show or change anyone else's rows, whatever the browser sends. This mattered most when I wrote them, because WorkBud had no server of its own then: the browser talked to Supabase directly with a key that is public. So the rule could not live in app code a user could bypass; it had to live in the database. It still matters now that the Express API sits in front (see 1.16), because the server queries as the signed-in user, so these policies are a second check behind every route. `profiles` deliberately has no insert or delete policy, because those rows should only ever come from the signup trigger. I tested it signed out: every table returned nothing, and an insert was refused.
+Every table has RLS switched on, with a separate policy for select, insert, update and delete, and each one checks `auth.uid() = user_id`. That means the database itself refuses to show or change anyone else's rows, whatever the browser sends. This mattered most when I wrote them, because WorkBud had no server of its own then: the browser talked to Supabase directly with a key that is public. So the rule could not live in app code a user could bypass; it had to live in the database. It still matters now that the Express API sits in front (see 1.16), because the server queries as the signed-in user, so these policies are a second check behind every route. `profiles` deliberately has no insert or delete policy, because those rows should only ever come from the signup trigger. I tested it signed out: every table returned nothing, and an insert was refused. The policies on `milestones` came later with that feature and were generated by Claude to the same pattern (1.11).
 
 **The signup trigger** (`supabase/schema.sql`, `handle_new_user`, from [32e697a](https://github.com/JustinNeri/WorkBud/commit/32e697a))
 When someone signs up, Supabase adds them to `auth.users`, and this trigger immediately creates their `profiles` row. It is done in the database rather than the app so there is never a moment where a user is signed in but has no profile. If the app created it instead, a dropped connection between the two steps would leave a broken account.
@@ -244,11 +269,11 @@ When someone signs up, Supabase adds them to `auth.users`, and this trigger imme
 **The `jobs` table and multi-job design** (`supabase/schema.sql`, from [99f39b3](https://github.com/JustinNeri/WorkBud/commit/99f39b3))
 Each placement is a row in `jobs` with its own target hours, budgets and deadline, and every daily log belongs to one job through `job_id ... on delete cascade`. The cascade means deleting a job cleanly removes its logs and their expenses, with no orphaned rows. Targets live on the job instead of the profile so one person can track two placements at once.
 
-**Database validation rules** (`supabase/schema.sql`, the `check` constraints, from [32e697a](https://github.com/JustinNeri/WorkBud/commit/32e697a))
-Every column that takes something a user typed has a rule the database enforces by itself. A job name must be 1 to 60 characters. Hours worked must be between 0 and 24, and a break must be shorter than a full day. Money amounts cannot be negative. Age must be between 10 and 120, and an expense label can be at most 120 characters. The checks in the forms are only there for convenience, because anyone can skip a form and send a request directly. So the rule that counts has to live in the database, where a bad row is refused whatever sent it: the app, the API server, or a request written by hand.
+**Database validation rules** (`supabase/schema.sql`, the `check` constraints, from [32e697a](https://github.com/JustinNeri/WorkBud/commit/32e697a) and [99f39b3](https://github.com/JustinNeri/WorkBud/commit/99f39b3))
+Every column that takes something a user typed has a rule the database enforces by itself. The first commit has the rules that hours worked must be between 0 and 24 and that money amounts and targets cannot be negative. The second adds that a job name must be 1 to 60 characters and that age must be between 10 and 120. Two more rules follow the same pattern but are not mine: a break shorter than a full day and an expense label of at most 120 characters arrived with the columns in entry 1.5. The checks in the forms are only there for convenience, because anyone can skip a form and send a request directly. So the rule that counts has to live in the database, where a bad row is refused whatever sent it: the app, the API server, or a request written by hand.
 
-**Table permissions and the `updated_at` trigger** (`supabase/schema.sql`, the `grant` lines and `set_updated_at`, from [32e697a](https://github.com/JustinNeri/WorkBud/commit/32e697a))
-The grants give a signed-in user only the actions each table needs. Jobs, daily logs, expenses and milestones allow select, insert, update and delete. `profiles` allows only select and update: there is no insert, because the signup trigger creates that row, and no delete. This is a second layer under Row Level Security. RLS decides which rows a user can touch, and the grants decide which actions exist at all. `set_updated_at` is one small function attached as a trigger to every table that has an `updated_at` column. It stamps the time on every update, so no part of the app can forget to. It is declared with an empty `search_path`, so it cannot be tricked into running against a different object with the same name.
+**Table permissions and the `updated_at` trigger** (`supabase/schema.sql`, the `grant` lines and `set_updated_at`, from [32e697a](https://github.com/JustinNeri/WorkBud/commit/32e697a); its empty `search_path` from [fa45b49](https://github.com/JustinNeri/WorkBud/commit/fa45b49))
+The grants are meant to give a signed-in user only the actions each table needs. As I first wrote them they did not do that: Supabase already gives `anon` and `authenticated` every privilege on a new table, so granting a short list on top narrowed nothing, and Row Level Security was doing all the work. The October 8 review found this (1.17). The `revoke all` lines that now come before the grants are Claude's, added in [9e2eca7](https://github.com/JustinNeri/WorkBud/commit/9e2eca7), and they are what make the description below true. Jobs, daily logs, expenses and milestones allow select, insert, update and delete. `profiles` allows only select and update: there is no insert, because the signup trigger creates that row, and no delete. This is a second layer under Row Level Security. RLS decides which rows a user can touch, and the grants decide which actions exist at all. `set_updated_at` is one small function attached as a trigger to every table that has an `updated_at` column. It stamps the time on every update, so no part of the app can forget to. It is declared with an empty `search_path`, so it cannot be tricked into running against a different object with the same name.
 
 **The logo and app icons** (`design/logo/`, `public/`, drawn in `src/components/Logo.jsx`, from [88676b3](https://github.com/JustinNeri/WorkBud/commit/88676b3))
 The mark is my own design. It is one zigzag line that reads as the W in WorkBud and as a tracked line on a chart. It is drawn in two strokes, an hours stroke that hands off to a money stroke, because those are the two things the app tracks, and it finishes higher than it starts. The same mark is exported in four forms: the plain mark, an icon, a lockup with the name, and a maskable version with extra padding, so Android can crop it to any shape without cutting the line. The PNG sizes in `public/` are the home-screen icons the PWA needs.
