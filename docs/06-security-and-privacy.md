@@ -23,11 +23,12 @@ The longer, row-by-row version with 31 rows of evidence is
       own screens.
 - [ ] No `student.json`, and no name, student number or email of yours or
       anyone else's. There is no `student.json`, no student number and no email
-      of mine. My name is in two places, both on purpose: `LICENSE`, where the
-      template asks for it, and the Settings screenshot
-      (`assets/06-settings.png`), which shows my own profile. One email that is
-      not mine appears in `SECURITY-CHECKLIST.md` row 20, as part of that
-      checklist's own printed question, not something I added.
+      of mine. My full name is in one place, `LICENSE`, where the template asks
+      for it. The Settings and Export screenshots had my name and age on them,
+      and those are now blurred; the dashboard screenshot shows a first name
+      only. What keeps this box empty is one email that is not mine, in
+      `SECURITY-CHECKLIST.md` row 20. It is part of that checklist's own
+      printed question, not something I added.
 
 ## The application
 
@@ -76,7 +77,8 @@ The longer, row-by-row version with 31 rows of evidence is
 - [x] **No real classmates' names, numbers, emails or photos**, anywhere. The
       seed example in the README uses `you@example.com` and a job called
       "Sample OJT". The onboarding screenshot uses the placeholder name "Juan
-      Dela Cruz". The only real person named in a screenshot is me.
+      Dela Cruz". The only real person in any screenshot is me, by first name
+      on the dashboard.
 - [x] Seed data is invented. There is no seed script. The optional SQL in the
       README inserts one made-up job, one day and one jeepney fare.
 - [ ] If real people tested your app, their data is deleted before you submit.
@@ -87,9 +89,9 @@ The longer, row-by-row version with 31 rows of evidence is
       ("That code and password resets are the only mail WorkBud sends"), but
       there is no line saying what is stored: name, age, occupation, hours,
       expenses and an optional photo.
-- [ ] Any face in a screenshot is stock, generated, or yours. The Settings
-      screenshot shows the profile picture on my own account at thumbnail size.
-      No other screenshot has a photo in it.
+- [x] Any face in a screenshot is stock, generated, or yours. No screenshot has
+      a face in it. The only photo is the profile picture on my own account, in
+      the Settings and Export screenshots, and it is a landscape.
 
 WorkBud handles personal information about real people, so it is inside the
 Philippine Data Privacy Act. It collects the minimum it needs to track hours
