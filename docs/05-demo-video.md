@@ -9,6 +9,38 @@ The link opens a Google Drive folder that anyone can view. It holds the video
 (`PRESENTATION SLIDE_WORKBUD.pdf`) and the square image
 (`SquareImage_WorkBud.png`).
 
+## Timeline
+
+The video runs 5:23. The times below are estimated from the script's word
+count spread across that runtime, so each one is within a few seconds, not
+exact.
+
+| Time | Slide | What is said |
+|---|---|---|
+| 0:00 | 1. Title | Who I am, and what WorkBud is. |
+| 0:05 | 2. Problem | 300 to 600 hours tracked on paper, expenses not tracked at all, and the three questions that stay unanswered. |
+| 0:27 | 3. Demo | The recorded walkthrough: log a day, add expenses, dashboard, milestones, budget, save to catch up, where it goes, export. |
+| 1:25 | 4. Tech | React PWA, Express API server, Supabase with five tables. |
+| 1:43 | 5. `requireAuth` code | The check every data route passes, and why the server holds no secret key. |
+| 2:06 | 6. Row Level Security code | The database policies as a second layer behind the server. |
+| 2:14 | 7. AI usage, top of the file | How I work with AI: ask for the structure, build it, test it, ask again. |
+| 2:50 | 8. Section 1.16, the Express API server | The biggest piece AI wrote, and how I tested it. |
+| 3:11 | 9. `rememberAwareStorage` code | The AI-written piece I understand best. |
+| 3:29 | 10. Where the AI got it wrong | The delete-job bug it described wrongly, and the 6-digit code box I caught. |
+| 4:06 | 11. Signup trigger and RLS code | The parts that are my own work, and my rule for using AI. |
+| 4:34 | 12. Challenges | Overnight shifts, dates one day off, the public key, and checking AI against the code. |
+| 4:59 | 13. What comes next | Tests, error messages, the avatars bucket, an offline save queue. Ends at 5:23. |
+
+By part:
+
+| Part | Slides | Time | Length |
+|---|---|---|---|
+| What it is and who it is for | 1 to 2 | 0:00 to 0:27 | about 0:27 |
+| The main flow | 3 | 0:27 to 1:25 | about 0:58 |
+| How it is built, and the code | 4 to 6 | 1:25 to 2:14 | about 0:49 |
+| How I used AI | 7 to 11 | 2:14 to 4:34 | about 2:20 |
+| What was hard, and what comes next | 12 to 13 | 4:34 to 5:23 | about 0:49 |
+
 ## The structure
 
 ### 1. What it is and who it is for
