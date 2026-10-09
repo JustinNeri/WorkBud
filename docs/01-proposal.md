@@ -117,3 +117,78 @@ Home owns the data the app is about. The other four screens mostly own short-liv
 *What is the one part of this app you are least sure how to build? Naming it now means you can ask for help on it early, instead of the night before it is due.*
 
 I am least sure how to calculate a day's hours correctly. For a 7:00 a.m.–5:00 p.m. shift, checking at 9:00 a.m. should show "2h so far," not 10 hours or 0. That means the Dashboard needs a `now` value that updates by itself every minute, and I have never used `setInterval` inside a React effect with proper cleanup. On top of that, an overnight shift (10:00 p.m. to 6:00 a.m.) has to come out as 8 hours instead of −16, and subtracting the break must never make the total negative. If this calculation is wrong, every number in the app is wrong, including the exported DTR. My plan is to write it as one plain function first, test it by hand against a list of tricky shifts, and ask for help early if the live update misbehaves.
+
+---
+
+# What changed since this proposal
+
+The proposal above is the version submitted for M6A1 and is left as written.
+This section is kept up to date as the build moves away from it.
+
+## Where each piece is hosted
+
+| Piece | Host | The free tier's catch |
+|---|---|---|
+| Client (React, built by Vite) | Vercel | none met so far |
+| API (Express, as one Vercel function) | Vercel | the first request after a quiet spell is slower while the function starts |
+| Database, sign-in and file storage | Supabase | a free project is paused after a period with no activity |
+
+The proposal had no API. Until the week of September 28 the React app talked to
+Supabase directly. From that week, jobs, daily logs, expenses, milestones and
+the profile are read and written through the Express server in `server/`.
+Sign-in and profile picture uploads still go straight to Supabase.
+
+## Demo mode
+
+There never was one. The course template ships with a simulated backend so a
+project has a live link before its API exists. WorkBud had a real database from
+its first week, so the deployed site has always read and written real data.
+
+## Core features
+
+All five screens in the proposal were built: Home, Auth, Onboarding, Log a day
+and Export.
+
+Added beyond the proposal:
+
+- **Onboarding asks for more.** Middle initial, age and occupation, on top of
+  the name, currency, placement name and required hours the proposal listed.
+- **Two more fields on a job.** Hours per day and an optional start date, which
+  are what the expected finish date is worked out from. Neither is in the
+  proposal's `jobs` shape.
+- **Delete account.** A signed-in user can delete their account and everything
+  in it.
+
+Moved to stretch goals, not built yet:
+
+- **Editing and deleting a single expense line.** Lines can be added. To change
+  one, the day's log has to be deleted and entered again.
+- **Saving while offline.** The app opens without a connection, but every save
+  needs the network.
+- **Loading skeletons.**
+
+## Content I said I needed
+
+- **A real DTR sample from my coordinator.** Still not done. The exported time
+  log has not been compared with the form a coordinator actually accepts.
+- **In the app now:** the logo and home-screen icons, the written copy
+  (onboarding questions, empty-state and error messages), the Supabase project
+  and Vercel hosting, a currency list with PHP as the default, and 480 hours as
+  the onboarding default.
+
+## The risk
+
+The risk I named was calculating a day's hours correctly. It turned out to be
+real: overnight shifts coming out negative was one of the two bugs that cost
+the most time in the first week.
+
+- **Shrunk.** `computeHours()` in `client/src/lib/format.js` is one plain
+  function, as planned. A time out earlier than the time in is treated as a
+  shift that crossed midnight, and the total can never go below zero. A
+  one-minute timer in `client/src/hooks/useWorkbud.js`, cleared on unmount,
+  makes a shift in progress count up.
+- **Still open.** The plan was to test it by hand against a list of tricky
+  shifts, and that is all it has had. There are no automated tests on
+  `format.js`, which is the first thing I would add.
+- **Grew.** Dates were a risk I did not see coming. A timezone conversion
+  showed entries one day off, the other costly bug of the first week.

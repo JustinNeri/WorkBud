@@ -1,112 +1,163 @@
 # Design system
 
-The rules the WorkBud interface follows, so that every screen looks like it
-belongs to the same app. The app is dark only: there is one palette, not a
-light theme with a dark copy behind it.
+The tokens and components every WorkBud screen shares. All values are taken
+from the app's stylesheet, [client/src/index.css](../client/src/index.css), and
+its components in [client/src/components/](../client/src/components/).
 
-## In code
+## Styling approach
 
-Everything here lives in [client/src/index.css](../client/src/index.css). The
-raw values are CSS custom properties on `:root` (the `--wb-*` names), and a
-Tailwind 4 `@theme` block maps them to utility names, so `--wb-brand` becomes
-`text-brand` and `bg-brand`. Components use those names. The exceptions are
-the logo and the hours ring, which draw SVG and carry a few hex values of their
-own for gradient stops and the white-on-hero variant.
+Tailwind CSS v4, with no UI library. The app has one dark palette only, and
+icons come from `lucide-react`.
+
+| Layer | Where WorkBud's tokens live | Example |
+|---|---|---|
+| Raw values | `:root` custom properties in `client/src/index.css` | `--wb-surface: #16181f` |
+| Tailwind tokens | the `@theme` block in `client/src/index.css` (Tailwind v4 has no `tailwind.config.js`) | `--color-surface: var(--wb-surface)` |
+| In components | the class names Tailwind generates from `@theme` | `bg-surface`, `text-muted` |
 
 ## Colour
 
-Greys are near neutral on purpose, so that colour always means something:
-hours, money, running warm, or over budget.
+![WorkBud's five colours](assets/design-system/01-colours.png)
 
-### Surfaces and text
+| Token | Role | Hex |
+|---|---|---|
+| `--color-brand` | hours: links, active job tab, focus ring, and every hours figure | `#818CF8` |
+| `--color-money` | money: amount spent, budget left, "on track" | `#10B981` |
+| `--color-canvas` | page background | `#0D0E12` |
+| `--color-surface` | cards, sheets, and the sign-in panel | `#16181F` |
+| `--color-ink` | body text, headings, and numbers | `#E8EAF0` |
 
-| Name in code | Hex | Used for | Contrast on surface |
+Buttons, the "+" button and the avatar use `bg-action`, a gradient made from the
+brand colour (`#4338CA` to `#6D28D9`). Two more colours are only for warnings:
+`--color-warn` `#D97706` (behind pace) and `--color-over` `#EE5A5F` (over
+budget, errors).
+
+**Contrast.** I checked all 23 text-on-background pairs in the app with the
+WCAG formula, the same one WebAIM uses. They all pass 4.5 : 1, and the lowest
+is 4.63 : 1. The main pairs:
+
+| Text | On | Contrast |
+|---|---|---|
+| ink `#E8EAF0` | surface `#16181F` | 14.74 : 1 |
+| muted `#9BA1B0` | surface `#16181F` | 6.85 : 1 |
+| faint `#828A99` | surface-2 `#1E212A` | 4.63 : 1 |
+| brand `#818CF8` | surface `#16181F` | 5.94 : 1 |
+| money `#10B981` | surface `#16181F` | 6.99 : 1 |
+| white | `bg-action` `#4338CA` to `#6D28D9` | 7.90 / 7.10 : 1 |
+
+## Type scale
+
+![The three sizes at their real size](assets/design-system/02-type-scale.png)
+
+| Style | Size | Weight | Used for |
 |---|---|---|---|
-| `canvas` | `#0d0e12` | page background | |
-| `surface` | `#16181f` | cards and sheets | |
-| `surface-2` | `#1e212a` | inputs and raised areas inside a card | |
-| `line` | `#272b36` | borders and dividers | |
-| `ink` | `#e8eaf0` | main text | 14.3 to 1 |
-| `muted` | `#9ba1b0` | secondary text | 6.6 to 1 |
-| `faint` | `#828a99` | hints and captions | 4.95 to 1 |
+| Heading | 17px | Semibold | sheet titles ("Log a day", "Export", "Settings") |
+| Body | 14px | Regular / Semibold | card text, feed rows, paragraphs |
+| Small | 12px | Regular / Medium | captions, field labels, hints, feed dates |
 
-### Meaning colours
+The font is the system stack (`-apple-system`, `"Segoe UI"`, `Roboto`,
+`sans-serif`), so nothing downloads. A few places sit outside the scale on
+purpose:
 
-Each hue has two tiers, because one value cannot do both jobs on a dark
-background. The text tier is light enough to read as text on a dark surface.
-The fill tier is dark enough that white text on it still passes.
-
-| Meaning | Text tier | Fill tier | Soft background | Meter track | Text contrast |
-|---|---|---|---|---|---|
-| Brand, hours | `#818cf8` | `#4f46e5` | `#1a1c30` | `#262a4d` | 5.75 to 1 |
-| Money, on budget | `#10b981` | `#047857` | `#0e2a22` | `#14463a` | 6.8 to 1 |
-| Warning, running warm | `#d97706` | `#a45607` | `#2b1e08` | `#45300c` | 5.4 to 1 |
-| Over budget, errors | `#ee5a5f` | `#c02b30` | `#2e1216` | `#4d1c21` | 5.2 to 1 |
-
-All text values clear the WCAG minimum of 4.5 to 1 on `surface`.
-
-### Gradients
-
-| Name | From | To | Used for |
-|---|---|---|---|
-| hero | `#1e1b4b` | `#2e1065` | the hours card at the top of the dashboard |
-| action | `#4338ca` | `#6d28d9` | the primary button, the log button and the avatar |
-
-## Type
-
-One family: the system sans-serif stack (`-apple-system`, `Segoe UI`, `Roboto`
-and their fallbacks), so text renders in the phone's own font with nothing to
-download.
-
-Sizes are written as explicit pixel values (`text-[13px]`), not Tailwind's named
-steps. The ones that carry most of the interface:
-
-| Size | Used for |
-|---|---|
-| 11px to 12px | captions, labels and chips |
-| 13px to 15px | body text and form fields |
-| 16px to 20px | card titles and section headings |
-| 24px and up | headline figures, such as the hours total |
-
-This is the weakest part of the system. There are 19 distinct sizes in use,
-from 9px to 42px, where four or five named ones would do. Collapsing them into
-a named scale in `index.css` is the first cleanup I would make.
+- the big hours number in the hero card is 40px Bold
+- buttons are 15px Semibold
+- inputs are 16px, so iOS doesn't zoom in when a field is tapped
+- the Home greeting is 19px, and the sign-in title is 27px (31px on desktop)
 
 ## Spacing
 
-Tailwind's default spacing scale (steps of 4px) is the only scale in use for
-padding, margins and gaps. No component sets those with a one-off pixel value.
+![The spacing scale drawn to size, and a Home screen with its spacing measured out](assets/design-system/03-spacing.png)
 
-## Elevation
+Base unit: 4px, which is Tailwind's own step.
 
-| Name | Used for |
-|---|---|
-| `shadow-card` | cards |
-| `shadow-hero` | the hero hours card |
-| `shadow-float` | bottom sheets and the floating log button |
+- Tight spacing (between related items): 8px
+- Card to card in the column: 12px
+- Standard spacing (between sections): 16px, which is also the padding inside cards
+- Screen edge padding: 20px on a phone, and 32px from 1024px up
 
-## Components
+## Reusable components
 
-Shared pieces live in [client/src/components/](../client/src/components/):
+![Component sketches](assets/design-system/04-components.png)
 
-- `ui.jsx`: the form primitives (`Field`, `TextInput`, `PasswordInput`,
-  `NumberInput`, `Select`, `TextArea`, `Checkbox`), plus `Button`, `Alert`,
-  `PasswordMeter`, `SectionHeading` and `FormSection`
-- `Sheet.jsx`: the bottom-sheet shell used by every form (a bottom sheet on a
-  phone, a centred dialog on a larger screen)
-- `Meter.jsx` and `Ring.jsx`: the budget bars and the hours ring
-- `Avatar.jsx`: the profile picture, or the user's initial when none is set
+![Sheet and AuthShell](assets/design-system/05-sheet-and-authshell.png)
 
-**Focus.** Every focusable element gets the same visible ring: a 2px `brand`
-outline with a 2px offset on `:focus-visible`. The default outline is never
-removed without this replacement.
+| Component | Level | Appears on | Props it takes |
+|---|---|---|---|
+| `Button` | atom | Auth, Onboarding, Log a day, Export, Home | `variant`, `busy`, `disabled`, `onClick`, `children` |
+| `TextInput` | atom | Auth, Onboarding, Log a day, Export | `icon`, plus input props |
+| `PasswordInput` | atom | Auth (sign in, sign up, forgot password), Home (change password) | `icon`, plus input props |
+| `NumberInput` | atom | Onboarding, Log a day, Home (job and settings sheets) | `adornment`, plus input props |
+| `Select` | atom | Onboarding, Log a day, Home (settings sheet) | `children`, plus select props |
+| `Checkbox` | atom | Auth ("Remember me"), Log a day ("I didn't work") | `label`, `hint`, `checked`, `onChange` |
+| `Alert` | atom | Auth, Onboarding, Log a day, Export, Home | `tone`, `children` |
+| `Field` | molecule | Auth, Onboarding, Log a day, Export, Home sheets | `label`, `hint`, `children` |
+| `FormSection` | molecule | Log a day, Home (job and settings sheets) | `label`, `icon`, `tone`, `action`, `children` |
+| `Sheet` | molecule | Log a day, Export, Home (settings, job, milestone, password) | `open`, `onClose`, `title`, `footer`, `children` |
+| `AuthShell` | organism | Auth (sign in, sign up, code, forgot password), Onboarding | `title`, `subtitle`, `step`, `onBack`, `footer`, `children` |
 
-## States
+- **Card.** Home's cards all share the same classes (`rounded-3xl bg-surface p-4
+  shadow-card`). It is a repeated pattern, not a component yet.
+- **Header and nav.** `DashboardHeader` appears only on Home, so it isn't a
+  shared component. The app has no nav bar, because every other screen opens as
+  a sheet over Home.
+- **Footer.** There is no app-wide footer. The small legal line on the sign-in
+  screens is `AuthShell`'s `footer` prop.
+- **UI library.** None, so I build everything myself. Only the icons come free,
+  from `lucide-react`.
 
-- **Error.** Field errors and failed saves use the `over` colour with a message
-  next to the thing that failed.
-- **Misconfigured.** A missing Supabase setup shows a "Supabase isn't
-  configured" card, not a blank page.
-- **Empty and loading.** Not designed yet. A new account's dashboard has no
-  dedicated empty state or skeleton, which is listed under next steps in the
-  main [README](../README.md).
+The atoms and molecules are in `ui.jsx`; `Sheet` and `AuthShell` have their own
+files.
+
+## Responsive plan
+
+![Home at 375px and at 1024px and up](assets/design-system/06-responsive.png)
+
+- **Below 640px (phone):** one column with a 20px edge. Sheets slide up from
+  the bottom, and the "+" button floats bottom right.
+- **640 to 1023px (tablet):** the column is capped at 600px, and sheets become
+  a centred pop-up.
+- **Above 1024px (desktop):** Home splits into two columns (hours on the left,
+  money on the right). Sign-in shows the brand panel beside the form.
+
+These map to Tailwind's `sm:` (640) and `lg:` (1024). There is no sideways
+scroll at 375px: the page body has `overflow-x: clip`, and every field has
+`min-width: 0`.
+
+## Accessibility check
+
+- [x] Every text-on-background pair passes 4.5 : 1 contrast. All 23 pairs pass;
+      the lowest is 4.63 : 1.
+- [x] Real semantic elements: `<header>`, `<main>` and `<aside>`, and `<button>`
+      for every tap target. Sheets use `role="dialog"`, and there are no
+      clickable `<div>`s. (There is no `<nav>`, because the app has no nav bar.)
+- [x] Images have alt text. The logo is an SVG with `aria-label="WorkBud"`. The
+      profile photo uses `alt=""`, because the name is printed beside it.
+- [x] Every input has a label. `Field` wraps each input inside its `<label>`,
+      which links them without needing `htmlFor` and `id`. Icon-only buttons
+      have an `aria-label`.
+- [x] Every button and link is reachable with Tab and shows a focus ring (a 2px
+      brand-colour outline). Escape closes a sheet.
+
+## Where the build differs from this plan
+
+This document was written before most of the app was built. Three things did
+not land the way it describes:
+
+- **Spacing and type tokens are not in the stylesheet.** The plan names
+  `--space-2`, `--space-4`, `--text-heading` and so on. The colours and shadows
+  did become tokens in `index.css`, but spacing uses Tailwind's own classes
+  (`gap-2`, `p-4`) and text sizes are written as pixel values (`text-[14px]`).
+  The numbers match the plan; the named tokens do not exist.
+- **13px crept in as a fourth size.** The scale above is 17, 14 and 12. In the
+  components today 12px is the most used size, but 13px comes second, ahead of
+  14px. It should either join the scale or be folded into 12 or 14.
+- **Card is still a pattern, not a component.** The same class list is repeated
+  on each Home card.
+
+## What to keep
+
+- **Tokens:** kept in `client/src/index.css` (`:root` and `@theme`). New code
+  uses the class names only, never a hex code.
+- **Components:** built once in `client/src/components/`.
+- **Responsive:** write the phone layout first, then add `sm:` and `lg:`, and
+  check every screen at 375px wide.
