@@ -84,8 +84,10 @@ The longer, row-by-row version with 31 rows of evidence is
 - [x] Seed data is invented. There is no seed script. The optional SQL in the
       README inserts one made-up job, one day and one jeepney fare.
 - [ ] If real people tested your app, their data is deleted before you submit.
-      Not done yet. The database holds 16 accounts, and 3 of them have logged
-      days. The ones that are not mine need to be removed before submitting.
+      Partly. On October 9, 2026 I deleted 11 of the 16 accounts, with their
+      profiles, jobs, logs and expenses. Five remain. Two are mine. The other
+      three belong to testers and hold a job name each, with no logged days and
+      no expenses.
 - [x] If your app collects anything about anyone, the app says what it
       collects. The signup screen says it under the form, before an account is
       created: "WorkBud stores your email, name, age, occupation, the hours and
