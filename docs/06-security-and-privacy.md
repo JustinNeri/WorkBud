@@ -21,14 +21,12 @@ The longer, row-by-row version with 31 rows of evidence is
       `vercel.json` for `sb_secret`, `service_role`, `postgres://`, `eyJhbGci`
       and my project ref and found none. The six screenshots show only the app's
       own screens.
-- [ ] No `student.json`, and no name, student number or email of yours or
-      anyone else's. There is no `student.json`, no student number and no email
-      of mine. My full name is in one place, `LICENSE`, where the template asks
-      for it. The Settings and Export screenshots had my name and age on them,
-      and those are now blurred; the dashboard screenshot shows a first name
-      only. What keeps this box empty is one email that is not mine, in
-      `SECURITY-CHECKLIST.md` row 20. It is part of that checklist's own
-      printed question, not something I added.
+- [x] No `student.json`, and no name, student number or email of yours or
+      anyone else's. There is no `student.json` and no student number. The only
+      email addresses in the repository are `you@example.com` placeholders. My
+      full name is in one place, `LICENSE`, where the template asks for it. The
+      Settings and Export screenshots had my name and age on them, and those
+      are now blurred; the dashboard screenshot shows a first name only.
 
 ## The application
 
