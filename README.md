@@ -386,6 +386,7 @@ The server answers `201 Created` with the saved log, its `expenses`, and `amount
 | 404 | The row does not exist, or belongs to someone else |
 | 413 | The body is larger than 100 KB |
 | 415 | The body is in a charset or content encoding the server cannot read |
+| 429 | More than 300 requests from one address in 15 minutes. The `Retry-After` header says how long to wait |
 | 500 | Something failed on the server. The details are logged on the server, not sent to the browser |
 | 503 | The server could not reach Supabase to check your session, or the health check could not reach the database |
 
@@ -509,7 +510,7 @@ WorkBud/
 - **No automated tests.** There is still not a single test in the repository, and that now includes the API routes. The two bugs that cost the most time in Week 1 both lived in `client/src/lib/format.js`: overnight shifts coming out as negative hours, and dates showing one day off because of a timezone conversion. That's exactly the file that should have had unit tests first.
 - **Offline is read-only.** The app shell opens without a connection, but every save still needs the network. Logging a day at a placement site with no signal fails rather than waiting to sync.
 - **Every API request checks the token with Supabase.** That is one extra round trip per request. It is simple and always correct, but verifying the token's signature on the server would be faster.
-- **The API has no rate limiting.** Nothing stops a signed-in user from sending requests in a loop.
+- **The API's rate limit is counted in memory.** Each caller gets 300 requests per 15 minutes, then 429. On Vercel the count lives inside one function instance, so it resets when that instance is recycled and is not shared between instances. It stops a simple loop, not a determined one.
 - **Expense rows can be added but not fully managed.** Editing and deleting individual expense lines isn't finished. The reliable workaround today is deleting the day's log and entering it again.
 - **`hours_worked` is an unproven design.** It stores the planned total while the dashboard works out the live figure when it draws. It works, but I'm not confident it holds up once entries are edited after the fact, and it hasn't been stress-tested.
 - **The export hasn't been checked against a real form.** The time log looks right, but it hasn't been compared with the DTR my coordinator actually requires, and printing from a phone is untested.
@@ -518,7 +519,7 @@ WorkBud/
 ### Next steps
 
 1. Unit tests on `client/src/lib/format.js` covering shift maths, overnight shifts and timezone handling, before any new feature.
-2. Rate limiting on the API.
+2. A shared store for the API's rate limit, so the count holds across function instances.
 3. Finish editing and deleting individual expense rows.
 4. A save queue, so a day logged offline syncs when the connection returns.
 5. Compare the exported time log with the real coordinator form, and test printing from a phone.

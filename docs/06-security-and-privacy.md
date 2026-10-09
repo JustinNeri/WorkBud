@@ -48,14 +48,18 @@ The longer, row-by-row version with 31 rows of evidence is
       body. Vercel sets it for the deployed function. The error handler in
       `server/errors.js` logs the error on the server and sends only
       `{"error": "Something went wrong on our side."}`.
-- [ ] `helmet` installed. Not installed. The API answers JSON only and the
-      pages are served by Vercel, not by Express, so most of what `helmet` sets
-      would apply to responses a browser never renders. It is still one line
-      and I have not added it.
-- [ ] Anything that costs money or accepts a password is rate limited. Partly.
-      Sign-in, signup codes and password resets go to Supabase Auth, which rate
-      limits them itself. My own API has no rate limiting, so a signed-in user
-      could send requests in a loop. Nothing in the app costs money.
+- [x] `helmet` installed. `api.use(helmet())` in `server/app.js` puts its
+      headers on every API answer: `X-Content-Type-Options: nosniff`,
+      `X-Frame-Options`, `Strict-Transport-Security` and a content security
+      policy. It is mounted on the `/api` router, not the whole app, because
+      the same app serves the built pages when run locally and the default
+      policy would stop them reaching Supabase.
+- [x] Anything that costs money or accepts a password is rate limited. Nothing
+      in the app costs money. Passwords never reach my API: sign-in, signup
+      codes and password resets go to Supabase Auth, which rate limits them
+      itself. My own API allows 300 requests per address per 15 minutes
+      (`express-rate-limit` in `server/app.js`) and answers 429 with a
+      `Retry-After` header after that. I tested it: request 301 came back 429.
 - [x] Passwords are hashed with bcrypt and never logged. WorkBud never stores
       or sees a stored password: Supabase Auth holds them, hashed with bcrypt.
       No `console` call in the client or the server mentions a password.
@@ -103,6 +107,9 @@ public by design, so anyone can read it from the built JavaScript. What I did
 about it is put the protection in the database instead of in secrecy: Row Level
 Security is on for every table, the server queries as the signed-in user and
 holds no admin key, and I tested it signed out, where every table returned
-nothing and an insert was refused. What I knowingly accepted is an API with no
-rate limiting and no `helmet`, because each user can only reach their own rows
-and the API returns JSON, not pages. Those are the first two things I would add.
+nothing and an insert was refused. What I knowingly accepted is a rate limit
+that is counted in memory. On Vercel that count lives inside one function
+instance, so it resets when the instance is recycled and is not shared between
+instances. It stops a simple loop, not a determined one, and I accepted that
+because each user can only reach their own rows. A shared store for the count
+is the first thing I would add.
