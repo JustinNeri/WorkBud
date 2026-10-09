@@ -229,6 +229,11 @@ export function AuthScreen({ mode }) {
           <>
             We&apos;ll email you a verification code next. That code and password
             resets are the only mail WorkBud sends.
+            <span className="mt-2 block">
+              WorkBud stores your email, name, age, occupation, the hours and
+              expenses you log, and a profile photo if you add one. You can
+              delete your account and all of it from Settings.
+            </span>
           </>
         ) : null
       }

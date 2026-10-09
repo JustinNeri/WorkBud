@@ -86,11 +86,12 @@ The longer, row-by-row version with 31 rows of evidence is
 - [ ] If real people tested your app, their data is deleted before you submit.
       Not done yet. The database holds 16 accounts, and 3 of them have logged
       days. The ones that are not mine need to be removed before submitting.
-- [ ] If your app collects anything about anyone, the app says what it
-      collects. Only partly. The signup screen says what mail WorkBud sends
-      ("That code and password resets are the only mail WorkBud sends"), but
-      there is no line saying what is stored: name, age, occupation, hours,
-      expenses and an optional photo.
+- [x] If your app collects anything about anyone, the app says what it
+      collects. The signup screen says it under the form, before an account is
+      created: "WorkBud stores your email, name, age, occupation, the hours and
+      expenses you log, and a profile photo if you add one. You can delete your
+      account and all of it from Settings." The same note says the
+      verification code and password resets are the only mail WorkBud sends.
 - [x] Any face in a screenshot is stock, generated, or yours. No screenshot has
       a face in it. The only photo is the profile picture on my own account, in
       the Settings and Export screenshots, and it is a landscape.
