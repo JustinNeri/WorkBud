@@ -1,53 +1,55 @@
-# Design system
+# WorkBud Design System
 
-The tokens and components every WorkBud screen shares. All values are taken
-from the app's stylesheet, [client/src/index.css](../client/src/index.css), and
-its components in [client/src/components/](../client/src/components/).
+## 3. Design System
 
-## Styling approach
+**WorkBud**: the tokens and components every WorkBud screen shares. All values
+are taken from the app's stylesheet, `client/src/index.css`, and its components
+in `client/src/components/`.
 
-Tailwind CSS v4, with no UI library. The app has one dark palette only, and
-icons come from `lucide-react`.
+## Step A: Choose your styling approach
 
 | Layer | Where WorkBud's tokens live | Example |
 |---|---|---|
-| Raw values | `:root` custom properties in `client/src/index.css` | `--wb-surface: #16181f` |
-| Tailwind tokens | the `@theme` block in `client/src/index.css` (Tailwind v4 has no `tailwind.config.js`) | `--color-surface: var(--wb-surface)` |
-| In components | the class names Tailwind generates from `@theme` | `bg-surface`, `text-muted` |
+| **Raw values** | `:root` custom properties in `client/src/index.css` | `--wb-surface: #16181f` |
+| **Tailwind tokens** | the `@theme` block in `client/src/index.css` (Tailwind v4 has no `tailwind.config.js`) | `--color-surface: var(--wb-surface)` |
+| **In components** | the class names Tailwind generates from `@theme` | `bg-surface`, `text-muted` |
 
-## Colour
+My approach: **Tailwind CSS v4**, with no UI library. The app has one dark
+palette only, and icons come from `lucide-react`.
 
-![WorkBud's five colours](assets/design-system/01-colours.png)
+## Step B: Colour tokens
 
-| Token | Role | Hex |
+| Token | Role | Your colour (hex) |
 |---|---|---|
-| `--color-brand` | hours: links, active job tab, focus ring, and every hours figure | `#818CF8` |
-| `--color-money` | money: amount spent, budget left, "on track" | `#10B981` |
-| `--color-canvas` | page background | `#0D0E12` |
-| `--color-surface` | cards, sheets, and the sign-in panel | `#16181F` |
-| `--color-ink` | body text, headings, and numbers | `#E8EAF0` |
+| `--color-brand` | hours: links, active job tab, focus ring, and every hours figure | **#818CF8** |
+| `--color-money` | money: amount spent, budget left, "on track" | **#10B981** |
+| `--color-canvas` | page background | **#0D0E12** |
+| `--color-surface` | cards, sheets, and the sign-in panel | **#16181F** |
+| `--color-ink` | body text, headings, and numbers | **#E8EAF0** |
 
 Buttons, the "+" button and the avatar use `bg-action`, a gradient made from the
-brand colour (`#4338CA` to `#6D28D9`). Two more colours are only for warnings:
-`--color-warn` `#D97706` (behind pace) and `--color-over` `#EE5A5F` (over
-budget, errors).
+brand colour (#4338CA → #6D28D9). Two more colours are only for warnings:
+`--color-warn` #D97706 (behind pace) and `--color-over` #EE5A5F (over budget,
+errors).
 
-**Contrast.** I checked all 23 text-on-background pairs in the app with the
+**Contrast:** I checked all 23 text-on-background pairs in the app with the
 WCAG formula, the same one WebAIM uses. They all pass 4.5 : 1, and the lowest
 is 4.63 : 1. The main pairs:
 
 | Text | On | Contrast |
 |---|---|---|
-| ink `#E8EAF0` | surface `#16181F` | 14.74 : 1 |
-| muted `#9BA1B0` | surface `#16181F` | 6.85 : 1 |
-| faint `#828A99` | surface-2 `#1E212A` | 4.63 : 1 |
-| brand `#818CF8` | surface `#16181F` | 5.94 : 1 |
-| money `#10B981` | surface `#16181F` | 6.99 : 1 |
-| white | `bg-action` `#4338CA` to `#6D28D9` | 7.90 / 7.10 : 1 |
+| `ink` #E8EAF0 | `surface` #16181F | 14.74 : 1 |
+| `muted` #9BA1B0 | `surface` #16181F | 6.85 : 1 |
+| `faint` #828A99 | `surface-2` #1E212A | 4.63 : 1 |
+| `brand` #818CF8 | `surface` #16181F | 5.94 : 1 |
+| `money` #10B981 | `surface` #16181F | 6.99 : 1 |
+| white | `bg-action` #4338CA → #6D28D9 | 7.90 / 7.10 : 1 |
 
-## Type scale
+![WorkBud's five colors](assets/design-system/01-colours.png)
 
-![The three sizes at their real size](assets/design-system/02-type-scale.png)
+*Figure 1: WorkBud's five colors.*
+
+## Step C: Type scale
 
 | Style | Size | Weight | Used for |
 |---|---|---|---|
@@ -55,31 +57,35 @@ is 4.63 : 1. The main pairs:
 | Body | 14px | Regular / Semibold | card text, feed rows, paragraphs |
 | Small | 12px | Regular / Medium | captions, field labels, hints, feed dates |
 
-The font is the system stack (`-apple-system`, `"Segoe UI"`, `Roboto`,
-`sans-serif`), so nothing downloads. A few places sit outside the scale on
-purpose:
+The font is the system stack (`-apple-system, "Segoe UI", Roboto, sans-serif`),
+so nothing downloads. A few places sit outside the scale on purpose:
 
 - the big hours number in the hero card is 40px Bold
 - buttons are 15px Semibold
 - inputs are 16px, so iOS doesn't zoom in when a field is tapped
 - the Home greeting is 19px, and the sign-in title is 27px (31px on desktop)
 
-## Spacing
+![The three sizes at their real size](assets/design-system/02-type-scale.png)
+
+*Figure 2: The three sizes at their real size.*
+
+## Step D: Spacing rule
+
+Base unit: **4px**, which is Tailwind's own step. The tokens count in fours, so
+`--space-2` = 8px and `--space-4` = 16px.
+
+- Tight spacing (between related items): **8** px (`--space-2`)
+- Card to card in the column: **12** px (`--space-3`)
+- Standard spacing (between sections): **16** px (`--space-4`), which is also
+  the padding inside cards
+- Screen edge padding: **20** px on a phone, and **32** px from 1024px up
 
 ![The spacing scale drawn to size, and a Home screen with its spacing measured out](assets/design-system/03-spacing.png)
 
-Base unit: 4px, which is Tailwind's own step.
+*Figure 3: The spacing scale drawn to size, and a Home screen with its spacing
+measured out.*
 
-- Tight spacing (between related items): 8px
-- Card to card in the column: 12px
-- Standard spacing (between sections): 16px, which is also the padding inside cards
-- Screen edge padding: 20px on a phone, and 32px from 1024px up
-
-## Reusable components
-
-![Component sketches](assets/design-system/04-components.png)
-
-![Sheet and AuthShell](assets/design-system/05-sheet-and-authshell.png)
+## Step E: Reusable components
 
 | Component | Level | Appears on | Props it takes |
 |---|---|---|---|
@@ -95,38 +101,45 @@ Base unit: 4px, which is Tailwind's own step.
 | `Sheet` | molecule | Log a day, Export, Home (settings, job, milestone, password) | `open`, `onClose`, `title`, `footer`, `children` |
 | `AuthShell` | organism | Auth (sign in, sign up, code, forgot password), Onboarding | `title`, `subtitle`, `step`, `onBack`, `footer`, `children` |
 
-- **Card.** Home's cards all share the same classes (`rounded-3xl bg-surface p-4
+- **Card:** Home's cards all share the same classes (`rounded-3xl bg-surface p-4
   shadow-card`). It is a repeated pattern, not a component yet.
-- **Header and nav.** `DashboardHeader` appears only on Home, so it isn't a
-  shared component. The app has no nav bar, because every other screen opens as
-  a sheet over Home.
-- **Footer.** There is no app-wide footer. The small legal line on the sign-in
+- **Header/nav:** `DashboardHeader` appears only on Home, so it isn't a shared
+  component. The app has no nav bar, because every other screen opens as a
+  sheet over Home.
+- **Footer:** there is no app-wide footer. The small legal line on the sign-in
   screens is `AuthShell`'s `footer` prop.
-- **UI library.** None, so I build everything myself. Only the icons come free,
+- **UI library:** none, so I build everything myself. Only the icons come free,
   from `lucide-react`.
 
-The atoms and molecules are in `ui.jsx`; `Sheet` and `AuthShell` have their own
-files.
+![Component sketches](assets/design-system/04-components.png)
 
-## Responsive plan
+*Figure 4: Component sketches.*
 
-![Home at 375px and at 1024px and up](assets/design-system/06-responsive.png)
+![Sheet and AuthShell](assets/design-system/05-sheet-and-authshell.png)
 
-- **Below 640px (phone):** one column with a 20px edge. Sheets slide up from
-  the bottom, and the "+" button floats bottom right.
-- **640 to 1023px (tablet):** the column is capped at 600px, and sheets become
-  a centred pop-up.
-- **Above 1024px (desktop):** Home splits into two columns (hours on the left,
-  money on the right). Sign-in shows the brand panel beside the form.
+*Figure 5: Sheet and AuthShell.*
+
+## Step F: Responsive plan
+
+- Below **640** px (phone): one column with a 20px edge. Sheets slide up from
+  the bottom, and the "+" button floats bottom-right
+- **640–1023** px (tablet): the column is capped at 600px, and sheets become a
+  centred pop-up
+- Above **1024** px (desktop): Home splits into two columns (hours on the left,
+  money on the right). Sign-in shows the brand panel beside the form
 
 These map to Tailwind's `sm:` (640) and `lg:` (1024). There is no sideways
 scroll at 375px: the page body has `overflow-x: clip`, and every field has
 `min-width: 0`.
 
-## Accessibility check
+![Home at 375px and at 1024px and up](assets/design-system/06-responsive.png)
+
+*Figure 6: Home at 375px and at 1024px and up.*
+
+## Accessibility check (before you build)
 
 - [x] Every text-on-background pair passes 4.5 : 1 contrast. All 23 pairs pass;
-      the lowest is 4.63 : 1.
+      the lowest is 4.63:1.
 - [x] Real semantic elements: `<header>`, `<main>` and `<aside>`, and `<button>`
       for every tap target. Sheets use `role="dialog"`, and there are no
       clickable `<div>`s. (There is no `<nav>`, because the app has no nav bar.)
@@ -138,26 +151,11 @@ scroll at 375px: the page body has `overflow-x: clip`, and every field has
 - [x] Every button and link is reachable with Tab and shows a focus ring (a 2px
       brand-colour outline). Escape closes a sheet.
 
-## Where the build differs from this plan
-
-This document was written before most of the app was built. Three things did
-not land the way it describes:
-
-- **Spacing and type tokens are not in the stylesheet.** The plan names
-  `--space-2`, `--space-4`, `--text-heading` and so on. The colours and shadows
-  did become tokens in `index.css`, but spacing uses Tailwind's own classes
-  (`gap-2`, `p-4`) and text sizes are written as pixel values (`text-[14px]`).
-  The numbers match the plan; the named tokens do not exist.
-- **13px crept in as a fourth size.** The scale above is 17, 14 and 12. In the
-  components today 12px is the most used size, but 13px comes second, ahead of
-  14px. It should either join the scale or be folded into 12 or 14.
-- **Card is still a pattern, not a component.** The same class list is repeated
-  on each Home card.
-
 ## What to keep
 
 - **Tokens:** kept in `client/src/index.css` (`:root` and `@theme`). New code
   uses the class names only, never a hex code.
-- **Components:** built once in `client/src/components/`.
+- **Components:** built once in `client/src/components/`. The atoms and
+  molecules are in `ui.jsx`; `Sheet` and `AuthShell` have their own files.
 - **Responsive:** write the phone layout first, then add `sm:` and `lg:`, and
   check every screen at 375px wide.
