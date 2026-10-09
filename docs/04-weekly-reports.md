@@ -2,6 +2,14 @@
 
 Weekly increment reports for WorkBud, one section per week.
 
+> **A note on paths.** These reports are left as they were written. After Week 3
+> the repository was rearranged to the course template, so a path in an older
+> week maps like this: `src/` is now `client/src/`, `public/` is now
+> `client/public/`, `supabase/schema.sql` is now `server/db/schema.sql`,
+> `docs/screenshots/` is now `docs/assets/`, and this file was `REPORT.md` at
+> the root. `npm run dev` from the root became `npm run dev` in `client/` and
+> in `server/`.
+
 - [Week 1: September 14 to 20, 2026](#week-1-september-14-to-20-2026)
 - [Week 2: September 21 to 27, 2026](#week-2-september-21-to-27-2026)
 - [Week 3: September 28 to October 4, 2026](#week-3-september-28-to-october-4-2026)

@@ -4,7 +4,7 @@ const url = import.meta.env.VITE_SUPABASE_URL
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
 /**
- * False when .env.local is missing or still holds the placeholder values.
+ * False when .env is missing or still holds the placeholder values.
  * App.jsx shows a setup card instead of a blank screen when this is false.
  */
 export const isConfigured = Boolean(

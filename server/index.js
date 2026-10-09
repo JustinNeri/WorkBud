@@ -5,10 +5,10 @@ import { app } from './app.js'
 import { PORT } from './config.js'
 import { errorHandler } from './errors.js'
 
-// After `npm run build`, this one process serves the built React app as well
-// as the API. In development Vite serves the pages and proxies /api here, so
-// dist/ doesn't exist and this block is skipped.
-const dist = path.resolve('dist')
+// After `npm run build` in client/, this one process serves the built React
+// app as well as the API. In development Vite serves the pages and proxies
+// /api here, so client/dist/ doesn't exist and this block is skipped.
+const dist = path.resolve(import.meta.dirname, '../client/dist')
 if (existsSync(path.join(dist, 'index.html'))) {
   app.use(express.static(dist))
   // Client-side routes (/dashboard, /login) all resolve to the one page.

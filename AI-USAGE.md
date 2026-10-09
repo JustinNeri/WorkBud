@@ -23,7 +23,7 @@ built the backend from there.
 - **What I asked:** a starting structure for the project, and a workflow for the backend: which tables I needed, how sign-up, sign-in and sign-out should work with Supabase, and how to keep each user's data private.
 - **What it gave back:**
   - the React, Vite and Tailwind project setup, with the PWA config;
-  - a first draft of `supabase/schema.sql`: the `profiles` and `daily_logs` tables, their Row Level Security policies, the signup trigger, the check constraints and the grants, and the flow they support: sign up, get a profile row, log days against it;
+  - a first draft of `server/db/schema.sql`: the `profiles` and `daily_logs` tables, their Row Level Security policies, the signup trigger, the check constraints and the grants, and the flow they support: sign up, get a profile row, log days against it;
   - the first screens: `AuthScreen.jsx` for sign-in and sign-up, a dashboard, a log sheet, and a settings sheet with the sign-out button, plus the `useSession.js` and `useWorkbud.js` hooks.
 - **What I kept, what I changed, and why:** Claude drafted that first `schema.sql`. I did not take it as given: I read it, checked it against what I wanted (each user's data private, a profile created at signup), changed parts of it, and ran it in the Supabase SQL Editor myself (section 3). The next day I replaced the one-target-per-user model with a `jobs` table, so a student can track more than one placement. Most of these first screens were reworked within days (see 1.4 and 1.9).
 - **Commits:** [32e697a](https://github.com/JustinNeri/WorkBud/commit/32e697a), [fa45b49](https://github.com/JustinNeri/WorkBud/commit/fa45b49)
@@ -66,7 +66,7 @@ built the backend from there.
 - **What I asked:** how to log a day as time in, time out and break instead of typing a number of hours, how to record each expense separately, and how to make a shift that is still running show the hours worked so far.
 - **What it gave back:**
   - `time_in`, `time_out` and `break_minutes` columns, and an `expenses` table with one row per item bought;
-  - `computeHours()` in `src/lib/format.js`, which treats a time out earlier than the time in as a shift that crossed midnight;
+  - `computeHours()` in `client/src/lib/format.js`, which treats a time out earlier than the time in as a shift that crossed midnight;
   - `effectiveHours()` and `isInProgress()`, which show "so far" for a running shift, capped at the planned total, with the screen recalculating once a minute.
 - **What I kept, what I changed, and why:** I kept all of it. Keeping the stored `hours_worked` as the planned total, and working out the live figure only for display, means nothing has to be written back to the database as the day goes on.
 - **Commits:** [ee96f6b](https://github.com/JustinNeri/WorkBud/commit/ee96f6b), [4181ba3](https://github.com/JustinNeri/WorkBud/commit/4181ba3)
@@ -77,7 +77,7 @@ built the backend from there.
 - **What I asked:** help adding the parts that make the numbers useful: whether I am on pace for my deadline, where the money goes, a reminder inside the app when today is not logged, and a time record I can hand to my coordinator.
 - **What it gave back:**
   - `PaceCard.jsx`, `CategoryBreakdown.jsx` and `TodayNudge.jsx`;
-  - `ExportSheet.jsx` and `src/lib/export.js`, which build a printable time log and a CSV for any date range, and escape everything the user typed before it goes into the printed page.
+  - `ExportSheet.jsx` and `client/src/lib/export.js`, which build a printable time log and a CSV for any date range, and escape everything the user typed before it goes into the printed page.
 - **What I kept, what I changed, and why:** I kept them. The export was reworked on September 15 to carry milestones (1.11). One thing in it was wrong, and I found it in my own screenshot: the total hours were added up without rounding, so an export could read 209.32999999999998. I fixed that on September 27 by rounding the total to two decimals.
 - **Commits:** [f3b7ebe](https://github.com/JustinNeri/WorkBud/commit/f3b7ebe), total fixed in [6341689](https://github.com/JustinNeri/WorkBud/commit/6341689)
 
@@ -99,7 +99,7 @@ built the backend from there.
 - **What it gave back:**
   - a password field with a show and hide button (`ui.jsx`), marked `type="button"` so pressing it does not submit the form;
   - `SignupSteps.jsx`, which shows where you are in account, verify and set-up;
-  - `src/lib/password.js`, one set of strength rules shared by signup, reset and change password;
+  - `client/src/lib/password.js`, one set of strength rules shared by signup, reset and change password;
   - the already-registered check moved to the moment you leave the email field.
 - **What I kept, what I changed, and why:** I kept them. Checking the password rules in the app before sending matters here, because every failed signup attempt costs a real email.
 - **Commits:** [7e7d8e4](https://github.com/JustinNeri/WorkBud/commit/7e7d8e4), [66ddc96](https://github.com/JustinNeri/WorkBud/commit/66ddc96)
@@ -135,7 +135,7 @@ built the backend from there.
   - a `milestones` table with its own Row Level Security policies;
   - `MilestoneSheet.jsx` for creating and editing milestones;
   - `MilestonesCard.jsx`, which flags overdue and due-this-week items and shows automatic badges at 25, 50, 75 and 100 percent of the target, each with the date it was reached or a projected date at the current pace;
-  - a reworked `src/lib/export.js`.
+  - a reworked `client/src/lib/export.js`.
 - **What I kept, what I changed, and why:** I kept the badges being worked out in the app instead of stored in the database. That way they can never disagree with the hours actually logged, because they are recalculated from the logs every time. I restyled the card a few days later to fit the new colour tokens.
 - **Commits:** [552a712](https://github.com/JustinNeri/WorkBud/commit/552a712), restyled in [4820302](https://github.com/JustinNeri/WorkBud/commit/4820302)
 
@@ -145,7 +145,7 @@ built the backend from there.
 - **What I asked:** how to add a "Remember me" checkbox that actually controls whether a user stays signed in after closing the browser.
 - **What it gave back:**
   - an explanation that supabase-js decides where to store the session once, when the client is created, so the checkbox cannot just be passed to the sign-in call;
-  - a custom storage adapter in `src/lib/supabase.js` that uses `localStorage` or `sessionStorage` depending on a `wb-remember` flag;
+  - a custom storage adapter in `client/src/lib/supabase.js` that uses `localStorage` or `sessionStorage` depending on a `wb-remember` flag;
   - the checkbox on the sign-in screen, with a reusable `Checkbox` component in `ui.jsx`.
 - **What I kept, what I changed, and why:** I kept it, because of three details that are easy to get wrong:
   - the flag is saved before signing in;
@@ -160,7 +160,7 @@ built the backend from there.
 - **Date and tool:** September 19, 2026, Claude (committed at the end of Week 1, after my Week 1 report was written, so it is reported in my Week 2 report)
 - **What I asked:** how to let users upload a profile picture from settings.
 - **What it gave back:**
-  - `src/lib/avatar.js`, which rejects oversized files, respects the rotation tag phone cameras write, and centre-crops each photo to a square and shrinks it to a small JPEG before uploading;
+  - `client/src/lib/avatar.js`, which rejects oversized files, respects the rotation tag phone cameras write, and centre-crops each photo to a square and shrinks it to a small JPEG before uploading;
   - `Avatar.jsx`, which shows the user's initial when there is no picture;
   - the upload flow in `SettingsSheet.jsx`;
   - an `avatars` storage bucket with per-user upload policies and an `avatar_path` column.
@@ -195,7 +195,7 @@ built the backend from there.
   - `server/auth.js`, which checks the Supabase access token on every data route and then queries the database as that user, so Row Level Security still applies;
   - `server/validate.js`, which checks every request body and answers 400 naming the field that failed;
   - `server/errors.js`, which turns database errors into status codes without leaking their details;
-  - `src/lib/api.js`, and `useWorkbud.js`, `Onboarding.jsx` and `DeleteAccountSheet.jsx` changed to call the API instead of Supabase;
+  - `client/src/lib/api.js`, and `useWorkbud.js`, `Onboarding.jsx` and `DeleteAccountSheet.jsx` changed to call the API instead of Supabase;
   - `api/index.js` and a `vercel.json` rewrite so the same server runs on Vercel, and updates to the README and security checklist.
 - **What I kept, what I changed, and why:** Claude proposed the design and consulted me on it, and I agreed to it before keeping the code. This is the largest piece of AI-written code in the project. The design choices I agreed to, and why:
   - the server forwards the signed-in user's token instead of using a service-role key, so the Row Level Security policies still check every query and there is no new secret to protect;
@@ -211,7 +211,7 @@ built the backend from there.
 
 - **Date and tool:** October 8, 2026, Claude (Claude Code)
 - **What I asked:** to check the finished project against the finals rubric, and then to fix what it found.
-- **What it gave back:** it ran the server and sent it bad requests, and compared `supabase/schema.sql` with the live database. It found two requests that answered 500 instead of a 4xx (2.4), that the avatars bucket could still be listed (2.5), and that my table grants narrowed nothing. It then wrote the fixes: the error handler, the `revoke all` lines, a new avatars policy, and a `save_log()` function so a day and its expenses save in one transaction.
+- **What it gave back:** it ran the server and sent it bad requests, and compared `server/db/schema.sql` with the live database. It found two requests that answered 500 instead of a 4xx (2.4), that the avatars bucket could still be listed (2.5), and that my table grants narrowed nothing. It then wrote the fixes: the error handler, the `revoke all` lines, a new avatars policy, and a `save_log()` function so a day and its expenses save in one transaction.
 - **What I kept, what I changed, and why:** I kept the fixes. This is AI-written code, like the server it corrects. Claude could not sign in, so the signed-in flows were mine to test. Its connector could not run the database changes, so I ran the SQL myself in the Supabase SQL Editor.
 - **Commit:** [9e2eca7](https://github.com/JustinNeri/WorkBud/commit/9e2eca7)
 
@@ -235,7 +235,7 @@ built the backend from there.
 
 ### 2.3 The export added up hours without rounding
 
-- **What it gave me:** in `src/lib/export.js`, the total on the exported time record was a plain sum of each day's hours.
+- **What it gave me:** in `client/src/lib/export.js`, the total on the exported time record was a plain sum of each day's hours.
 - **What was wrong with it:** decimal hours like 15.83 cannot be stored exactly as floating-point numbers, so the sum drifts. My exported record showed "Hours completed: 209.32999999999998" instead of 209.33, on the one document that is meant to be handed to a coordinator.
 - **What I did instead:** I noticed it in my own screenshot while preparing the documentation, listed it as a known issue, and then fixed it by rounding the total to two decimals.
 - **Commits:** [f3b7ebe](https://github.com/JustinNeri/WorkBud/commit/f3b7ebe), fixed in [6341689](https://github.com/JustinNeri/WorkBud/commit/6341689)
@@ -262,28 +262,28 @@ built the backend from there.
 
 A note on all of these: "wrote myself" means I typed the code and made the decisions. It does not mean I never asked for help. When I got stuck, I asked the AI to explain something or to help me find a bug, and each item below says where that happened.
 
-**The `jobs` table and multi-job design** (`supabase/schema.sql`, from [99f39b3](https://github.com/JustinNeri/WorkBud/commit/99f39b3))
+**The `jobs` table and multi-job design** (`server/db/schema.sql`, from [99f39b3](https://github.com/JustinNeri/WorkBud/commit/99f39b3))
 Each placement is a row in `jobs` with its own target hours, budgets and deadline, so one person can track two placements at once. Every log belongs to a job with `on delete cascade`, so deleting a job removes its logs and expenses.
 
-**The logo and app icons** (`design/logo/`, `public/`, drawn in `src/components/Logo.jsx`, from [88676b3](https://github.com/JustinNeri/WorkBud/commit/88676b3))
+**The logo and app icons** (`docs/assets/logo/`, `client/public/`, drawn in `client/src/components/Logo.jsx`, from [88676b3](https://github.com/JustinNeri/WorkBud/commit/88676b3))
 My own design: one zigzag line that reads as the W in WorkBud and as a line on a chart, drawn as an hours stroke handing off to a money stroke. It is exported as a mark, an icon, a lockup and a maskable version for Android.
 
-**What the app tracks: categories, occupations and currencies** (`src/lib/format.js`, from [99f39b3](https://github.com/JustinNeri/WorkBud/commit/99f39b3) and [f3b7ebe](https://github.com/JustinNeri/WorkBud/commit/f3b7ebe))
+**What the app tracks: categories, occupations and currencies** (`client/src/lib/format.js`, from [99f39b3](https://github.com/JustinNeri/WorkBud/commit/99f39b3) and [f3b7ebe](https://github.com/JustinNeri/WorkBud/commit/f3b7ebe))
 Three lists that are my decisions: five expense categories an OJT student actually pays for, nine occupations (a placement gets a deadline countdown, ongoing work gets a month-to-date view), and ten currencies with PHP as the default.
 
-**Logging past dates** (`src/components/LogSheet.jsx`, from [e89aafa](https://github.com/JustinNeri/WorkBud/commit/e89aafa))
+**Logging past dates** (`client/src/components/LogSheet.jsx`, from [e89aafa](https://github.com/JustinNeri/WorkBud/commit/e89aafa))
 Most students find the app partway through a placement and need earlier weeks to count. I asked Claude how it should be done (entry 1.10) and implemented it myself: the date field has today as its maximum, so future dates stay blocked.
 
-**The visual design and the colour tokens** (`src/index.css` and the components, from [7465711](https://github.com/JustinNeri/WorkBud/commit/7465711), [9656071](https://github.com/JustinNeri/WorkBud/commit/9656071) and [4820302](https://github.com/JustinNeri/WorkBud/commit/4820302))
-The look of the app is my design, and I typed the styling myself. Colours used to be hex values repeated in each component. They are now named tokens in `src/index.css` (`brand`, `money`, `warn`, `over`), so a colour is changed in one place.
+**The visual design and the colour tokens** (`client/src/index.css` and the components, from [7465711](https://github.com/JustinNeri/WorkBud/commit/7465711), [9656071](https://github.com/JustinNeri/WorkBud/commit/9656071) and [4820302](https://github.com/JustinNeri/WorkBud/commit/4820302))
+The look of the app is my design, and I typed the styling myself. Colours used to be hex values repeated in each component. They are now named tokens in `client/src/index.css` (`brand`, `money`, `warn`, `over`), so a colour is changed in one place.
 
 **Deployment on Vercel** (`vercel.json`, from [464ff06](https://github.com/JustinNeri/WorkBud/commit/464ff06))
 I created the Vercel project, connected the repository so every push deploys, and set the Supabase values as environment variables. The `vercel.json` file itself was written with Claude.
 
-**Routing and the route guards** (`src/App.jsx`, `src/main.jsx`, [6b44022](https://github.com/JustinNeri/WorkBud/commit/6b44022))
+**Routing and the route guards** (`client/src/App.jsx`, `client/src/main.jsx`, [6b44022](https://github.com/JustinNeri/WorkBud/commit/6b44022))
 I asked Claude how routing should be set up (entry 1.14) and wrote it myself. `RequireSession` sends a signed-out visitor to `/login` and remembers where they were going. `GuestOnly` sends a signed-in user on to that page or to `/dashboard`. The rule for who can see a page lives in the guards, not on every screen.
 
-**The activity feed preview and month filter** (`src/components/ActivityFeed.jsx`, from [2990956](https://github.com/JustinNeri/WorkBud/commit/2990956), [9300ef0](https://github.com/JustinNeri/WorkBud/commit/9300ef0) and [42d73f6](https://github.com/JustinNeri/WorkBud/commit/42d73f6))
+**The activity feed preview and month filter** (`client/src/components/ActivityFeed.jsx`, from [2990956](https://github.com/JustinNeri/WorkBud/commit/2990956), [9300ef0](https://github.com/JustinNeri/WorkBud/commit/9300ef0) and [42d73f6](https://github.com/JustinNeri/WorkBud/commit/42d73f6))
 I wrote this myself. When I got stuck on one bug, the list going empty after switching jobs with a month selected, I asked Claude why. The feed shows the five newest days with a "show all" button, so a long placement does not turn the dashboard into one long list. The month chips are built from the months that actually have entries, so there is never a chip that leads to nothing, and they only appear once there is more than one month. Picking a month also shows that month's hours and days worked. If the chosen month does not exist for the current job, the feed falls back to "all" instead of showing an empty list.
 
 **Setting up the Supabase project** (Supabase dashboard; the app code that depends on it is in [adc5631](https://github.com/JustinNeri/WorkBud/commit/adc5631) and [0194caa](https://github.com/JustinNeri/WorkBud/commit/0194caa), and the steps are written down in README section 2.6)
@@ -291,28 +291,28 @@ I created the Supabase project and configured it myself in the dashboard. Dashbo
 
 ### Drafted by Claude, checked and changed by me
 
-Claude wrote the first version of these four parts of `supabase/schema.sql` (entry 1.1). I checked each one, changed parts of it, and ran it in the Supabase SQL Editor myself. I can explain what each does and why it is there.
+Claude wrote the first version of these four parts of `server/db/schema.sql` (entry 1.1). I checked each one, changed parts of it, and ran it in the Supabase SQL Editor myself. I can explain what each does and why it is there.
 
-**Row Level Security policies** (`supabase/schema.sql`, from [32e697a](https://github.com/JustinNeri/WorkBud/commit/32e697a))
+**Row Level Security policies** (`server/db/schema.sql`, from [32e697a](https://github.com/JustinNeri/WorkBud/commit/32e697a))
 Every table has a policy for select, insert, update and delete, each checking `auth.uid() = user_id`, so the database itself refuses to show or change anyone else's rows. `profiles` has no insert or delete policy, because those rows only come from the signup trigger. The `milestones` policies came later and were generated by Claude to the same pattern (1.11).
 
-**The signup trigger** (`supabase/schema.sql`, `handle_new_user`, from [32e697a](https://github.com/JustinNeri/WorkBud/commit/32e697a))
+**The signup trigger** (`server/db/schema.sql`, `handle_new_user`, from [32e697a](https://github.com/JustinNeri/WorkBud/commit/32e697a))
 When a user is added to `auth.users`, this trigger creates their `profiles` row. It lives in the database so a user can never be signed in without a profile.
 
-**Database validation rules** (`supabase/schema.sql`, the `check` constraints, from [32e697a](https://github.com/JustinNeri/WorkBud/commit/32e697a) and [99f39b3](https://github.com/JustinNeri/WorkBud/commit/99f39b3))
+**Database validation rules** (`server/db/schema.sql`, the `check` constraints, from [32e697a](https://github.com/JustinNeri/WorkBud/commit/32e697a) and [99f39b3](https://github.com/JustinNeri/WorkBud/commit/99f39b3))
 Hours must be between 0 and 24, money and targets cannot be negative, a job name is 1 to 60 characters, and age is 10 to 120. They live in the database because anyone can skip a form and send a request directly. The break and expense-label rules are not mine: the AI wrote them with the columns in entry 1.5.
 
-**Table permissions and the `updated_at` trigger** (`supabase/schema.sql`, the `grant` lines and `set_updated_at`, from [32e697a](https://github.com/JustinNeri/WorkBud/commit/32e697a) and [fa45b49](https://github.com/JustinNeri/WorkBud/commit/fa45b49))
+**Table permissions and the `updated_at` trigger** (`server/db/schema.sql`, the `grant` lines and `set_updated_at`, from [32e697a](https://github.com/JustinNeri/WorkBud/commit/32e697a) and [fa45b49](https://github.com/JustinNeri/WorkBud/commit/fa45b49))
 The grants give a signed-in user only the actions each table needs: `profiles` allows select and update only. As first drafted they narrowed nothing, because Supabase grants everything by default. The `revoke all` lines that fixed this are Claude's, added in [9e2eca7](https://github.com/JustinNeri/WorkBud/commit/9e2eca7). `set_updated_at` stamps the time on every update, so no part of the app can forget to.
 
 ### My idea, written by AI
 
-**The catch-up budget** (`src/components/CatchUpCard.jsx`, `src/hooks/useWorkbud.js`, from [d5df02a](https://github.com/JustinNeri/WorkBud/commit/d5df02a), rule changed in [c66207f](https://github.com/JustinNeri/WorkBud/commit/c66207f))
+**The catch-up budget** (`client/src/components/CatchUpCard.jsx`, `client/src/hooks/useWorkbud.js`, from [d5df02a](https://github.com/JustinNeri/WorkBud/commit/d5df02a), rule changed in [c66207f](https://github.com/JustinNeri/WorkBud/commit/c66207f))
 This feature was my idea, and Claude wrote the code for it (entry 1.10). Telling someone they are 410 pesos over budget does not tell them what to do, so the card spreads the overspend across the days left in the month and shows the daily amount that gets them back to level. The first version added up only the days that went over and ignored the days that came in under, so a cheap day never reduced what was owed. I had it changed to a net position: what the daily budget has allowed so far against what was actually spent, counted from the first day logged that month, so someone who starts mid-month does not get credit for days they were not tracking.
 
 ### The AI-written piece I understand best
 
-**The "Remember me" storage adapter** (`src/lib/supabase.js`, [dfa3599](https://github.com/JustinNeri/WorkBud/commit/dfa3599))
+**The "Remember me" storage adapter** (`client/src/lib/supabase.js`, [dfa3599](https://github.com/JustinNeri/WorkBud/commit/dfa3599))
 supabase-js decides where to save the login session once, when the client is created, so a checkbox cannot just be passed to the sign-in call. The adapter works around that. It gives Supabase a custom storage object that, on every read and write, checks a `wb-remember` flag and uses `localStorage` (you stay signed in) or `sessionStorage` (the session ends when the browser closes). We kept it because of three details it gets right:
 - the flag is saved *before* signing in, because the adapter reads it at write time;
 - sign-out clears both stores, so no copy of the token is left behind;

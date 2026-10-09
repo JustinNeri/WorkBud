@@ -1,10 +1,26 @@
-node_modules
-dist
-dist-ssr
-dev-dist
-*.local
+# Secrets. Never commit these.
 .env
-.env.local
+.env.*
+!.env.example
+*.local
+
+# Dependencies and build output
+node_modules/
+dist/
+dist-ssr/
+dev-dist/
+build/
+.vite/
+
+# Database dumps: a full plain-text copy of your data
+*.dump
+backup*.sql
+
+# Editor and OS noise
 .DS_Store
+.vscode/
+.idea/
+
+# Logs
 *.log
-.vite
+npm-debug.log*

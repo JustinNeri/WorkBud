@@ -1,0 +1,17 @@
+{
+  "name": "workbud-server",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js"
+  },
+  "engines": {
+    "node": ">=20.19"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.114.0",
+    "express": "^5.2.1"
+  }
+}

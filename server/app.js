@@ -10,7 +10,7 @@ import { profile } from './routes/profile.js'
 
 /**
  * The WorkBud API. Built here without listening, so the same app serves both
- * `node server/index.js` locally and the Vercel function in api/index.js.
+ * `node index.js` locally and the Vercel function in api/index.js.
  */
 export const app = express()
 

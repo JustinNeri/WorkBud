@@ -68,40 +68,49 @@ cd WorkBud
 
 ### 2.3 Install dependencies
 
+The client and the server are separate packages, each with its own `package.json`. Install both:
+
 ```bash
-npm install
+npm install --prefix client
+npm install --prefix server
 ```
+
+`npm run install:all` from the repository root does the same two installs in one command.
 
 ### 2.4 Environment and configuration
 
-First, create a Supabase project: go to supabase.com and choose **New project**. Then copy the example environment file:
+First, create a Supabase project: go to supabase.com and choose **New project**. Then copy the example environment file in each folder:
 
 ```bash
-cp .env.example .env.local
+cp client/.env.example client/.env
+cp server/.env.example server/.env
 ```
 
 On Windows PowerShell:
 
 ```powershell
-Copy-Item .env.example .env.local
+Copy-Item client/.env.example client/.env
+Copy-Item server/.env.example server/.env
 ```
 
-Both values come from your Supabase dashboard under **Settings → API**. Fill them into `.env.local`:
+Both values come from your Supabase dashboard under **Settings → API**, and they are the same two values in both files:
 
-| Variable | Required | Example value | Where it comes from |
+| Variable | File | Example value | Where it comes from |
 |---|---|---|---|
-| `VITE_SUPABASE_URL` | Yes | `https://abcdefghijklmnop.supabase.co` | Settings → API → Project URL |
-| `VITE_SUPABASE_ANON_KEY` | Yes | `sb_publishable_xxxxxxxxxxxxxxxxxx` | Settings → API → anon / publishable key |
+| `VITE_SUPABASE_URL` | `client/.env` | `https://abcdefghijklmnop.supabase.co` | Settings → API → Project URL |
+| `VITE_SUPABASE_ANON_KEY` | `client/.env` | `sb_publishable_xxxxxxxxxxxxxxxxxx` | Settings → API → anon / publishable key |
+| `SUPABASE_URL` | `server/.env` | `https://abcdefghijklmnop.supabase.co` | the same Project URL |
+| `SUPABASE_ANON_KEY` | `server/.env` | `sb_publishable_xxxxxxxxxxxxxxxxxx` | the same anon / publishable key |
 
-The API server reads the same two values from the same file, so there is nothing else to set. (It also accepts `SUPABASE_URL` and `SUPABASE_ANON_KEY` without the `VITE_` prefix, and `PORT` to change its port from 3001.)
+All four are required. The server also accepts the `VITE_` names as a fallback, so a host that already has them set for the client build needs nothing more, and `PORT` changes its port from 3001.
 
-The anon key is designed to be public. It is Row Level Security, not secrecy, that protects the data. Even so, `.env.local` is listed in `.gitignore` and must never be committed. The values above are placeholders, not real credentials.
+The anon key is designed to be public. It is Row Level Security, not secrecy, that protects the data. Even so, every `.env` file is listed in `.gitignore` and must never be committed. The values above are placeholders, not real credentials.
 
 If these are missing or still hold the placeholder text, the app deliberately shows a "Supabase isn't configured" card instead of a blank screen, and the API server stops at startup with "Supabase is not configured", so a misconfigured setup is obvious rather than silent.
 
 ### 2.5 Set up the database
 
-Open your Supabase project, go to the **SQL Editor**, paste the entire contents of [`supabase/schema.sql`](supabase/schema.sql), and click **Run**.
+Open your Supabase project, go to the **SQL Editor**, paste the entire contents of [`server/db/schema.sql`](server/db/schema.sql), and click **Run**.
 
 That one script creates everything the app needs:
 
@@ -159,14 +168,22 @@ select id, user_id, 'Jeepney fare', 'transport', 180 from new_log;
 
 ## 3. How to run it
 
+Two processes, in two terminals. The API server first:
+
 ```bash
+cd server
 npm run dev
 ```
 
-That one command starts two things side by side:
+Then the web app:
 
-- the **API server** (Express) on `http://localhost:3001`;
-- the **web app** (Vite) on `http://localhost:5173`, which forwards every `/api` request to the server.
+```bash
+cd client
+npm run dev
+```
+
+- the **API server** (Express) listens on `http://localhost:3001`;
+- the **web app** (Vite) listens on `http://localhost:5173`, and forwards every `/api` request to the server.
 
 Open:
 
@@ -176,26 +193,43 @@ http://localhost:5173
 
 ### What you should see when it works
 
-- **In the terminal:** a line reading `[api] WorkBud API listening on http://localhost:3001`, and Vite's `Local: http://localhost:5173/`.
-- **At `http://localhost:5173/api/health`:** `{"status":"ok","database":"connected"}`. This proves the server is running and can reach the database. If it says `"database":"unreachable"`, the values in `.env.local` are wrong.
-- **If `.env.local` is filled in correctly:** the sign-in screen at `http://localhost:5173/login`. It has the WorkBud logo, email and password fields, a "Remember me" checkbox, and links to create an account or reset a password.
+- **In the server terminal:** a line reading `WorkBud API listening on http://localhost:3001`. In the client terminal, Vite's `Local: http://localhost:5173/`.
+- **At `http://localhost:5173/api/health`:** `{"status":"ok","database":"connected"}`. This proves the server is running and can reach the database. If it says `"database":"unreachable"`, the values in `server/.env` are wrong.
+- **If `client/.env` is filled in correctly:** the sign-in screen at `http://localhost:5173/login`. It has the WorkBud logo, email and password fields, a "Remember me" checkbox, and links to create an account or reset a password.
 - **After signing up and entering the emailed code:** the onboarding flow (name, age, occupation, currency, first job).
 - **After onboarding, or on any later sign-in:** the dashboard at `/dashboard`, showing the hours progress ring.
-- **If `.env.local` is missing or unfilled:** a card reading "Supabase isn't configured". That is the expected screen for a bad setup, not a crash.
+- **If `client/.env` is missing or unfilled:** a card reading "Supabase isn't configured". That is the expected screen for a bad setup, not a crash.
 
 ### All available scripts
 
+In `client/`:
+
 | Command | What it does |
 |---|---|
-| `npm run dev` | Starts the API server (port 3001) and the Vite dev server (port 5173) together |
-| `npm run dev:api` | Starts only the API server, restarting when a file in `server/` changes |
-| `npm run dev:web` | Starts only the Vite dev server |
-| `npm run build` | Production build of the web app into `dist/` |
-| `npm start` | Starts the API server. If `dist/` exists, it serves the built web app too, so the whole app runs at localhost:3001 |
+| `npm run dev` | Starts the Vite dev server (port 5173) |
+| `npm run build` | Production build of the web app into `client/dist/` |
 | `npm run preview` | Serves the built output locally (needs the API server running as well) |
 | `npm run lint` | Runs oxlint |
 
-To run the production build locally in one process:
+In `server/`:
+
+| Command | What it does |
+|---|---|
+| `npm run dev` | Starts the API server (port 3001), restarting when a file changes |
+| `npm start` | Starts the API server. If `client/dist/` exists, it serves the built web app too, so the whole app runs at localhost:3001 |
+
+From the repository root, as shortcuts into the two folders:
+
+| Command | What it does |
+|---|---|
+| `npm run install:all` | Installs the client's and the server's dependencies |
+| `npm run dev:api` | Same as `npm run dev` in `server/` |
+| `npm run dev:web` | Same as `npm run dev` in `client/` |
+| `npm run build` | Same as `npm run build` in `client/` |
+| `npm start` | Same as `npm start` in `server/` |
+| `npm run lint` | Same as `npm run lint` in `client/` |
+
+To run the production build locally in one process, from the repository root:
 
 ```bash
 npm run build
@@ -206,13 +240,14 @@ Then open `http://localhost:3001`.
 
 ### If it does not start
 
-Run `node -v` first; anything below 20.19 is the most common cause. If the terminal shows "Supabase is not configured", `.env.local` is missing or still has the placeholder values. If the page loads but the dashboard says it can't reach the server, the API server is not running: use `npm run dev`, not `npm run dev:web` on its own. If signing in fails, check that the two variables in `.env.local` have no quotes or trailing spaces, then restart. Both the server and Vite only read environment files at startup.
+Run `node -v` first; anything below 20.19 is the most common cause. If the server terminal shows "Supabase is not configured", `server/.env` is missing or still has the placeholder values. If the page loads but the dashboard says it can't reach the server, the API server is not running: start it in `server/` as well as the client. If signing in fails, check that the two variables in `client/.env` have no quotes or trailing spaces, then restart. Both the server and Vite only read environment files at startup.
 
 ### Deploying
 
 Vercel reads [`vercel.json`](vercel.json) as it is:
 
-- every `/api/*` request is sent to [`api/index.js`](api/index.js), which runs the same Express app as a Vercel function;
+- it installs both packages, builds `client/`, and serves `client/dist`;
+- every `/api/*` request is sent to [`api/index.js`](api/index.js), which runs the same Express app as a Vercel function. That one file stays at the repository root because Vercel only looks for functions there;
 - every other path is rewritten to `index.html`, so the app's routes work on refresh;
 - hashed assets are cached for a year;
 - the service worker is set to revalidate every time, so a cached worker can never pin a user to a stale build.
@@ -373,68 +408,80 @@ One design note worth knowing:
 
 ## 5. Project structure
 
+The layout follows the course template: `client/`, `server/` and `docs/`.
+
 ```
 WorkBud/
-|-- index.html                 Vite entry HTML
-|-- vite.config.js             Vite, Tailwind, PWA / Workbox config and the /api proxy
-|-- vercel.json                API and SPA rewrites, cache headers for deployment
-|-- .env.example               Template for .env.local (placeholders only)
-|-- public/                    Favicons and PWA icons
-|-- docs/screenshots/          Screenshots used in this README
-|-- supabase/
-|   \-- schema.sql             Tables, RLS policies, triggers, storage bucket
-|-- api/
-|   \-- index.js               Vercel entry point: exports the Express app
-|-- server/                    The API server
-|   |-- index.js               Starts the server; also serves dist/ after a build
-|   |-- app.js                 Builds the Express app and mounts the routes
-|   |-- config.js              Reads the environment, refuses to start if unset
-|   |-- db.js                  Supabase clients, and the shared delete handler
-|   |-- auth.js                Checks the access token on every data route
-|   |-- validate.js            Field checks and the request-body parser
-|   |-- errors.js              HttpError, database error mapping, error handler
+|-- client/                    React front end, built by Vite
+|   |-- index.html                 Vite entry HTML
+|   |-- vite.config.js             Vite, Tailwind, PWA / Workbox config and the /api proxy
+|   |-- package.json               The client's own dependencies and scripts
+|   |-- .env.example               Template for client/.env (placeholders only)
+|   |-- public/                    Favicons and PWA icons
+|   \-- src/
+|       |-- main.jsx               Mounts React inside BrowserRouter
+|       |-- App.jsx                Routes and the signed-in / signed-out guards
+|       |-- index.css              Tailwind layer and design tokens
+|       |-- components/            Screens, cards and the bottom-sheet forms
+|       |   |-- AuthScreen.jsx         Sign in and sign up
+|       |   |-- SignupSteps.jsx        Multi-step account creation
+|       |   |-- OtpStep.jsx            Emailed code entry
+|       |   |-- ForgotPassword.jsx     Password reset by code
+|       |   |-- Onboarding.jsx         First-run profile and first job
+|       |   |-- Dashboard.jsx          The main signed-in screen
+|       |   |-- HeroHours.jsx          Progress ring and headline figures
+|       |   |-- PaceCard.jsx           Deadline countdown and required pace
+|       |   |-- BudgetCard.jsx         Daily and monthly budget meters
+|       |   |-- CatchUpCard.jsx        Overspend spread across remaining days
+|       |   |-- CategoryBreakdown.jsx  Spend by category
+|       |   |-- MilestonesCard.jsx     Checkpoints and automatic hour badges
+|       |   |-- MilestoneSheet.jsx     Create or edit a milestone
+|       |   |-- ActivityFeed.jsx       Recent logged days
+|       |   |-- LogSheet.jsx           Add or edit a day of hours and expenses
+|       |   |-- JobSheet.jsx           Create or edit a job
+|       |   |-- JobTabs.jsx            Switch between jobs
+|       |   |-- ExportSheet.jsx        Date range, time log or full record
+|       |   |-- SettingsSheet.jsx      Profile, avatar, currency, sign out
+|       |   |-- Avatar.jsx             Profile picture, or your initial when unset
+|       |   \-- Sheet.jsx, ui.jsx      Bottom-sheet shell and shared primitives
+|       |-- hooks/
+|       |   |-- useSession.js          The persisted Supabase session
+|       |   \-- useWorkbud.js          Profile, jobs, logs and everything derived
+|       \-- lib/
+|           |-- api.js                 fetch wrapper for the WorkBud API
+|           |-- supabase.js            Auth client, "remember me" storage, error text
+|           |-- format.js              Money, hours, dates, shift maths, currencies
+|           |-- export.js              Time log and CSV builders
+|           |-- password.js            Strength rules shared by every password screen
+|           \-- avatar.js              Profile picture upload and public URLs
+|-- server/                    Express API
+|   |-- index.js                   Starts the server; also serves client/dist/ after a build
+|   |-- app.js                     Builds the Express app and mounts the routes
+|   |-- config.js                  Reads the environment, refuses to start if unset
+|   |-- db.js                      Supabase clients, and the shared delete handler
+|   |-- auth.js                    Checks the access token on every data route
+|   |-- validate.js                Field checks and the request-body parser
+|   |-- errors.js                  HttpError, database error mapping, error handler
+|   |-- package.json               The server's own dependencies and scripts
+|   |-- .env.example               Template for server/.env (placeholders only)
+|   |-- db/
+|   |   \-- schema.sql             Tables, RLS policies, triggers, storage bucket
 |   \-- routes/
 |       |-- profile.js             GET and PATCH /api/profile
 |       |-- jobs.js                CRUD for /api/jobs
 |       |-- logs.js                CRUD for /api/logs, with nested expenses
 |       |-- milestones.js          CRUD for /api/milestones
 |       \-- account.js             DELETE /api/account
-\-- src/
-    |-- main.jsx               Mounts React inside BrowserRouter
-    |-- App.jsx                Routes and the signed-in / signed-out guards
-    |-- index.css              Tailwind layer and design tokens
-    |-- components/            Screens, cards and the bottom-sheet forms
-    |   |-- AuthScreen.jsx         Sign in and sign up
-    |   |-- SignupSteps.jsx        Multi-step account creation
-    |   |-- OtpStep.jsx            Emailed code entry
-    |   |-- ForgotPassword.jsx     Password reset by code
-    |   |-- Onboarding.jsx         First-run profile and first job
-    |   |-- Dashboard.jsx          The main signed-in screen
-    |   |-- HeroHours.jsx          Progress ring and headline figures
-    |   |-- PaceCard.jsx           Deadline countdown and required pace
-    |   |-- BudgetCard.jsx         Daily and monthly budget meters
-    |   |-- CatchUpCard.jsx        Overspend spread across remaining days
-    |   |-- CategoryBreakdown.jsx  Spend by category
-    |   |-- MilestonesCard.jsx     Checkpoints and automatic hour badges
-    |   |-- MilestoneSheet.jsx     Create or edit a milestone
-    |   |-- ActivityFeed.jsx       Recent logged days
-    |   |-- LogSheet.jsx           Add or edit a day of hours and expenses
-    |   |-- JobSheet.jsx           Create or edit a job
-    |   |-- JobTabs.jsx            Switch between jobs
-    |   |-- ExportSheet.jsx        Date range, time log or full record
-    |   |-- SettingsSheet.jsx      Profile, avatar, currency, sign out
-    |   |-- Avatar.jsx             Profile picture, or your initial when unset
-    |   \-- Sheet.jsx, ui.jsx      Bottom-sheet shell and shared primitives
-    |-- hooks/
-    |   |-- useSession.js          The persisted Supabase session
-    |   \-- useWorkbud.js          Profile, jobs, logs and everything derived
-    \-- lib/
-        |-- api.js                 fetch wrapper for the WorkBud API
-        |-- supabase.js            Auth client, "remember me" storage, error text
-        |-- format.js              Money, hours, dates, shift maths, currencies
-        |-- export.js              Time log and CSV builders
-        |-- password.js            Strength rules shared by every password screen
-        \-- avatar.js              Profile picture upload and public URLs
+|-- docs/                      Planning documents and weekly reports
+|   |-- 01-proposal.md ... 06-security-and-privacy.md
+|   \-- assets/                    Screenshots used in this README, and the logo sources
+|-- api/
+|   \-- index.js               Vercel entry point: exports the Express app from server/
+|-- vercel.json                Install and build commands, API and SPA rewrites, cache headers
+|-- package.json               Shortcut scripts into client/ and server/; no dependencies
+|-- AI-USAGE.md                How AI was used, where it was wrong, who wrote what
+|-- SECURITY-CHECKLIST.md      The completed security checklist
+\-- LICENSE
 ```
 
 `useWorkbud` keeps all of a user's logs in memory and filters them per job. That's a small amount of data for a personal tracker, and it makes switching job tabs instant.
@@ -445,11 +492,11 @@ WorkBud/
 
 | Sign-in | Onboarding | Dashboard |
 |---|---|---|
-| ![Sign-in screen](docs/screenshots/01-signin.png) | ![Onboarding](docs/screenshots/02-onboarding.png) | ![Dashboard](docs/screenshots/03-dashboard.png) |
+| ![Sign-in screen](docs/assets/01-signin.png) | ![Onboarding](docs/assets/02-onboarding.png) | ![Dashboard](docs/assets/03-dashboard.png) |
 
 | Log sheet | Export sheet | Settings |
 |---|---|---|
-| ![Log sheet](docs/screenshots/04-log-sheet.png) | ![Export sheet](docs/screenshots/05-export.png) | ![Settings](docs/screenshots/06-settings.png) |
+| ![Log sheet](docs/assets/04-log-sheet.png) | ![Export sheet](docs/assets/05-export.png) | ![Settings](docs/assets/06-settings.png) |
 
 ---
 
@@ -457,7 +504,7 @@ WorkBud/
 
 ### Known issues
 
-- **No automated tests.** There is still not a single test in the repository, and that now includes the API routes. The two bugs that cost the most time in Week 1 both lived in `src/lib/format.js`: overnight shifts coming out as negative hours, and dates showing one day off because of a timezone conversion. That's exactly the file that should have had unit tests first.
+- **No automated tests.** There is still not a single test in the repository, and that now includes the API routes. The two bugs that cost the most time in Week 1 both lived in `client/src/lib/format.js`: overnight shifts coming out as negative hours, and dates showing one day off because of a timezone conversion. That's exactly the file that should have had unit tests first.
 - **Offline is read-only.** The app shell opens without a connection, but every save still needs the network. Logging a day at a placement site with no signal fails rather than waiting to sync.
 - **Every API request checks the token with Supabase.** That is one extra round trip per request. It is simple and always correct, but verifying the token's signature on the server would be faster.
 - **The API has no rate limiting.** Nothing stops a signed-in user from sending requests in a loop.
@@ -468,7 +515,7 @@ WorkBud/
 
 ### Next steps
 
-1. Unit tests on `src/lib/format.js` covering shift maths, overnight shifts and timezone handling, before any new feature.
+1. Unit tests on `client/src/lib/format.js` covering shift maths, overnight shifts and timezone handling, before any new feature.
 2. Rate limiting on the API.
 3. Finish editing and deleting individual expense rows.
 4. A save queue, so a day logged offline syncs when the connection returns.
@@ -482,5 +529,7 @@ WorkBud/
 ## Security and AI usage
 
 **Security.** The completed security checklist is in [SECURITY-CHECKLIST.md](SECURITY-CHECKLIST.md). It covers secrets, the database, access control, input and output, and repository privacy, with evidence for every row.
+
+**Project documents.** The proposal, mockup, design system, weekly reports and demo video notes are in [docs/](docs/README.md).
 
 **AI usage.** This project was built with help from Claude (Anthropic), with ChatGPT (OpenAI) and Gemini (Google) used alongside it on a couple of earlier bug fixes. [AI-USAGE.md](AI-USAGE.md) records what each was used for, where it got things wrong, and which parts I wrote myself.

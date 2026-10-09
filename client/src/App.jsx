@@ -57,7 +57,7 @@ function ConfigNotice() {
         <h1 className="text-[17px] font-semibold">Supabase isn't configured</h1>
         <p className="mt-2 text-[14px] leading-snug text-muted">
           Copy <code className="text-ink">.env.example</code> to{' '}
-          <code className="text-ink">.env.local</code>, fill in your project URL
+          <code className="text-ink">.env</code>, fill in your project URL
           and anon key, then restart the dev server.
         </p>
       </div>

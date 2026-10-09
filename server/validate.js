@@ -10,7 +10,7 @@ import { HttpError } from './errors.js'
    created_at and so on).
 
    The limits mirror the check constraints and column sizes in
-   supabase/schema.sql. The database would refuse the same values, but checking
+   db/schema.sql. The database would refuse the same values, but checking
    here means the caller gets a 400 that names the field instead of a bare
    constraint failure.
 --------------------------------------------------------------------------- */
