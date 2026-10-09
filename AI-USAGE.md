@@ -207,6 +207,14 @@ built the backend from there.
 
 
 
+### 1.17 A review of the finished project, and the fixes
+
+- **Date and tool:** October 8, 2026, Claude (Claude Code)
+- **What I asked:** to check the finished project against the finals rubric, and then to fix what it found.
+- **What it gave back:** it ran the server and sent it bad requests, and compared `supabase/schema.sql` with the live database. It found two requests that answered 500 instead of a 4xx (2.4), that the avatars bucket could still be listed (2.5), and that my table grants narrowed nothing. It then wrote the fixes: the error handler, the `revoke all` lines, a new avatars policy, and a `save_log()` function so a day and its expenses save in one transaction.
+- **What I kept, what I changed, and why:** I kept the fixes. This is AI-written code, like the server it corrects. Claude could not sign in, so the signed-in flows were mine to test. Its connector could not run the database changes, so I ran the SQL myself in the Supabase SQL Editor.
+- **Commit:** [9e2eca7](https://github.com/JustinNeri/WorkBud/commit/9e2eca7)
+
 ---
 
 ## 2. Where the AI got it wrong
