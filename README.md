@@ -6,6 +6,8 @@ OJT hours and expense tracker.
 
 **Live:** [workbud-ph.vercel.app](https://workbud-ph.vercel.app/)
 
+**Demo video:** [video, slides and square image on Google Drive](https://drive.google.com/drive/folders/1ws2guOP-WJ-NwuA1P8lmsicYdH91E59I?usp=sharing)
+
 > Built with help from Claude (Anthropic), with ChatGPT and Gemini used on a couple of earlier bug fixes. I ask the AI first what the structure of a feature should be and for an example of how it should be done, build the feature with that structure and example as my guide and test it, then ask it again when something does not work or could be cleaner or more efficient; Claude also gave me the first draft of the Supabase backend, wrote the Express API server in `server/`, and helped write the documentation. Full details in [AI-USAGE.md](AI-USAGE.md).
 
 ---
