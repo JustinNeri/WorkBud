@@ -1,6 +1,7 @@
-# WorkBud Weekly Increment Reports
+# Weekly reports
 
-Weekly increment reports for WorkBud, one section per week.
+One section per week, newest first. A new week is added at the top, and an
+older week is never edited.
 
 > **A note on paths.** These reports are left as they were written. After Week 3
 > the repository was rearranged to the course template, so a path in an older
@@ -10,15 +11,188 @@ Weekly increment reports for WorkBud, one section per week.
 > the root. `npm run dev` from the root became `npm run dev` in `client/` and
 > in `server/`.
 
-- [Week 1: September 14 to 20, 2026](#week-1-september-14-to-20-2026)
-- [Week 2: September 21 to 27, 2026](#week-2-september-21-to-27-2026)
-- [Week 3: September 28 to October 4, 2026](#week-3-september-28-to-october-4-2026)
+---
+
+## Week of 2026-09-28
+
+Week 3: September 28 to October 4, 2026.
+
+**Done.**
+
+**1. Express API server** (`server/`, `api/index.js`, `src/lib/api.js`)
+
+Until this week the React app talked to Supabase directly and the project had no server of its own. It now has one. Jobs, daily logs, expenses, milestones and the profile are read and written through a REST API built with Express 5.
+
+- Routes: `/api/profile`, `/api/jobs`, `/api/logs`, `/api/milestones` and `/api/account`, plus a public `/api/health` that checks the database connection. Creates return 201, deletes return 204, bad input returns 400, a missing or invalid token returns 401, and a row that does not exist or is not yours returns 404.
+- Every request body is validated on the server (`server/validate.js`) before it reaches the database, and the error names the field that failed.
+- Sign-in still goes through Supabase Auth. The browser sends its access token to the API, and the server queries the database as that user, so the Row Level Security policies from Week 1 still apply behind every route.
+- `useWorkbud.js`, `Onboarding.jsx` and `DeleteAccountSheet.jsx` now call the API instead of Supabase. `npm run dev` starts the server and Vite together.
+- Nothing in the database changed: same tables, same policies, same data.
+
+This was written by Claude (Claude Code). It is recorded in `AI-USAGE.md`, entry 1.16.
+
+Commit: [fb4eb62](https://github.com/JustinNeri/WorkBud/commit/fb4eb62)
+
+**2. Past months on the budget card** (`BudgetCard.jsx`, `useWorkbud.js`)
+
+The budget card can now page back through earlier months, from the first month logged up to last month. A month with nothing logged shows as nothing spent instead of being skipped.
+
+Commit: [4c271ec](https://github.com/JustinNeri/WorkBud/commit/4c271ec)
+
+**3. Delete account** (`DeleteAccountSheet.jsx`, `schema.sql`)
+
+A user can now close their own account from settings. It asks for the current password first, removes the profile pictures, then deletes the account, and the database cascades through the jobs, logs, expenses and milestones.
+
+Commit: [03a52d9](https://github.com/JustinNeri/WorkBud/commit/03a52d9)
+
+**4. Documentation** (`README.md`, `SECURITY-CHECKLIST.md`, `AI-USAGE.md`)
+
+The README now describes the server: how the pieces fit, how to run it, every API route, and the error format. It also removes the old line that said there was no server to run. Eleven rows of the security checklist were checked again against the server, and the CORS row changed from N/A to Yes.
+
+Commit: [fb4eb62](https://github.com/JustinNeri/WorkBud/commit/fb4eb62)
+
+**5. Export totals rounded** (`src/lib/export.js`)
+
+The exported time record could show a total like 209.32999999999998 hours, because adding up decimal hours in floating point drifts. The total is now rounded to two decimals, so it reads 209.33. This was committed on September 27, at the end of Week 2, after my Week 2 report was written, so it is reported here.
+
+Commit: [6341689](https://github.com/JustinNeri/WorkBud/commit/6341689)
+
+Why these, this week:
+
+The final project rubric grades a server that starts, connects to its database and answers on its endpoints, with sensible routes and correct status codes. WorkBud had none of that to show, because Supabase was doing the job of the server. I could not get an answer in time on whether that would be accepted, so I added a server instead of risking those rows.
+
+Keeping Supabase Auth and Row Level Security in place, and putting the server in front of them, was the smallest change that gave the project a real API without rewriting sign-in in the last week.
+
+**Stuck.**
+
+- **I found the gap late.** My proposal and both earlier reports describe an app with no server, and I only checked that against the final rubric in the last week. The server was added on October 3.
+- **The server is AI-written and I have to catch up on it.** I did not write this code. I need to read it well enough to explain it in the presentation.
+- **It could not be fully tested when it was written.** Claude had no account to sign in with, so only the signed-out paths, the bad-input paths and the health check were tested. I tested the signed-in flows myself afterwards, on localhost and on the Vercel preview, before merging.
+- **Saving a day is two writes, not one transaction.** The server saves the log, then its expenses. A failure between the two on an edit could leave a day without its expense list.
+
+**Hours.** (fill in: roughly how many hours this week took)
+
+**Next.**
+
+- **Automated tests.** Still none, and that now includes the API routes.
+- **One transaction for a log and its expenses,** as a database function.
+- **Rate limiting on the API.**
+- **Avatars bucket.** The listing problem found in Week 2 is still not fixed.
 
 ---
 
-# Week 1: September 14 to 20, 2026
+## Week of 2026-09-21
 
-## What changed this week
+Week 2: September 21 to 27, 2026.
+
+**Done.**
+
+**1. Routing** (`main.jsx`, `App.jsx`)
+
+The app was one authenticated screen with sheets layered over it and no URLs. It now uses React Router with real routes at `/login`, `/signup`, `/forgot-password` and `/dashboard`, guarded by `RequireSession` and `GuestOnly`. Opening a protected page while signed out sends you to `/login` and remembers where you were headed, so signing in takes you back there instead of always to the dashboard. This closes the first item on my Week 1 "What is left" list.
+
+Commit: [6b44022](https://github.com/JustinNeri/WorkBud/commit/6b44022)
+
+**2. Session persistence, "Remember me"** (`src/lib/supabase.js`, `AuthScreen.jsx`)
+
+There is now a checkbox on the sign-in screen that controls how long a session lasts. When it is ticked, the token goes to `localStorage` and you stay signed in. When it is unticked, the token goes to `sessionStorage` and the session ends when the browser closes. This closes the second item on the Week 1 list.
+
+Commit: [dfa3599](https://github.com/JustinNeri/WorkBud/commit/dfa3599)
+
+**3. Profile pictures** (`Avatar.jsx`, `src/lib/avatar.js`, `SettingsSheet.jsx`)
+
+Users can now upload a profile picture from settings.
+
+- Added an `avatar_path` column on `profiles`, and a public `avatars` storage bucket in `schema.sql`. The bucket has a 2 MB limit, accepts JPEG, PNG and WebP only, and has per-user policies so nobody can overwrite anyone else's picture.
+- Each upload writes a new timestamped filename, so a cache can never keep serving an old picture.
+
+This closes the third item on the Week 1 list.
+
+Commit: [5779d1d](https://github.com/JustinNeri/WorkBud/commit/5779d1d)
+
+**4. Planned pace, start dates and days off** (`JobSheet.jsx`, `LogSheet.jsx`, `schema.sql`)
+
+- Added three columns: `jobs.daily_hours`, `jobs.start_date` and `daily_logs.absent`.
+- The first two drive an expected finish date. That answers "when do I actually finish at the pace I keep," which is a different question from "how many hours a day do I need."
+- Days you did not go in are now recorded with an "I didn't work this day" tick instead of being left blank.
+
+Commit: [f979747](https://github.com/JustinNeri/WorkBud/commit/f979747)
+
+**5. Visual overhaul and colour tokens** (`AuthShell.jsx`, `Dashboard.jsx`, `index.css`)
+
+I rebuilt the sign-in shell, restructured the dashboard, and reworked the header, job tabs and shared `ui.jsx` primitives. Colours now come from tokens in `index.css` instead of hex values repeated in each component. That was three commits, about 660 lines across 13 files.
+
+Commits: [7465711](https://github.com/JustinNeri/WorkBud/commit/7465711), [9656071](https://github.com/JustinNeri/WorkBud/commit/9656071), [4820302](https://github.com/JustinNeri/WorkBud/commit/4820302)
+
+**6. Activity feed filtering** (`ActivityFeed.jsx`)
+
+The feed now shows a five-entry preview with a "show all" option. It also has month chips, built only from months that actually have entries.
+
+Commit: [9300ef0](https://github.com/JustinNeri/WorkBud/commit/9300ef0)
+
+**7. Sheet overflow indicator** (`Sheet.jsx`)
+
+A chevron now appears when a form continues below the fold. Before this, there was no sign there was more to fill in.
+
+Commit: [3226aad](https://github.com/JustinNeri/WorkBud/commit/3226aad)
+
+**8. Documentation, security checklist and AI usage record** (`README.md`, `SECURITY-CHECKLIST.md`, `AI-USAGE.md`, `docs/screenshots/`)
+
+- Rewrote the README to match the code: routes, the new features, screenshots, known issues, and an AI credit badge. It also removes the old claim that the app had no router.
+- Filled in the 31-row security checklist with evidence. I searched the whole git history for secrets and found none, then tested Row Level Security live while signed out: every table returned nothing, and an insert was refused. That test found a real problem, below.
+- Wrote `AI-USAGE.md`: six uses of AI with their commits, three times it got something wrong, and which parts are mine.
+
+Commits: [7ce34bb](https://github.com/JustinNeri/WorkBud/commit/7ce34bb), [fede7c9](https://github.com/JustinNeri/WorkBud/commit/fede7c9), [8397bcc](https://github.com/JustinNeri/WorkBud/commit/8397bcc), [a86aaf9](https://github.com/JustinNeri/WorkBud/commit/a86aaf9)
+
+Why these, this week:
+
+Routing, remember me and profile pictures were the three things I committed to in Week 1, and I wanted that list closed before starting anything new.
+
+Routing mattered most. With no routes, the phone back button closed the whole app instead of the open sheet. Users don't report that; they just leave.
+
+Planned pace and days off fix a gap I only saw once real days were logged. A progress ring tells you how far you've come, but not whether you'll finish. A blank day was also ambiguous: it could mean you were absent, or that you forgot to log it.
+
+The colour tokens were debt repayment. Hardcoded colours in thirteen components were getting more expensive to change every week.
+
+**Stuck.**
+
+- **"Remember me" was the hardest part of the week, and it is a checkbox.**
+  - supabase-js decides where to store the session once, when the client is created, so the checkbox cannot simply be passed to the sign-in call. I had to write a custom storage adapter that picks `localStorage` or `sessionStorage` based on a flag.
+  - The flag has to be set *before* signing in. Otherwise the new token gets written to the storage you just switched away from.
+  - A missing flag has to count as "remembered." Every existing session predates the feature, so reading a missing flag as false would have signed every user out the moment I deployed.
+- **The activity feed month filter kept breaking.** If you filtered to a month on one job and then switched to a job with no entries that month, you got an empty list and no obvious way back. The same happened after deleting the last entry of the filtered month. I touched `ActivityFeed.jsx` three times in one night before settling on the fix: fall back to "all" whenever the selected month doesn't exist for the current job.
+- **The UI overhaul took three passes.** The commits read `UI`, then `UI AGAIN`, then `colors`, and together they deleted 473 lines. I rewrote components before deciding on the colour tokens, then went back through all thirteen files to swap the hex values out.
+- **My schema pattern tripped me up.** I added the three new columns inside the `create table if not exists` block. When I ran the script, nothing happened, because that block skips a table that already exists. New columns need their own `alter table ... add column if not exists` line.
+- **I'm behind on tests.** Between September 21 and 27 my commits were documentation, security and the AI usage record, not code. In Week 1 I said tests on `src/lib/format.js` would come right after the router. The router is done, but the tests haven't been started. That's the main thing I'm stuck on: not a hard bug, just work I keep putting off.
+- **My commit messages are still bad.** `UI AGAIN`, `updated version`, and `Update ActivityFeed.jsx` three times. I named this problem in Week 1 and didn't fix it.
+
+**Hours.** (fill in: roughly how many hours this week took)
+
+**Next.**
+
+Needed before the final:
+
+- **Automated tests.** There are still none. `src/lib/format.js` comes first: shift maths, overnight shifts and timezone handling, where Week 1's worst bugs were.
+- **Real offline support.** The app shell loads offline, but writes still need a connection, so logging a day with no signal fails.
+- **Editing and deleting expense rows.** Only adding is solid.
+- **Export polish.** The DTR output still hasn't been compared with the form my coordinator requires, and printing from a phone is untested.
+- **Error handling pass.** Several Supabase calls still fail silently, so a failed save can look like a successful one.
+- **Export totals.** The exported time log can show 209.32999999999998 hours instead of 209.33, because the total isn't rounded.
+- **Avatars bucket.** Anyone signed out can list the `avatars` bucket and see user IDs. Found by the security checklist; the fix is to limit that policy to each user's own folder.
+
+Nice to have if time allows:
+
+- A reminder notification to log the day's hours. The in-app "Nothing logged today" nudge already exists; this would reach you when the app is closed.
+- A tidier git workflow: feature branches, and commit messages that say what changed.
+- Empty states and loading skeletons.
+
+---
+
+## Week of 2026-09-14
+
+Week 1: September 14 to 20, 2026.
+
+**Done.**
 
 **1. Project foundation and deployment pipeline**
 
@@ -82,11 +256,11 @@ Rebuilt the layout for phone screens (bottom sheets instead of modals, safe-area
 
 Wrote a full README covering features, setup, schema, data model, project structure, and deployment.
 
-## Why
+Why these, this week:
 
 The goal of Week 1 was to get a *usable* end-to-end product rather than scaffolding. An OJT student needs three things at once: hours that satisfy the school's DTR, an honest picture of what the placement costs out of pocket, and proof of progress toward the required total. So auth, logging, money, and export all had to exist together before any of it was worth testing. I prioritized deployment and RLS early because a tracker holding personal financial data is not something to bolt security onto later, and mobile-first because this gets opened on a phone at the end of a shift, not on a laptop.
 
-## What broke or what I got stuck on
+**Stuck.**
 
 - **Supabase email confirmation was the biggest time sink.** The default confirmation *link* kicked users out of the app into a browser tab and often failed to return them to a logged-in session. I switched to an emailed OTP code, which then broke again because I had hard-coded a 6-digit length while Supabase was issuing a different length. Fixed. This also required editing the Supabase email template to emit `{{ .Token }}`, which is not obvious from the dashboard.
 - **Password reset took four separate commits to get right.** The recovery session was not being picked up correctly, so the new password either failed to save or dropped the user back to the login screen. Two full days went into this.
@@ -94,9 +268,11 @@ The goal of Week 1 was to get a *usable* end-to-end product rather than scaffold
 - **Deleting a job failed** because of the foreign-key relationships between `jobs`, `daily_logs`, and `expenses`: child rows blocked the delete.
 - **The mobile UI needed six passes.** See the `FIXED MOBILE VIEW` / `FIXED UI LOGIN` commits. I built the first version desktop-first out of habit, then had to rework layout, the login screen, and the edit-entry sheet once I actually opened it on a phone. That was avoidable and cost me most of a day.
 
-## What is left
+**Hours.** (fill in: roughly how many hours this week took)
 
-### Needed before the final
+**Next.**
+
+Needed before the final:
 
 - **Routing.** The app is currently one authenticated screen with sheets layered over it and no router, so there are no shareable URLs and the phone back button closes the app instead of the sheet. Adding React Router is the next thing I'm doing.
 - **Session persistence ("remember me").** Users are logged out too aggressively right now.
@@ -107,175 +283,8 @@ The goal of Week 1 was to get a *usable* end-to-end product rather than scaffold
 - **Export polish.** Verify the DTR output against the actual form my coordinator requires, and confirm printing works from a phone.
 - **Error handling pass.** Several Supabase calls still fail silently instead of telling the user what went wrong.
 
-### Nice to have if time allows
+Nice to have if time allows:
 
 - Reminder notification to log the day's hours
 - Tidier git workflow (feature branches, descriptive commit messages; "additional feature" is not useful to anyone)
 - Empty states and loading skeletons
-
----
-
-# Week 2: September 21 to 27, 2026
-
-## What changed this week
-
-**1. Routing** (`main.jsx`, `App.jsx`)
-
-The app was one authenticated screen with sheets layered over it and no URLs. It now uses React Router with real routes at `/login`, `/signup`, `/forgot-password` and `/dashboard`, guarded by `RequireSession` and `GuestOnly`. Opening a protected page while signed out sends you to `/login` and remembers where you were headed, so signing in takes you back there instead of always to the dashboard. This closes the first item on my Week 1 "What is left" list.
-
-Commit: [6b44022](https://github.com/JustinNeri/WorkBud/commit/6b44022)
-
-**2. Session persistence, "Remember me"** (`src/lib/supabase.js`, `AuthScreen.jsx`)
-
-There is now a checkbox on the sign-in screen that controls how long a session lasts. When it is ticked, the token goes to `localStorage` and you stay signed in. When it is unticked, the token goes to `sessionStorage` and the session ends when the browser closes. This closes the second item on the Week 1 list.
-
-Commit: [dfa3599](https://github.com/JustinNeri/WorkBud/commit/dfa3599)
-
-**3. Profile pictures** (`Avatar.jsx`, `src/lib/avatar.js`, `SettingsSheet.jsx`)
-
-Users can now upload a profile picture from settings.
-
-- Added an `avatar_path` column on `profiles`, and a public `avatars` storage bucket in `schema.sql`. The bucket has a 2 MB limit, accepts JPEG, PNG and WebP only, and has per-user policies so nobody can overwrite anyone else's picture.
-- Each upload writes a new timestamped filename, so a cache can never keep serving an old picture.
-
-This closes the third item on the Week 1 list.
-
-Commit: [5779d1d](https://github.com/JustinNeri/WorkBud/commit/5779d1d)
-
-**4. Planned pace, start dates and days off** (`JobSheet.jsx`, `LogSheet.jsx`, `schema.sql`)
-
-- Added three columns: `jobs.daily_hours`, `jobs.start_date` and `daily_logs.absent`.
-- The first two drive an expected finish date. That answers "when do I actually finish at the pace I keep," which is a different question from "how many hours a day do I need."
-- Days you did not go in are now recorded with an "I didn't work this day" tick instead of being left blank.
-
-Commit: [f979747](https://github.com/JustinNeri/WorkBud/commit/f979747)
-
-**5. Visual overhaul and colour tokens** (`AuthShell.jsx`, `Dashboard.jsx`, `index.css`)
-
-I rebuilt the sign-in shell, restructured the dashboard, and reworked the header, job tabs and shared `ui.jsx` primitives. Colours now come from tokens in `index.css` instead of hex values repeated in each component. That was three commits, about 660 lines across 13 files.
-
-Commits: [7465711](https://github.com/JustinNeri/WorkBud/commit/7465711), [9656071](https://github.com/JustinNeri/WorkBud/commit/9656071), [4820302](https://github.com/JustinNeri/WorkBud/commit/4820302)
-
-**6. Activity feed filtering** (`ActivityFeed.jsx`)
-
-The feed now shows a five-entry preview with a "show all" option. It also has month chips, built only from months that actually have entries.
-
-Commit: [9300ef0](https://github.com/JustinNeri/WorkBud/commit/9300ef0)
-
-**7. Sheet overflow indicator** (`Sheet.jsx`)
-
-A chevron now appears when a form continues below the fold. Before this, there was no sign there was more to fill in.
-
-Commit: [3226aad](https://github.com/JustinNeri/WorkBud/commit/3226aad)
-
-**8. Documentation, security checklist and AI usage record** (`README.md`, `SECURITY-CHECKLIST.md`, `AI-USAGE.md`, `docs/screenshots/`)
-
-- Rewrote the README to match the code: routes, the new features, screenshots, known issues, and an AI credit badge. It also removes the old claim that the app had no router.
-- Filled in the 31-row security checklist with evidence. I searched the whole git history for secrets and found none, then tested Row Level Security live while signed out: every table returned nothing, and an insert was refused. That test found a real problem, below.
-- Wrote `AI-USAGE.md`: six uses of AI with their commits, three times it got something wrong, and which parts are mine.
-
-Commits: [7ce34bb](https://github.com/JustinNeri/WorkBud/commit/7ce34bb), [fede7c9](https://github.com/JustinNeri/WorkBud/commit/fede7c9), [8397bcc](https://github.com/JustinNeri/WorkBud/commit/8397bcc), [a86aaf9](https://github.com/JustinNeri/WorkBud/commit/a86aaf9)
-
-## Why
-
-Routing, remember me and profile pictures were the three things I committed to in Week 1, and I wanted that list closed before starting anything new.
-
-Routing mattered most. With no routes, the phone back button closed the whole app instead of the open sheet. Users don't report that; they just leave.
-
-Planned pace and days off fix a gap I only saw once real days were logged. A progress ring tells you how far you've come, but not whether you'll finish. A blank day was also ambiguous: it could mean you were absent, or that you forgot to log it.
-
-The colour tokens were debt repayment. Hardcoded colours in thirteen components were getting more expensive to change every week.
-
-## What broke or what I got stuck on
-
-- **"Remember me" was the hardest part of the week, and it is a checkbox.**
-  - supabase-js decides where to store the session once, when the client is created, so the checkbox cannot simply be passed to the sign-in call. I had to write a custom storage adapter that picks `localStorage` or `sessionStorage` based on a flag.
-  - The flag has to be set *before* signing in. Otherwise the new token gets written to the storage you just switched away from.
-  - A missing flag has to count as "remembered." Every existing session predates the feature, so reading a missing flag as false would have signed every user out the moment I deployed.
-- **The activity feed month filter kept breaking.** If you filtered to a month on one job and then switched to a job with no entries that month, you got an empty list and no obvious way back. The same happened after deleting the last entry of the filtered month. I touched `ActivityFeed.jsx` three times in one night before settling on the fix: fall back to "all" whenever the selected month doesn't exist for the current job.
-- **The UI overhaul took three passes.** The commits read `UI`, then `UI AGAIN`, then `colors`, and together they deleted 473 lines. I rewrote components before deciding on the colour tokens, then went back through all thirteen files to swap the hex values out.
-- **My schema pattern tripped me up.** I added the three new columns inside the `create table if not exists` block. When I ran the script, nothing happened, because that block skips a table that already exists. New columns need their own `alter table ... add column if not exists` line.
-- **I'm behind on tests.** Between September 21 and 27 my commits were documentation, security and the AI usage record, not code. In Week 1 I said tests on `src/lib/format.js` would come right after the router. The router is done, but the tests haven't been started. That's the main thing I'm stuck on: not a hard bug, just work I keep putting off.
-- **My commit messages are still bad.** `UI AGAIN`, `updated version`, and `Update ActivityFeed.jsx` three times. I named this problem in Week 1 and didn't fix it.
-
-## What is left
-
-### Needed before the final
-
-- **Automated tests.** There are still none. `src/lib/format.js` comes first: shift maths, overnight shifts and timezone handling, where Week 1's worst bugs were.
-- **Real offline support.** The app shell loads offline, but writes still need a connection, so logging a day with no signal fails.
-- **Editing and deleting expense rows.** Only adding is solid.
-- **Export polish.** The DTR output still hasn't been compared with the form my coordinator requires, and printing from a phone is untested.
-- **Error handling pass.** Several Supabase calls still fail silently, so a failed save can look like a successful one.
-- **Export totals.** The exported time log can show 209.32999999999998 hours instead of 209.33, because the total isn't rounded.
-- **Avatars bucket.** Anyone signed out can list the `avatars` bucket and see user IDs. Found by the security checklist; the fix is to limit that policy to each user's own folder.
-
-### Nice to have if time allows
-
-- A reminder notification to log the day's hours. The in-app "Nothing logged today" nudge already exists; this would reach you when the app is closed.
-- A tidier git workflow: feature branches, and commit messages that say what changed.
-- Empty states and loading skeletons.
-
----
-
-# Week 3: September 28 to October 4, 2026
-
-## What changed this week
-
-**1. Express API server** (`server/`, `api/index.js`, `src/lib/api.js`)
-
-Until this week the React app talked to Supabase directly and the project had no server of its own. It now has one. Jobs, daily logs, expenses, milestones and the profile are read and written through a REST API built with Express 5.
-
-- Routes: `/api/profile`, `/api/jobs`, `/api/logs`, `/api/milestones` and `/api/account`, plus a public `/api/health` that checks the database connection. Creates return 201, deletes return 204, bad input returns 400, a missing or invalid token returns 401, and a row that does not exist or is not yours returns 404.
-- Every request body is validated on the server (`server/validate.js`) before it reaches the database, and the error names the field that failed.
-- Sign-in still goes through Supabase Auth. The browser sends its access token to the API, and the server queries the database as that user, so the Row Level Security policies from Week 1 still apply behind every route.
-- `useWorkbud.js`, `Onboarding.jsx` and `DeleteAccountSheet.jsx` now call the API instead of Supabase. `npm run dev` starts the server and Vite together.
-- Nothing in the database changed: same tables, same policies, same data.
-
-This was written by Claude (Claude Code). It is recorded in `AI-USAGE.md`, entry 1.16.
-
-Commit: [fb4eb62](https://github.com/JustinNeri/WorkBud/commit/fb4eb62)
-
-**2. Past months on the budget card** (`BudgetCard.jsx`, `useWorkbud.js`)
-
-The budget card can now page back through earlier months, from the first month logged up to last month. A month with nothing logged shows as nothing spent instead of being skipped.
-
-Commit: [4c271ec](https://github.com/JustinNeri/WorkBud/commit/4c271ec)
-
-**3. Delete account** (`DeleteAccountSheet.jsx`, `schema.sql`)
-
-A user can now close their own account from settings. It asks for the current password first, removes the profile pictures, then deletes the account, and the database cascades through the jobs, logs, expenses and milestones.
-
-Commit: [03a52d9](https://github.com/JustinNeri/WorkBud/commit/03a52d9)
-
-**4. Documentation** (`README.md`, `SECURITY-CHECKLIST.md`, `AI-USAGE.md`)
-
-The README now describes the server: how the pieces fit, how to run it, every API route, and the error format. It also removes the old line that said there was no server to run. Eleven rows of the security checklist were checked again against the server, and the CORS row changed from N/A to Yes.
-
-Commit: [fb4eb62](https://github.com/JustinNeri/WorkBud/commit/fb4eb62)
-
-**5. Export totals rounded** (`src/lib/export.js`)
-
-The exported time record could show a total like 209.32999999999998 hours, because adding up decimal hours in floating point drifts. The total is now rounded to two decimals, so it reads 209.33. This was committed on September 27, at the end of Week 2, after my Week 2 report was written, so it is reported here.
-
-Commit: [6341689](https://github.com/JustinNeri/WorkBud/commit/6341689)
-
-## Why
-
-The final project rubric grades a server that starts, connects to its database and answers on its endpoints, with sensible routes and correct status codes. WorkBud had none of that to show, because Supabase was doing the job of the server. I could not get an answer in time on whether that would be accepted, so I added a server instead of risking those rows.
-
-Keeping Supabase Auth and Row Level Security in place, and putting the server in front of them, was the smallest change that gave the project a real API without rewriting sign-in in the last week.
-
-## What broke or what I got stuck on
-
-- **I found the gap late.** My proposal and both earlier reports describe an app with no server, and I only checked that against the final rubric in the last week. The server was added on October 3.
-- **The server is AI-written and I have to catch up on it.** I did not write this code. I need to read it well enough to explain it in the presentation.
-- **It could not be fully tested when it was written.** Claude had no account to sign in with, so only the signed-out paths, the bad-input paths and the health check were tested. I tested the signed-in flows myself afterwards, on localhost and on the Vercel preview, before merging.
-- **Saving a day is two writes, not one transaction.** The server saves the log, then its expenses. A failure between the two on an edit could leave a day without its expense list.
-
-## What is left
-
-- **Automated tests.** Still none, and that now includes the API routes.
-- **One transaction for a log and its expenses,** as a database function.
-- **Rate limiting on the API.**
-- **Avatars bucket.** The listing problem found in Week 2 is still not fixed.
