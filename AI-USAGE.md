@@ -164,7 +164,7 @@ built the backend from there.
   - `Avatar.jsx`, which shows the user's initial when there is no picture;
   - the upload flow in `SettingsSheet.jsx`;
   - an `avatars` storage bucket with per-user upload policies and an `avatar_path` column.
-- **What I kept, what I changed, and why:** I kept the resize-before-upload step. A phone photo is 3 to 8 MB, and this app is used on mobile data, so shrinking it to usually under 60 KB before sending saves users real money for a picture shown at 44 pixels. One part was not right, and I only found it later: the bucket's read policy lets signed-out users list every file. My security checklist caught it on September 27 (see 1.15). It stayed open until October 8, when the policy was replaced with one limited to each user's own folder (see 1.17 and 2.5).
+- **What I kept, what I changed, and why:** I kept the resize-before-upload step. A phone photo is 3 to 8 MB, and this app is used on mobile data, so shrinking it to usually under 60 KB before sending saves users real money for a picture shown at 44 pixels. One part was not right, and I only found it later: the bucket's read policy lets signed-out users list every file. My security checklist caught it on September 27 (see 1.15). It stayed open until October 8, when the policy was replaced with one limited to each user's own folder
 - **Commits:** [5779d1d](https://github.com/JustinNeri/WorkBud/commit/5779d1d), fixed in [9e2eca7](https://github.com/JustinNeri/WorkBud/commit/9e2eca7)
 
 ### 1.14 React Router
@@ -200,7 +200,7 @@ built the backend from there.
 - **What I kept, what I changed, and why:** Claude proposed the design and consulted me on it, and I agreed to it before keeping the code. This is the largest piece of AI-written code in the project. The design choices I agreed to, and why:
   - the server forwards the signed-in user's token instead of using a service-role key, so the Row Level Security policies I wrote still check every query and there is no new secret to protect;
   - sign-in stays with Supabase Auth, so the signup codes, password reset and "Remember me" that already worked were not rewritten in the last week;
-  - a day's `amount_spent` is never taken from the browser, so the total can never disagree with the items. In this first version the server added up the expense list it was sent. Since October 8 the database function `save_log()` works it out from the rows it stored (see 1.17).
+  - a day's `amount_spent` is never taken from the browser, so the total can never disagree with the items. In this first version the server added up the expense list it was sent. Since October 8 the database function `save_log()` works it out from the rows it stored 
 
   Claude could not sign in, so it only tested the signed-out and bad-input paths. I tested the signed-in flows myself in the browser, on localhost and on the Vercel preview: adding, editing and deleting a log with expenses, a job and a milestone, changing the profile, and onboarding and deleting a test account.
 - **Commit:** [fb4eb62](https://github.com/JustinNeri/WorkBud/commit/fb4eb62)
@@ -236,7 +236,7 @@ built the backend from there.
 
 - **What it gave me:** the error handler in the Express server Claude wrote (`server/errors.js`, see 1.16). It recognised its own `HttpError`, a body that was not valid JSON, and a body that was too large. Everything else became a 500 with "Something went wrong on our side."
 - **What was wrong with it:** Express and its body parser also raise errors for other bad requests, and those already carry a 4xx status. The handler ignored that status. A body sent with an unknown charset came back 500 instead of 415, and a URL with a broken escape such as `/api/jobs/%E0%A4%A` came back 500 instead of 400. A 500 tells the caller the server is broken when the request was. The same gap had a second effect: when `npm start` serves the built app, a broken page URL never reached the handler at all and got Express's default error page, which printed a stack trace with file paths.
-- **What I did instead:** it was found in the October 8 review (1.17), by sending the server those requests, not by reading the code. The handler now passes a 4xx status through with its own short message, and `server/index.js` registers the handler again after the page routes. Both cases now return one line of JSON with the right status.
+- **What I did instead:** by sending the server those requests, not by reading the code. The handler now passes a 4xx status through with its own short message, and `server/index.js` registers the handler again after the page routes. Both cases now return one line of JSON with the right status.
 - **Commits:** [fb4eb62](https://github.com/JustinNeri/WorkBud/commit/fb4eb62), fixed in [9e2eca7](https://github.com/JustinNeri/WorkBud/commit/9e2eca7)
 
 ### 2.5 The avatars policy let anyone list every user's folder
