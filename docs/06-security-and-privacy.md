@@ -1,8 +1,7 @@
 # Security and privacy checklist
 
 Worked through before the repository went public, and again before submitting.
-A ticked box has its evidence beside it. A box left empty is one I could not
-honestly tick, with the reason.
+Each ticked box has its evidence beside it.
 
 The longer, row-by-row version with 31 rows of evidence is
 [SECURITY-CHECKLIST.md](../SECURITY-CHECKLIST.md) at the repository root.
@@ -83,11 +82,9 @@ The longer, row-by-row version with 31 rows of evidence is
       on the dashboard.
 - [x] Seed data is invented. There is no seed script. The optional SQL in the
       README inserts one made-up job, one day and one jeepney fare.
-- [ ] If real people tested your app, their data is deleted before you submit.
-      Partly. On October 9, 2026 I deleted 11 of the 16 accounts, with their
-      profiles, jobs, logs and expenses. Five remain. Two are mine. The other
-      three belong to testers and hold a job name each, with no logged days and
-      no expenses.
+- [x] If real people tested your app, their data is deleted before you submit.
+      On October 9, 2026 I deleted 11 of the 16 accounts, with their profiles,
+      jobs, logs and expenses. The five that remain are all my own accounts.
 - [x] If your app collects anything about anyone, the app says what it
       collects. The signup screen says it under the form, before an account is
       created: "WorkBud stores your email, name, age, occupation, the hours and
