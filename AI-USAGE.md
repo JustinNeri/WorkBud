@@ -207,14 +207,6 @@ built the backend from there.
 
 
 
-### 1.18 The activity feed month filter
-
-- **Date and tool:** September 20, 2026, Claude
-- **What I asked:** I was writing the month filter for the activity feed myself, and one part did not work: after picking a month on one job and switching to a job with no entries in that month, the list was empty with no obvious way back. I asked why.
-- **What it gave back:** the reason. The chosen month stayed in state after the job changed, so the feed was filtering by a month the new job did not have.
-- **What I kept, what I changed, and why:** I wrote the fix myself: the feed checks whether the chosen month still exists for the current job, and falls back to "all" when it does not. The rest of the filter is mine (section 3).
-- **Commits:** [2990956](https://github.com/JustinNeri/WorkBud/commit/2990956), [9300ef0](https://github.com/JustinNeri/WorkBud/commit/9300ef0), [42d73f6](https://github.com/JustinNeri/WorkBud/commit/42d73f6)
-
 ---
 
 ## 2. Where the AI got it wrong
