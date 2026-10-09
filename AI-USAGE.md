@@ -287,6 +287,9 @@ I created the Vercel project, connected the repository so every push deploys, an
 **Routing and the route guards** (`src/App.jsx`, `src/main.jsx`, [6b44022](https://github.com/JustinNeri/WorkBud/commit/6b44022))
 I asked Claude how routing should be set up (entry 1.14) and wrote it myself. `RequireSession` sends a signed-out visitor to `/login` and remembers where they were going. `GuestOnly` sends a signed-in user on to that page or to `/dashboard`. The rule for who can see a page lives in the guards, not on every screen.
 
+**Setting up the Supabase project** (Supabase dashboard; the app code that depends on it is in [adc5631](https://github.com/JustinNeri/WorkBud/commit/adc5631) and [0194caa](https://github.com/JustinNeri/WorkBud/commit/0194caa), and the steps are written down in README section 2.6)
+I created the Supabase project and configured it myself in the dashboard. Dashboard settings are not files, so they have no commit of their own. The commits above are the code that only works because of them. That code was written with Claude's help (entries 1.2 and 2.2); the configuration in Supabase is the part I did myself. I turned on email sign-in, set signups to be confirmed by an emailed code, and edited the "Confirm signup" and "Reset password" email templates to send `{{ .Token }}`, because the default template sends a link and no code. My project sends 8-digit codes, which is why the code box had to be changed to accept 6 to 10 digits (entry 2.2). On October 3 I turned on network restrictions so the direct database port is closed (checklist row 14), and on October 8 I ran the schema update in the SQL Editor myself.
+
 ### My idea, written by AI
 
 **The catch-up budget** (`src/components/CatchUpCard.jsx`, `src/hooks/useWorkbud.js`, from [d5df02a](https://github.com/JustinNeri/WorkBud/commit/d5df02a), rule changed in [c66207f](https://github.com/JustinNeri/WorkBud/commit/c66207f))
