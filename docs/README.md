@@ -10,7 +10,7 @@ is versioned alongside the thing it describes.
 | [03-design-system.md](03-design-system.md) | colours, type, spacing, components, the responsive plan and the accessibility check |
 | [04-weekly-reports.md](04-weekly-reports.md) | the weekly increment reports |
 | [05-demo-video.md](05-demo-video.md) | the recorded walkthrough |
-| [06-security-and-privacy.md](06-security-and-privacy.md) | what was checked before this went public |
+| [06-security-and-privacy.md](06-security-and-privacy.md) | the security and privacy checklist, with evidence for each box and the tradeoff I accepted |
 
 Images live in [assets/](assets/): the app screenshots, the wireframes in
 [assets/wireframes/](assets/wireframes/), the design system figures in
