@@ -206,7 +206,7 @@ built the backend from there.
 
 - **Tool:** Claude (Claude Code)
 - **What I asked for:** to check the finished project against the finals rubric, and then to fix what it found.
-- **What it gave back:** it ran the server and sent it bad requests, and compared `server/db/schema.sql` with the live database. It found two requests that answered 500 instead of a 4xx (Case 4 in section 2), that the avatars bucket could still be listed (Case 5), and that my table grants narrowed nothing. It then wrote the fixes: the error handler, the `revoke all` lines, a new avatars policy, and a `save_log()` function so a day and its expenses save in one transaction.
+- **What it gave back:** it ran the server and sent it bad requests, and compared `server/db/schema.sql` with the live database. It found two requests that answered 500 instead of a 4xx (Case 3 in section 2), that the avatars bucket could still be listed, and that my table grants narrowed nothing. It then wrote the fixes: the error handler, the `revoke all` lines, a new avatars policy, and a `save_log()` function so a day and its expenses save in one transaction.
 - **What I kept, what I changed, and why:** I kept the fixes. This is AI-written code, like the server it corrects. Claude could not sign in, so the signed-in flows were mine to test. Its connector could not run the database changes, so I ran the SQL myself in the Supabase SQL Editor.
 - **Commit:** https://github.com/JustinNeri/WorkBud/commit/9e2eca7
 
@@ -226,26 +226,12 @@ built the backend from there.
 - **What I did instead:** I caught it by testing a real signup, not by reading the code. It was fixed the same day: the box now accepts 6 to 10 digits, and it waits for the button instead of submitting by itself, because with a variable length there is no reliable moment to know the code is complete.
 - **Commit:** https://github.com/JustinNeri/WorkBud/commit/adc5631, fixed in https://github.com/JustinNeri/WorkBud/commit/0194caa
 
-### Case 3 - The export added up hours without rounding
-
-- **What it gave me:** in `client/src/lib/export.js`, the total on the exported time record was a plain sum of each day's hours.
-- **What was wrong with it:** decimal hours like 15.83 cannot be stored exactly as floating-point numbers, so the sum drifts. My exported record showed "Hours completed: 209.32999999999998" instead of 209.33, on the one document that is meant to be handed to a coordinator.
-- **What I did instead:** I noticed it in my own screenshot while preparing the documentation, listed it as a known issue, and then fixed it by rounding the total to two decimals.
-- **Commit:** https://github.com/JustinNeri/WorkBud/commit/f3b7ebe, fixed in https://github.com/JustinNeri/WorkBud/commit/6341689
-
-### Case 4 - The API server answered 500 for mistakes that were the caller's
+### Case 3 - The API server answered 500 for mistakes that were the caller's
 
 - **What it gave me:** the error handler in the Express server Claude wrote (`server/errors.js`, see "The Express API server" in section 1). It recognised its own `HttpError`, a body that was not valid JSON, and a body that was too large. Everything else became a 500 with "Something went wrong on our side."
 - **What was wrong with it:** Express and its body parser also raise errors for other bad requests, and those already carry a 4xx status. The handler ignored that status. A body sent with an unknown charset came back 500 instead of 415, and a URL with a broken escape such as `/api/jobs/%E0%A4%A` came back 500 instead of 400. A 500 tells the caller the server is broken when the request was. The same gap had a second effect: when `npm start` serves the built app, a broken page URL never reached the handler at all and got Express's default error page, which printed a stack trace with file paths.
 - **What I did instead:** it was found by sending the server those requests, not by reading the code. The handler now passes a 4xx status through with its own short message, and `server/index.js` registers the handler again after the page routes. Both cases now return one line of JSON with the right status.
 - **Commit:** https://github.com/JustinNeri/WorkBud/commit/fb4eb62, fixed in https://github.com/JustinNeri/WorkBud/commit/9e2eca7
-
-### Case 5 - The avatars policy let anyone list every user's folder
-
-- **What it gave me:** with the profile picture feature ("Profile pictures" in section 1), a storage policy named `avatars_read_all` that gave both signed-in and signed-out users SELECT on the whole `avatars` bucket.
-- **What was wrong with it:** the policy was not needed for what it seemed to be for. The bucket is public, so pictures load through public URLs without any policy. What the policy actually allowed was listing the bucket, and each user's folder is named after their user ID, so anyone could read every account's ID without signing in.
-- **What I did instead:** my security checklist caught it on September 27, and I listed it as a known issue but left it open. On October 8 it was replaced with `avatars_select_own`, which lets a signed-in user see only their own folder (the app needs that to remove old pictures) and gives signed-out visitors nothing.
-- **Commit:** https://github.com/JustinNeri/WorkBud/commit/5779d1d, fixed in https://github.com/JustinNeri/WorkBud/commit/9e2eca7
 
 ## 3. Who wrote what
 
