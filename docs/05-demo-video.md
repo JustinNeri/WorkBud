@@ -134,12 +134,12 @@ What comes next, as said in the video:
 
 ## Before recording
 
-- [ ] Opened the site five minutes early so the API was awake
-- [ ] Recorded the deployed URL, not `localhost`
-- [ ] Closed other tabs, and checked for personal messages, other students'
+- [x] Opened the site five minutes early so the API was awake
+- [x] Recorded the deployed URL, not `localhost`
+- [x] Closed other tabs, and checked for personal messages, other students'
       names, and any `.env` file open in an editor
-- [ ] Seeded realistic data
-- [ ] Did a full practice run
+- [x] Seeded realistic data
+- [x] Did a full practice run
 
 ## The fallback
 
