@@ -75,7 +75,7 @@ built the backend from there.
 - **What it gave back:**
   - `PaceCard.jsx`, `CategoryBreakdown.jsx` and `TodayNudge.jsx`;
   - `ExportSheet.jsx` and `client/src/lib/export.js`, which build a printable time log and a CSV for any date range, and escape everything the user typed before it goes into the printed page.
-- **What I kept, what I changed, and why:** I kept them. The export was reworked on September 15 to carry milestones (see "Milestones and hour badges"). One thing in it was wrong, and I found it in my own screenshot: the total hours were added up without rounding, so an export could read 209.32999999999998. I fixed that on September 27 by rounding the total to two decimals.
+- **What I kept, what I changed, and why:** I kept them. The export was reworked on September 15 to carry milestones (see "Milestones and hour badges"). One thing in it was wrong, and I found it in my own screenshot: the total hours were added up without rounding, so an export could read 209.32999999999998. I fixed that on September 27 by rounding the total to two decimals (Case 1 in section 2).
 - **Commit:** https://github.com/JustinNeri/WorkBud/commit/f3b7ebe, total fixed in https://github.com/JustinNeri/WorkBud/commit/6341689
 
 ### 2026-09-04 to 2026-09-05 - Forgot password and change password
@@ -121,7 +121,7 @@ built the backend from there.
   - the deadline date under the hours ring;
   - a `daily_budget` column on `jobs`, checked while an expense is being typed, with over-budget days flagged in the activity feed;
   - `CatchUpCard.jsx` and the catch-up figures in `useWorkbud.js`. The catch-up budget was my idea (section 3): when a day goes over the daily budget, show what to spend per day for the rest of the month to get back to level. Claude wrote the code.
-- **What I kept, what I changed, and why:** I kept all three. Later, the AI's summary of this fix for my report described the delete bug wrongly, which is Case 1 in section 2. The same day I also asked how to let a day be logged for a past date. For that one I took the explanation and wrote the change myself (section 3). On September 19 I had Claude change the catch-up rule, because the first version counted only the days that went over and ignored the days that came in under.
+- **What I kept, what I changed, and why:** I kept all three. Later, the AI's summary of this fix for my report described the delete bug wrongly: it blamed foreign keys blocking the delete, when the real causes were the three listed above. The same day I also asked how to let a day be logged for a past date. For that one I took the explanation and wrote the change myself (section 3). On September 19 I had Claude change the catch-up rule, because the first version counted only the days that went over and ignored the days that came in under.
 - **Commit:** https://github.com/JustinNeri/WorkBud/commit/0aa55ea, https://github.com/JustinNeri/WorkBud/commit/7467bc4, https://github.com/JustinNeri/WorkBud/commit/1334e5e, past dates in https://github.com/JustinNeri/WorkBud/commit/e89aafa, catch-up budget in https://github.com/JustinNeri/WorkBud/commit/d5df02a, its rule changed in https://github.com/JustinNeri/WorkBud/commit/c66207f
 
 ### 2026-09-15 - Milestones and hour badges
@@ -212,12 +212,12 @@ built the backend from there.
 
 ## 2. Where the AI got it wrong
 
-### Case 1 - It described my delete-job bug wrongly
+### Case 1 - The export added up hours without rounding
 
-- **What it gave me:** I used Claude to help with my Week 1 report and journal by giving me key points and a summarised form of my work to write from. In that summary, Claude described the delete-job bug as foreign keys between `jobs`, `daily_logs` and `expenses` blocking the delete.
-- **What was wrong with it:** it summarised that from the commit message "fix delete job" without reading the diff. The actual fix shows the foreign keys were fine: they cascade, so deleting a job removes its logs and expenses automatically. The real bugs were different. The delete button sat inside the form without `type="button"`, so confirming a delete also submitted a save of the job being deleted. You could not delete your last job. And after a delete, the dashboard showed "No job yet" even when other jobs were still listed.
-- **What I did instead:** it was caught when Claude went back to read the real diff while preparing this file. My Week 1 report and journal were already submitted with the wrong description, so this entry is the correction: the commit is the record of what was actually wrong, and I now describe bugs from the code, not the commit message.
-- **Commit:** https://github.com/JustinNeri/WorkBud/commit/0aa55ea
+- **What it gave me:** in `client/src/lib/export.js`, the total on the exported time record was a plain sum of each day's hours.
+- **What was wrong with it:** decimal hours like 15.83 cannot be stored exactly as floating-point numbers, so the sum drifts. My exported record showed "Hours completed: 209.32999999999998" instead of 209.33, on the one document that is meant to be handed to a coordinator.
+- **What I did instead:** I noticed it in my own screenshot while preparing the documentation, listed it as a known issue, and then fixed it by rounding the total to two decimals.
+- **Commit:** https://github.com/JustinNeri/WorkBud/commit/f3b7ebe, fixed in https://github.com/JustinNeri/WorkBud/commit/6341689
 
 ### Case 2 - The signup code box only accepted 6 digits
 
