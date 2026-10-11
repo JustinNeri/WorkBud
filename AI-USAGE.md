@@ -231,11 +231,70 @@ built the backend from there.
 
 A note on all of these: "written by me" means I typed the code and made the decisions. It does not mean I never asked for help. When I got stuck, I asked the AI to explain something or to help me find a bug, and each item below says where that happened.
 
+#### The activity feed preview and month filter
+
+- **File:** `client/src/components/ActivityFeed.jsx`
+- **Commit:** https://github.com/JustinNeri/WorkBud/commit/2990956, https://github.com/JustinNeri/WorkBud/commit/9300ef0, https://github.com/JustinNeri/WorkBud/commit/42d73f6
+- **What it does and why it is built this way:** I wrote this myself. When I got stuck on one bug, the list going empty after switching jobs with a month selected, I asked Claude why. The feed shows the five newest days with a "show all" button, so a long placement does not turn the dashboard into one long list. The month chips are built from the months that actually have entries, so there is never a chip that leads to nothing, and they only appear once there is more than one month. Picking a month also shows that month's hours and days worked. If the chosen month does not exist for the current job, the feed falls back to "all" instead of showing an empty list.
+
+#### Routing and the route guards
+
+- **File:** `client/src/App.jsx`, `client/src/main.jsx`
+- **Commit:** https://github.com/JustinNeri/WorkBud/commit/6b44022
+- **What it does and why it is built this way:** I asked Claude how routing should be set up (the "React Router" entry in section 1) and wrote it myself. `main.jsx` wraps the app in `BrowserRouter`, and `App.jsx` groups the routes under two guards. Each guard is a route with no path of its own: it either renders `<Outlet />`, which shows the page inside it, or returns a `<Navigate>` redirect.
+  - `RequireSession` wraps `/dashboard`. With no session it redirects to `/login` and passes the current location along as `state={{ from: location }}`.
+  - `GuestOnly` wraps `/login`, `/signup` and `/forgot-password`. Once a session exists it reads `location.state?.from`, rebuilds the address from its `pathname`, `search` and `hash`, and goes there, or to `/dashboard` when nothing was remembered. This is also what moves the user on after signing in or entering a signup code: the session appears, and the guard redirects.
+  - Both redirects use `replace`, so the back button does not land on a page that only bounces you forward again.
+  - `App` shows a spinner while `useSession` is still loading. Without that, the guards would see "no session" for a moment on every refresh and send a signed-in user to `/login`.
+  - `/` and any unknown path redirect to `/dashboard`, and the guard takes it from there.
+
+  The other way to do this was to check the session inside every screen, which is what the old version did with one big "if signed in, show this, otherwise show that". With guards, the rule for who can see a page is written once, and adding a page means putting it under the right guard.
+
 #### The `jobs` table and multi-job design
 
 - **File:** `server/db/schema.sql`
 - **Commit:** https://github.com/JustinNeri/WorkBud/commit/99f39b3
-- **What it does and why it is built this way:** Each placement is a row in `jobs` with its own target hours, budgets and deadline, so one person can track two placements at once. Every log belongs to a job with `on delete cascade`, so deleting a job removes its logs and expenses.
+- **What it does and why it is built this way:** The first schema kept one `target_hours` and one `monthly_budget` on `profiles`, so an account could only ever track one placement. I moved those onto a new `jobs` table: one row per placement, with its own name, target hours, budgets and, later, deadline and hourly rate. What had to change with it:
+  - `daily_logs` got a `job_id` column that is `not null` and references `jobs (id) on delete cascade`. Every log has to belong to a job, and deleting a job removes its logs, and through them their expenses, without any clean-up code in the app.
+  - `jobs.user_id` references `auth.users` with the same cascade, so deleting an account removes its jobs too.
+  - a job name is checked in the database with `length(trim(name)) between 1 and 60`, so a name made only of spaces is refused.
+  - two indexes: `jobs (user_id, sort_order, created_at)` for listing a user's jobs in tab order, and `daily_logs (job_id, entry_date desc, created_at desc)` for one job's days, newest first.
+  - `jobs` has its own four Row Level Security policies, on the same `auth.uid() = user_id` rule as the other tables.
+
+  The other option was more columns on `profiles` (a second target, a second budget). That would have fixed the number of placements in the table design. With a separate table, a second or third job is just another row. The old `target_hours` and `monthly_budget` columns are still on `profiles`: they seeded each early account's first job and are not read any more.
+
+#### The visual design and the colour tokens
+
+- **File:** `client/src/index.css` and the components
+- **Commit:** https://github.com/JustinNeri/WorkBud/commit/7465711, https://github.com/JustinNeri/WorkBud/commit/9656071, https://github.com/JustinNeri/WorkBud/commit/4820302
+- **What it does and why it is built this way:** The look of the app is my design, and I typed the styling myself. Colours used to be hex values repeated in each component. They are now defined once in `client/src/index.css`, in two layers: the raw values as `--wb-*` variables, and a Tailwind `@theme` block that maps them to `--color-*`, which is what makes classes like `text-brand` and `bg-money-fill` exist. Each colour has one meaning across the app: `brand` is hours, `money` is money, `warn` is getting close to a limit, and `over` is past it. Each one comes in four steps, because one value cannot do every job on a dark background:
+  - the plain token (`brand`) is light enough to be text on the dark surface;
+  - `-fill` is dark enough for white text to sit on it, for buttons and chips;
+  - `-soft` is a faint background tint;
+  - `-track` is the unfilled part of a meter, a darker step of the same colour.
+
+  Before this, changing a colour meant finding every copy of a hex value. Now it is one line, and a component cannot pick a shade that does not belong to the set.
+
+#### What the app tracks: categories, occupations and currencies
+
+- **File:** `client/src/lib/format.js`
+- **Commit:** https://github.com/JustinNeri/WorkBud/commit/99f39b3, https://github.com/JustinNeri/WorkBud/commit/f3b7ebe
+- **What it does and why it is built this way:** Three lists in `format.js` whose contents are my decisions, and each one is used by more than the form it appears in:
+  - `EXPENSE_CATEGORIES`: transport, food, supplies, fees and other, the things an OJT student actually pays for. Each has a `value` that is stored and a `label` that is shown. The list is fixed instead of free text so spending can be grouped by category, and the database and the API accept only these same five values. `categoryLabel()` falls back to "Other" for a value it does not know.
+  - `OCCUPATIONS`: nine choices, with "Student — OJT / Internship" first because that is who the app is for. Four of them (the two employed ones, freelancer and business owner) are also in the `ONGOING` set. The dashboard checks the user's occupation with `isOngoingRole()`: a placement gets a deadline countdown, and ongoing work gets a month-to-date view, because a job with no end date has nothing to count down to.
+  - `CURRENCIES`: ten currencies with PHP as the default. One currency applies to the whole account, and its symbol is looked up from this list.
+
+#### Logging past dates
+
+- **File:** `client/src/components/LogSheet.jsx`
+- **Commit:** https://github.com/JustinNeri/WorkBud/commit/e89aafa
+- **What it does and why it is built this way:** Most students find the app partway through a placement and need earlier weeks to count. I asked Claude how it should be done (the 2026-09-07 entry in section 1) and implemented it myself. The sheet already had a date field, but everything around it assumed today: it was titled "Log today" and gave no quick way to pick another day. The change made the date a proper part of the form:
+  - `Today` and `Yesterday` buttons under the date field, for the days people most often fill in late, with the date picker behind them for anything older;
+  - when an older day is picked, the full date is written out next to the buttons, because nothing else on the sheet says which day is being filled in;
+  - the sheet can be opened on a chosen day through a new `initialDate` value, and its title became "Log a day";
+  - the date field keeps `max={todayISO()}`, so any past day is allowed and future dates stay blocked.
+
+  The two buttons work out their dates each time the sheet draws, not once when the app loads, so an app left open overnight does not go on calling yesterday "today". They sit outside the field's label on purpose: a button inside the label would also open the date picker.
 
 #### The logo and app icons
 
@@ -243,41 +302,11 @@ A note on all of these: "written by me" means I typed the code and made the deci
 - **Commit:** https://github.com/JustinNeri/WorkBud/commit/88676b3
 - **What it does and why it is built this way:** My own design: one zigzag line that reads as the W in WorkBud and as a line on a chart, drawn as an hours stroke handing off to a money stroke. It is exported as a mark, an icon, a lockup and a maskable version for Android.
 
-#### What the app tracks: categories, occupations and currencies
-
-- **File:** `client/src/lib/format.js`
-- **Commit:** https://github.com/JustinNeri/WorkBud/commit/99f39b3, https://github.com/JustinNeri/WorkBud/commit/f3b7ebe
-- **What it does and why it is built this way:** Three lists that are my decisions: five expense categories an OJT student actually pays for, nine occupations (a placement gets a deadline countdown, ongoing work gets a month-to-date view), and ten currencies with PHP as the default.
-
-#### Logging past dates
-
-- **File:** `client/src/components/LogSheet.jsx`
-- **Commit:** https://github.com/JustinNeri/WorkBud/commit/e89aafa
-- **What it does and why it is built this way:** Most students find the app partway through a placement and need earlier weeks to count. I asked Claude how it should be done (the 2026-09-07 entry in section 1) and implemented it myself: the date field has today as its maximum, so future dates stay blocked.
-
-#### The visual design and the colour tokens
-
-- **File:** `client/src/index.css` and the components
-- **Commit:** https://github.com/JustinNeri/WorkBud/commit/7465711, https://github.com/JustinNeri/WorkBud/commit/9656071, https://github.com/JustinNeri/WorkBud/commit/4820302
-- **What it does and why it is built this way:** The look of the app is my design, and I typed the styling myself. Colours used to be hex values repeated in each component. They are now named tokens in `client/src/index.css` (`brand`, `money`, `warn`, `over`), so a colour is changed in one place.
-
 #### Deployment on Vercel
 
 - **File:** `vercel.json`
 - **Commit:** https://github.com/JustinNeri/WorkBud/commit/464ff06
 - **What it does and why it is built this way:** I created the Vercel project, connected the repository so every push deploys, and set the Supabase values as environment variables. The `vercel.json` file itself was written with Claude.
-
-#### Routing and the route guards
-
-- **File:** `client/src/App.jsx`, `client/src/main.jsx`
-- **Commit:** https://github.com/JustinNeri/WorkBud/commit/6b44022
-- **What it does and why it is built this way:** I asked Claude how routing should be set up (the "React Router" entry in section 1) and wrote it myself. `RequireSession` sends a signed-out visitor to `/login` and remembers where they were going. `GuestOnly` sends a signed-in user on to that page or to `/dashboard`. The rule for who can see a page lives in the guards, not on every screen.
-
-#### The activity feed preview and month filter
-
-- **File:** `client/src/components/ActivityFeed.jsx`
-- **Commit:** https://github.com/JustinNeri/WorkBud/commit/2990956, https://github.com/JustinNeri/WorkBud/commit/9300ef0, https://github.com/JustinNeri/WorkBud/commit/42d73f6
-- **What it does and why it is built this way:** I wrote this myself. When I got stuck on one bug, the list going empty after switching jobs with a month selected, I asked Claude why. The feed shows the five newest days with a "show all" button, so a long placement does not turn the dashboard into one long list. The month chips are built from the months that actually have entries, so there is never a chip that leads to nothing, and they only appear once there is more than one month. Picking a month also shows that month's hours and days worked. If the chosen month does not exist for the current job, the feed falls back to "all" instead of showing an empty list.
 
 #### Setting up the Supabase project
 
