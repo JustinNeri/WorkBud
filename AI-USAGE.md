@@ -202,14 +202,6 @@ built the backend from there.
   Claude could not sign in, so it only tested the signed-out and bad-input paths. I tested the signed-in flows myself in the browser, on localhost and on the Vercel preview: adding, editing and deleting a log with expenses, a job and a milestone, changing the profile, and onboarding and deleting a test account.
 - **Commit:** https://github.com/JustinNeri/WorkBud/commit/fb4eb62
 
-### 2026-10-08 - A review of the finished project, and the fixes
-
-- **Tool:** Claude (Claude Code)
-- **What I asked for:** to check the finished project against the finals rubric, and then to fix what it found.
-- **What it gave back:** it ran the server and sent it bad requests, and compared `server/db/schema.sql` with the live database. It found two requests that answered 500 instead of a 4xx (Case 3 in section 2), that the avatars bucket could still be listed, and that my table grants narrowed nothing. It then wrote the fixes: the error handler, the `revoke all` lines, a new avatars policy, and a `save_log()` function so a day and its expenses save in one transaction.
-- **What I kept, what I changed, and why:** I kept the fixes. This is AI-written code, like the server it corrects. Claude could not sign in, so the signed-in flows were mine to test. Its connector could not run the database changes, so I ran the SQL myself in the Supabase SQL Editor.
-- **Commit:** https://github.com/JustinNeri/WorkBud/commit/9e2eca7
-
 ## 2. Where the AI got it wrong
 
 ### Case 1 - The export added up hours without rounding
@@ -230,7 +222,7 @@ built the backend from there.
 
 - **What it gave me:** the error handler in the Express server Claude wrote (`server/errors.js`, see "The Express API server" in section 1). It recognised its own `HttpError`, a body that was not valid JSON, and a body that was too large. Everything else became a 500 with "Something went wrong on our side."
 - **What was wrong with it:** Express and its body parser also raise errors for other bad requests, and those already carry a 4xx status. The handler ignored that status. A body sent with an unknown charset came back 500 instead of 415, and a URL with a broken escape such as `/api/jobs/%E0%A4%A` came back 500 instead of 400. A 500 tells the caller the server is broken when the request was. The same gap had a second effect: when `npm start` serves the built app, a broken page URL never reached the handler at all and got Express's default error page, which printed a stack trace with file paths.
-- **What I did instead:** it was found by sending the server those requests, not by reading the code. The handler now passes a 4xx status through with its own short message, and `server/index.js` registers the handler again after the page routes. Both cases now return one line of JSON with the right status.
+- **What I did instead:** it was found on October 8, when I had Claude check the finished server and it sent those requests, not by reading the code. The handler now passes a 4xx status through with its own short message, and `server/index.js` registers the handler again after the page routes. Both cases now return one line of JSON with the right status.
 - **Commit:** https://github.com/JustinNeri/WorkBud/commit/fb4eb62, fixed in https://github.com/JustinNeri/WorkBud/commit/9e2eca7
 
 ## 3. Who wrote what
