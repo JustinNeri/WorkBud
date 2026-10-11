@@ -24,12 +24,12 @@ exact.
 | 1:43 | 5. `requireAuth` code | The check every data route passes, and why the server holds no secret key. |
 | 2:06 | 6. Row Level Security code | The database policies as a second layer behind the server. |
 | 2:14 | 7. AI usage, top of the file | How I work with AI: ask for the structure, build it, test it, ask again. |
-| 2:50 | 8. Section 1.16, the Express API server | The biggest piece AI wrote, and how I tested it. |
+| 2:50 | 8. The Express API server entry | The biggest piece AI wrote, and how I tested it. |
 | 3:11 | 9. `rememberAwareStorage` code | The AI-written piece I understand best. |
-| 3:29 | 10. Where the AI got it wrong | The delete-job bug it described wrongly, and the 6-digit code box I caught. |
-| 4:06 | 11. Signup trigger and RLS code | The parts that are my own work, and my rule for using AI. |
-| 4:34 | 12. Challenges | Overnight shifts, dates one day off, the public key, and checking AI against the code. |
-| 4:59 | 13. What comes next | Tests, error messages, the avatars bucket, an offline save queue. Ends at 5:23. |
+| 3:29 | 10. Where the AI got it wrong | The export total it did not round, and the 6-digit code box. I caught both. |
+| 4:06 | 11. Signup trigger and RLS code | What Claude drafted and I checked, the parts I wrote myself, and my rule for using AI. |
+| 4:34 | 12. Challenges | Overnight shifts, dates one day off, the public key, and checking AI against the real output. |
+| 4:59 | 13. What comes next | Tests, error messages, an offline save queue. Ends at 5:23. |
 
 By part:
 
@@ -91,8 +91,8 @@ I built WorkBud with help from AI, mostly Claude, and wrote all of it down in
 - **My way of working.** I ask the AI what the structure of a feature should
   be, with an example. I build the feature with that as my guide and test it.
   If something goes wrong, or I want a cleaner version, I ask again.
-- **The biggest piece AI wrote.** The Express API server (entry 1.16). The
-  project needed a server with endpoints, Claude proposed the design, and I
+- **The biggest piece AI wrote.** The Express API server (the 2026-10-03
+  entry). The project needed a server with endpoints, Claude proposed the design, and I
   agreed to it. I tested the signed-in flows myself, on localhost and on
   Vercel.
 - **The AI-written piece I understand best.** The "Remember me" storage
@@ -100,17 +100,19 @@ I built WorkBud with help from AI, mostly Claude, and wrote all of it down in
   checks a flag on every read and write. Ticked means `localStorage`, and you
   stay signed in. Unticked means `sessionStorage`, and you are signed out when
   the browser closes.
-- **Where the AI got it wrong.** It described my delete-job bug from the commit
-  message without reading the code, and the description was wrong. The real bug
-  was a delete button missing `type="button"`, so it also submitted the form. A
-  second case I caught myself: the AI's code box was fixed at 6 digits, but my
-  project sends 8, so no real code could pass. I caught it by testing a real
-  signup, and the box now accepts 6 to 10 digits.
-- **My part.** The `jobs` table that lets one person track several placements,
-  and the logo, are mine. The Row Level Security policies, the signup trigger,
-  the validation rules and the table permissions are the database rules I went
-  through, changed and ran myself. Who drafted each one is recorded in
-  [AI-USAGE.md](../AI-USAGE.md), section 3.
+- **Where the AI got it wrong.** The AI wrote my export, and it added up each
+  day's hours with a plain sum. Decimal hours cannot be stored exactly, so the
+  total drifted: my time record showed 209.32999999999998 instead of 209.33,
+  on the one document I hand to my coordinator. I noticed it in my own
+  screenshot and fixed it by rounding the total to two decimals. A second
+  case: the AI's code box was fixed at 6 digits, but my project sends 8, so no
+  real code could pass. I caught it by testing a real signup, and the box now
+  accepts 6 to 10 digits.
+- **My part.** Claude drafted the Row Level Security policies and the signup
+  trigger, and I checked them, changed them and ran them myself. The `jobs`
+  table that lets one person track several placements, the routing and the
+  activity feed I wrote myself, and I designed the logo. Who wrote each part
+  is recorded in [AI-USAGE.md](../AI-USAGE.md), section 3.
 - **My rule.** AI can suggest, but I decide what the app needs, and I test
   everything it gives me.
 
@@ -123,13 +125,13 @@ What was hard:
 - Dates showed one day off.
 - The database key is public, so the protection has to live in the database
   rules.
-- AI got one of my bugs wrong, so now I check everything against the code.
+- The AI's export total was off by a rounding error, so now I check what it
+  gives me against the real output.
 
 What comes next, as said in the video:
 
 - unit tests for the time maths
 - clear error messages when a save fails
-- locking down the avatars bucket
 - an offline save queue, so a day logged with no signal syncs later
 
 ## Before recording
